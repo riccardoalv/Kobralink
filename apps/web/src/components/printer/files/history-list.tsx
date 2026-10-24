@@ -1,4 +1,5 @@
 import type { PrintJobDto } from '@kobralink/shared';
+import { parseFilename } from '@/lib/filename';
 import { formatDate, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { jobStatusLabel } from '@/lib/labels';
@@ -21,7 +22,7 @@ export function HistoryList({ jobs }: { jobs: PrintJobDto[] }) {
                         )}
                     />
                     <span className="min-w-0 flex-1 truncate font-medium" title={j.filename}>
-                        {j.filename}
+                        {parseFilename(j.filename).name}
                     </span>
                     <span className="text-muted-foreground">{formatDate(j.startedAt)}</span>
                     <span className="w-20 text-right tabular-nums text-muted-foreground">
