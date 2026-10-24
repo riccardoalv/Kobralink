@@ -259,8 +259,8 @@ function Filament({ printerId, live }: { printerId: string; live: PrinterLiveSta
     if (slots.length > 0) {
         const loaded = slots.find((s) => s.globalIndex === live.amsLoadedSlot);
         return (
-            <div className="flex items-center gap-3 text-sm">
-                <div className="flex gap-1.5">
+            <div className="space-y-2 rounded-2xl bg-secondary p-3 text-sm">
+                <div className="flex flex-wrap gap-2">
                     {slots.map((s) => {
                         const empty = s.status !== 5 && !s.type;
                         return (
@@ -271,15 +271,16 @@ function Filament({ printerId, live }: { printerId: string; live: PrinterLiveSta
                                     color={rgbCss(s.color)}
                                     empty={empty}
                                     active={s.globalIndex === live.amsLoadedSlot}
-                                    className="size-12"
+                                    showPercent
+                                    className="size-16"
                                 />
                             </span>
                         );
                     })}
                 </div>
-                <span className="truncate text-muted-foreground">
+                <p className="truncate text-muted-foreground">
                     {loaded ? m.ams_loaded_type({ type: loaded.type || '?' }) : m.ams_none_loaded()}
-                </span>
+                </p>
             </div>
         );
     }
@@ -290,20 +291,25 @@ function Filament({ printerId, live }: { printerId: string; live: PrinterLiveSta
 function ExternalSpoolLine({ printerId }: { printerId: string }) {
     const spool = useExternalSpool(printerId);
     return (
-        <div className="flex items-center gap-3 text-sm">
-            <SpoolArt color={spool.hex} fraction={spool.fraction ?? 1} className="size-12" />
-            {spool.material ? (
-                <span className="min-w-0 truncate">
-                    <span className="font-medium">{spool.material}</span>
-                    {spool.name && <span className="text-muted-foreground">, {spool.name}</span>}
-                </span>
-            ) : (
-                <span className="text-muted-foreground">{m.printers_no_spool()}</span>
-            )}
-            {spool.remainingG !== undefined && (
-                <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">
-                    {m.printers_spool_left({ g: Math.round(spool.remainingG) })}
-                </span>
+        <div className="flex items-center gap-4 rounded-2xl bg-secondary p-3 text-sm">
+            <SpoolArt color={spool.hex} fraction={spool.fraction ?? 1} className="size-20" />
+            <div className="min-w-0 flex-1 space-y-0.5">
+                {spool.material ? (
+                    <p className="truncate">
+                        <span className="font-medium">{spool.material}</span>
+                        {spool.name && <span className="text-muted-foreground">, {spool.name}</span>}
+                    </p>
+                ) : (
+                    <p className="text-muted-foreground">{m.printers_no_spool()}</p>
+                )}
+                {spool.remainingG !== undefined && (
+                    <p className="tabular-nums text-muted-foreground">
+                        {m.printers_spool_left({ g: Math.round(spool.remainingG) })}
+                    </p>
+                )}
+            </div>
+            {spool.fraction !== undefined && spool.hex && (
+                <span className="shrink-0 text-xl font-semibold tabular-nums">{Math.round(spool.fraction * 100)}%</span>
             )}
         </div>
     );
