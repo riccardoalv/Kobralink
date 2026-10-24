@@ -2,7 +2,7 @@ name: kobralink
 
 services:
   kobralink:
-    image: nathacks/kobralink:latest
+    image: ghcr.io/riccardoalv/kobralink:latest
     container_name: kobralink
     restart: unless-stopped
     env_file:

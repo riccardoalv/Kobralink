@@ -3,16 +3,17 @@
 # Kobralink
 
 <p align="center">
-  <a href="https://github.com/NatHacks/Kobralink/releases/latest"><img src="https://img.shields.io/github/v/release/NatHacks/Kobralink?label=release" alt="GitHub release" /></a>
-  <a href="https://github.com/NatHacks/Kobralink/releases"><img src="https://img.shields.io/github/downloads/NatHacks/Kobralink/total?label=downloads" alt="GitHub downloads" /></a>
-  <a href="https://hub.docker.com/r/nathacks/kobralink"><img src="https://img.shields.io/docker/pulls/nathacks/kobralink?label=docker%20pulls" alt="Docker pulls" /></a>
-  <a href="https://hub.docker.com/r/nathacks/kobralink"><img src="https://img.shields.io/docker/image-size/nathacks/kobralink/latest?label=image%20size" alt="Docker image size" /></a>
-  <a href="https://github.com/NatHacks/Kobralink/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/NatHacks/Kobralink/release.yml?label=release%20build" alt="Release build" /></a>
-  <a href="https://github.com/NatHacks/Kobralink/stargazers"><img src="https://img.shields.io/github/stars/NatHacks/Kobralink?style=flat" alt="GitHub stars" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/NatHacks/Kobralink" alt="License" /></a>
+  <a href="https://github.com/riccardoalv/Kobralink/actions/workflows/docker-image.yml"><img src="https://img.shields.io/github/actions/workflow/status/riccardoalv/Kobralink/docker-image.yml?label=docker%20image" alt="Docker image build" /></a>
+  <a href="https://github.com/riccardoalv/Kobralink/pkgs/container/kobralink"><img src="https://img.shields.io/badge/ghcr.io-riccardoalv%2Fkobralink-blue" alt="GHCR image" /></a>
+  <a href="https://github.com/riccardoalv/Kobralink/stargazers"><img src="https://img.shields.io/github/stars/riccardoalv/Kobralink?style=flat" alt="GitHub stars" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/riccardoalv/Kobralink" alt="License" /></a>
 </p>
 
-Kobralink turns an **Anycubic Kobra X** into a **Moonraker-compatible printer** — no Klipper, no
+> **Community fork.** Kobralink was created by [NatHacks](https://github.com/NatHacks/Kobralink). This fork continues
+> its development for the community: bug fixes, Kobra 4 support and external spool tracking. Issues and pull requests
+> are welcome here.
+
+Kobralink turns an **Anycubic Kobra X** or **Kobra 4** into a **Moonraker-compatible printer** — no Klipper, no
 Raspberry Pi, no firmware change. Run it on a small server (Docker) or as a desktop app, add your
 printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker client
 (Mainsail, Obico, Home Assistant…).
@@ -37,12 +38,12 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 
 Requirements: Docker + Docker Compose, a machine on the same LAN as the printer. No clone needed:
 `infra/docker-compose.prod.yml` runs the published image
-[`nathacks/kobralink`](https://hub.docker.com/r/nathacks/kobralink) (linux/amd64 + linux/arm64).
+[`ghcr.io/riccardoalv/kobralink`](https://github.com/riccardoalv/Kobralink/pkgs/container/kobralink) (linux/amd64 + linux/arm64).
 
 ```bash
 mkdir kobralink && cd kobralink
-curl -fsSLO https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/docker-compose.prod.yml
-curl -fsSL https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/.env.example -o .env
+curl -fsSLO https://raw.githubusercontent.com/riccardoalv/Kobralink/main/infra/docker-compose.prod.yml
+curl -fsSL https://raw.githubusercontent.com/riccardoalv/Kobralink/main/infra/.env.example -o .env
 ```
 
 Edit `.env` and set `BETTER_AUTH_URL` to the URL you will type in the browser. Then:
@@ -61,7 +62,7 @@ Update:
 docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 ```
 
-To pin a version, set `KOBRALINK_IMAGE=nathacks/kobralink:<version>` in `.env`.
+To pin a version, set `KOBRALINK_IMAGE=ghcr.io/riccardoalv/kobralink:<version>` in `.env`.
 
 Behind a reverse proxy (HTTPS): set `KOBRALINK_BIND=127.0.0.1` and
 `BETTER_AUTH_URL=https://kobralink.example.com`. Moonraker ports stay direct (OrcaSlicer needs HTTP + WebSocket).
@@ -77,7 +78,7 @@ every port listens on all interfaces).
 
 | Variable                  | Default                     | Role                                                    |
 | ------------------------- | --------------------------- | ------------------------------------------------------- |
-| `KOBRALINK_IMAGE`         | `nathacks/kobralink:latest` | Image to run (pin a version: `nathacks/kobralink:0.1.5`) |
+| `KOBRALINK_IMAGE`         | `ghcr.io/riccardoalv/kobralink:latest` | Image to run (pin a version or a commit: `ghcr.io/riccardoalv/kobralink:sha-<commit>`) |
 | `KOBRALINK_BIND`          | `0.0.0.0`                   | Host interface (`127.0.0.1` behind a reverse proxy)     |
 | `KOBRALINK_PORT`          | `7100`                      | Dashboard port on the host                              |
 | `BETTER_AUTH_URL`         | —                           | **Required**: URL used by the browser                   |
@@ -88,7 +89,8 @@ every port listens on all interfaces).
 
 ## Desktop app (macOS / Windows / Linux)
 
-Download the installer from the [GitHub releases](https://github.com/NatHacks/Kobralink/releases)
+This fork does not publish desktop builds yet. The installers of the original project are on its
+[GitHub releases](https://github.com/NatHacks/Kobralink/releases)
 (dmg, exe, AppImage / deb). The app runs the bridge locally and updates itself.
 
 ## Connect a printer
@@ -97,7 +99,7 @@ Download the installer from the [GitHub releases](https://github.com/NatHacks/Ko
 2. Dashboard → **Add a printer** → enter the IP. A Moonraker port is assigned (`7125`, `7126`, …).
 3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`
    (or open **Connect OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
-   Click *Test*, then confirm: the **Device** tab now shows the Kobra X and *Print* sends the G-code to Kobralink.
+   Click *Test*, then confirm: the **Device** tab now shows the printer and *Print* sends the G-code to Kobralink.
 
 The OrcaSlicer **Device** tab only targets the printer: send a job, follow progress, pause / cancel, sync the ACE
 filaments. Everything else — print queue, file library, macros, filament profiles per slot, camera, failure
@@ -120,7 +122,7 @@ OrcaSlicer ──HTTP/WS──► :7125  (Moonraker, printer 1) ─┐
 Mainsail / Obico ─────► :7126  (Moonraker, printer 2) ─┤   apps/api (single process)
 Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘         │ MQTT mTLS :9883
                                                                   ▼
-                                                           Kobra X (LAN mode)
+                                                           Kobra X / Kobra 4 (LAN mode)
 ```
 
 | App / package             | Role                                                                                      |
@@ -128,7 +130,7 @@ Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘    
 | `apps/api`                | NestJS 11 · Prisma 7 + SQLite (libsql) · Better Auth (+ API keys) · MQTT bridge · Moonraker emulation |
 | `apps/web`                | React 19 · Vite · TanStack Router + Query · Tailwind v4 · shadcn/ui                       |
 | `apps/desktop`            | Electron — spawns the API locally, auto-update via GitHub releases                         |
-| `packages/kobra-protocol` | Kobra X protocol: mTLS MQTT client, credential recovery, GCode upload / parsing           |
+| `packages/kobra-protocol` | Kobra LAN protocol: mTLS MQTT client, credential recovery, GCode upload / parsing           |
 | `packages/shared`         | zod schemas + types shared between API and UI                                             |
 | `packages/i18n`           | Paraglide (inlang) messages: `fr`, `en`, `de`, `es`, `it`, `zh-cn`                        |
 
@@ -161,7 +163,7 @@ API environment variables (`apps/api`):
 | `KOBRALINK_EXTRA_ORIGINS` | `http://localhost:5173,…`             | Extra origins (CORS + Better Auth)            |
 | `KOBRALINK_FFMPEG`        | `@ffmpeg-installer/ffmpeg`, else PATH | ffmpeg binary for camera + timelapse          |
 | `KOBRALINK_VERSION`       | `package.json` version                | Version reported by `/api/v1/system`              |
-| `KOBRALINK_UPDATE_REPO`   | `NatHacks/Kobralink`                  | GitHub repo polled for update checks          |
+| `KOBRALINK_UPDATE_REPO`   | `riccardoalv/Kobralink`               | GitHub repo polled for update checks          |
 
 Desktop: `KOBRALINK_URL` forces the bridge URL without spawning the API;
 `KOBRALINK_SHOT=/x.png [KOBRALINK_SHOT_LOGIN="mail|password|/path"]` captures the window then quits.

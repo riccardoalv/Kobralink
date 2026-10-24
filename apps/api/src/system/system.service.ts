@@ -40,7 +40,7 @@ export class SystemService {
     }
 
     async checkUpdate(force = false): Promise<SystemInfoDto['update']> {
-        const repo = process.env.KOBRALINK_UPDATE_REPO ?? 'NatHacks/Kobralink';
+        const repo = process.env.KOBRALINK_UPDATE_REPO ?? 'riccardoalv/Kobralink';
         if (!repo) return null;
         if (!force && this.updateCache && Date.now() - this.updateCache.at < UPDATE_TTL_MS)
             return this.updateCache.result;

@@ -2,7 +2,7 @@
 
 Files:
 
-- `docker-compose.prod.yml` — runs the published image `nathacks/kobralink` from Docker Hub (recommended)
+- `docker-compose.prod.yml` — runs the published image `ghcr.io/riccardoalv/kobralink` from GitHub Container Registry (recommended)
 - `docker-compose.yml` — same service, plus a `build` section to build from source (`infra/Dockerfile`, context = repo root)
 - `.env.example` — configuration template (copy to `.env`)
 - `Dockerfile` (+ `Dockerfile.dockerignore`) — built and pushed to Docker Hub by the release workflow on every `v*` tag
@@ -11,13 +11,13 @@ Files:
 
 ```bash
 mkdir kobralink && cd kobralink
-curl -fsSLO https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/docker-compose.prod.yml
-curl -fsSL https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/.env.example -o .env
+curl -fsSLO https://raw.githubusercontent.com/riccardoalv/Kobralink/main/infra/docker-compose.prod.yml
+curl -fsSL https://raw.githubusercontent.com/riccardoalv/Kobralink/main/infra/.env.example -o .env
 # set BETTER_AUTH_URL in .env
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Pin a version with `KOBRALINK_IMAGE=nathacks/kobralink:<version>` in `.env`. Tags: `<version>`, `<major>.<minor>`, `latest`
+Pin a version with `KOBRALINK_IMAGE=ghcr.io/riccardoalv/kobralink:<version>` in `.env`. Tags: `<version>`, `<major>.<minor>`, `latest`, `sha-<commit>`
 (linux/amd64, linux/arm64).
 
 ## Build from source
