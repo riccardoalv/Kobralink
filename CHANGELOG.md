@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/riccardoalv/Kobralink/compare/v0.5.0...v0.6.0) (2026-10-24)
+
+
+### Features
+
+* **web:** flat spool disc with a progress bar ([#10](https://github.com/riccardoalv/Kobralink/issues/10)) ([496205c](https://github.com/riccardoalv/Kobralink/commit/496205c353a99b55e3cf2623b6aa59ba0e09c7e2))
+
 ## [0.5.0](https://github.com/riccardoalv/Kobralink/compare/v0.4.0...v0.5.0) (2026-10-24)
 
 
