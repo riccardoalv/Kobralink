@@ -1,7 +1,7 @@
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useExternalSpool } from '@/hooks/use-external-spool';
 import { useLiveState } from '@/hooks/use-printers';
-import { hexToRgb, rgbCss, textOn } from '@/lib/color';
+import { rgbCss } from '@/lib/color';
 import { m } from '@/lib/i18n';
 import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
 import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
+import { SpoolIcon } from './spool-icon';
 
 export function AmsCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
@@ -62,22 +63,18 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                     className="group flex w-14 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                                     title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                 >
-                                    <div
-                                        className={cn(
-                                            'flex size-14 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all group-enabled:group-hover:scale-105 group-enabled:group-hover:shadow-md',
-                                            empty
-                                                ? 'border-dashed border-muted-foreground/40 text-muted-foreground group-enabled:group-hover:border-muted-foreground/70 group-enabled:group-hover:bg-muted'
-                                                : 'border-transparent group-enabled:group-hover:brightness-110',
-                                            isLoaded && 'ring-4 ring-primary/40',
-                                            (s.activity === 'feeding' || s.activity === 'retracting') &&
-                                                'animate-pulse',
-                                        )}
-                                        style={
-                                            empty ? undefined : { background: rgbCss(s.color), color: textOn(s.color) }
-                                        }
-                                    >
-                                        {s.index + 1}
-                                    </div>
+                                    <span className="relative transition-transform group-enabled:group-hover:scale-105">
+                                        <SpoolIcon
+                                            color={empty ? undefined : rgbCss(s.color)}
+                                            active={isLoaded}
+                                            className={cn(
+                                                'size-14',
+                                                (s.activity === 'feeding' || s.activity === 'retracting') &&
+                                                    'animate-pulse',
+                                            )}
+                                        />
+                                        <SlotBadge>{s.index + 1}</SlotBadge>
+                                    </span>
                                     <div className="w-full truncate text-center text-xs text-muted-foreground">
                                         {empty ? m.ams_empty() : activity && !isLoaded ? activity : s.type || '?'}
                                     </div>
@@ -114,21 +111,22 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
                 className="group flex w-14 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 title={m.ams_external_spool()}
             >
-                <div
-                    className={cn(
-                        'flex size-14 items-center justify-center rounded-full border-2 text-sm font-semibold ring-4 ring-primary/40 transition-all group-enabled:group-hover:scale-105 group-enabled:group-hover:shadow-md',
-                        hex
-                            ? 'border-transparent group-enabled:group-hover:brightness-110'
-                            : 'border-dashed border-muted-foreground/40 text-muted-foreground group-enabled:group-hover:bg-muted',
-                    )}
-                    style={hex ? { background: hex, color: textOn(hexToRgb(hex)) } : undefined}
-                >
-                    E
-                </div>
+                <span className="relative transition-transform group-enabled:group-hover:scale-105">
+                    <SpoolIcon color={hex} active={Boolean(hex)} className="size-14" />
+                    <SlotBadge>E</SlotBadge>
+                </span>
                 <div className="w-full truncate text-center text-xs text-muted-foreground">
                     {material ?? m.ams_external_spool_empty()}
                 </div>
             </button>
         </div>
+    );
+}
+
+function SlotBadge({ children }: { children: React.ReactNode }) {
+    return (
+        <span className="absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full bg-secondary text-[0.6875rem] font-semibold text-secondary-foreground ring-2 ring-card">
+            {children}
+        </span>
     );
 }
