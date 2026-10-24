@@ -84,6 +84,7 @@ describe('PrinterCard', () => {
         await renderWithProviders(<PrinterCard printer={printer(idle)} canOperate {...actions()} />);
         expect(screen.getByText('PETG')).toBeTruthy();
         expect(screen.getByText('812 g left')).toBeTruthy();
+        expect(screen.getByText('81%')).toBeTruthy();
     });
 
     it('pauses and cancels a running print', async () => {

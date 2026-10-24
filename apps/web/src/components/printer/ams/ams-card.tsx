@@ -9,7 +9,7 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
 import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
-import { SlotSpoolArt, SpoolArt } from './spool-art';
+import { SlotSpoolArt, SpoolArt, SpoolPercent } from './spool-art';
 
 export function AmsCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
@@ -60,7 +60,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                             content: <SlotForm key={s.globalIndex} printerId={printerId} slot={s} />,
                                         })
                                     }
-                                    className="group flex w-16 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="group flex w-24 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                                     title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                 >
                                     <span className="relative transition-transform group-enabled:group-hover:scale-105">
@@ -70,8 +70,9 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                             color={rgbCss(s.color)}
                                             empty={empty}
                                             active={isLoaded}
+                                            showPercent
                                             className={cn(
-                                                'size-16',
+                                                'size-24',
                                                 (s.activity === 'feeding' || s.activity === 'retracting') &&
                                                     'animate-pulse',
                                             )}
@@ -111,13 +112,14 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
                         content: <ExternalSpoolForm printerId={printerId} />,
                     })
                 }
-                className="group flex w-16 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                className="group flex w-24 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 title={m.ams_external_spool()}
             >
                 <span className="relative transition-transform group-enabled:group-hover:scale-105">
-                    <SpoolArt color={hex} fraction={fraction ?? 1} active={Boolean(hex)} className="size-16" />
+                    <SpoolArt color={hex} fraction={fraction ?? 1} active={Boolean(hex)} className="size-24" />
                     <SlotBadge>E</SlotBadge>
                 </span>
+                {hex && <SpoolPercent fraction={fraction} />}
                 <div className="w-full truncate text-center text-xs text-muted-foreground">
                     {material ?? m.ams_external_spool_empty()}
                 </div>
@@ -128,7 +130,7 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
 
 function SlotBadge({ children }: { children: React.ReactNode }) {
     return (
-        <span className="absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full bg-secondary text-[0.6875rem] font-semibold text-secondary-foreground ring-2 ring-card">
+        <span className="absolute -left-1 -top-1 flex size-5 items-center justify-center rounded-full bg-secondary text-[0.6875rem] font-semibold text-secondary-foreground ring-2 ring-card">
             {children}
         </span>
     );
