@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      dependencies:
+        patterns: ["*"]
+    # Major versions (Prisma, NestJS, React, Electron...) are upgraded by hand,
+    # once the code around them is ready.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /infra
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    # The Bun image follows packageManager in package.json; majors are upgraded by hand.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
