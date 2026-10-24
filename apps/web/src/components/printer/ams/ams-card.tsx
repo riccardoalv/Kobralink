@@ -1,14 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useExternalSpool } from '@/hooks/use-external-spool';
 import { useLiveState } from '@/hooks/use-printers';
 import { hexToRgb, rgbCss, textOn } from '@/lib/color';
 import { m } from '@/lib/i18n';
 import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
-import { spoolAssignmentsQuery, spoolmanSpoolsQuery, spoolmanStatusQuery, spoolsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
-import { EXTERNAL_SLOT, ExternalSpoolForm } from './external-spool-form';
+import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
 
 export function AmsCard({ printerId }: { printerId: string }) {
@@ -25,7 +24,11 @@ export function AmsCard({ printerId }: { printerId: string }) {
                 <CardTitle className="text-lg font-medium">{m.ams_title()}</CardTitle>
                 <CardDescription>{FILAMENT_MODE_LABEL[state.filamentMode]?.()}</CardDescription>
                 <CardAction className="text-sm text-muted-foreground">
-                    {loaded ? m.ams_loaded_type({ type: loaded.type || '?' }) : m.ams_none_loaded()}
+                    {loaded
+                        ? m.ams_loaded_type({ type: loaded.type || '?' })
+                        : state.externalSpoolOnly
+                          ? null
+                          : m.ams_none_loaded()}
                 </CardAction>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -93,16 +96,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
 }
 
 function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disabled: boolean }) {
-    const spoolman = useQuery(spoolmanStatusQuery(printerId));
-    const spools = useQuery(spoolmanSpoolsQuery(Boolean(spoolman.data?.configured)));
-    const localSpools = useQuery(spoolsQuery());
-    const localAssign = useQuery(spoolAssignmentsQuery(printerId));
-    const spoolmanSpool = spools.data?.find((sp) => sp.id === spoolman.data?.slotSpools[EXTERNAL_SLOT]);
-    const localSpool = localSpools.data?.find((sp) => sp.id === localAssign.data?.slotSpools[EXTERNAL_SLOT]);
-    const hex = spoolmanSpool?.filament.color_hex
-        ? `#${spoolmanSpool.filament.color_hex.replace(/^#/, '')}`
-        : localSpool?.colorHex;
-    const material = spoolmanSpool?.filament.material ?? localSpool?.material;
+    const { hex, material } = useExternalSpool(printerId);
     const openDialog = confirmationDialogStore.actions.openDialog;
 
     return (
