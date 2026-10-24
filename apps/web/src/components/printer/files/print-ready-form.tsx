@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { hexToRgb, rgbCss, rgbToHex, textOn } from '@/lib/color';
+import { parseFilename } from '@/lib/filename';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filamentSlotsQuery, fileObjectsQuery } from '@/lib/queries';
@@ -197,7 +198,7 @@ export function PrintReadyForm({
     return (
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 py-2">
             <div className="flex items-center gap-4 rounded-2xl bg-secondary p-4">
-                <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-background/40">
+                <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-background/40">
                     {file.thumbnail ? (
                         <img
                             src={`data:image/png;base64,${file.thumbnail}`}
@@ -209,7 +210,9 @@ export function PrintReadyForm({
                     )}
                 </div>
                 <div className="min-w-0 space-y-1">
-                    <div className="truncate font-medium">{file.filename}</div>
+                    <div className="truncate font-medium" title={file.filename}>
+                        {parseFilename(file.filename).name}
+                    </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         {file.estPrintTimeSec > 0 && (
                             <span className="inline-flex items-center gap-1">

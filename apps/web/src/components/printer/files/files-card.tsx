@@ -5,6 +5,7 @@ import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { ScrollAreaWithShadow } from '@/components/ui/scroll-area-with-shadow';
 import { useFileActions } from '@/hooks/use-file-actions';
 import { useFileDrop } from '@/hooks/use-file-drop';
+import { parseFilename } from '@/lib/filename';
 import { m } from '@/lib/i18n';
 import { filesQuery, historyQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -89,7 +90,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
             );
         }
         return (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-3">
                 {list.map((f, i) => (
                     <FileTile
                         key={f.id}
@@ -101,7 +102,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
                         onQueue={() => actions.enqueue(f)}
                         onPreview={() =>
                             openDialog({
-                                title: f.filename,
+                                title: parseFilename(f.filename).name,
                                 props: { className: 'rounded-3xl sm:max-w-4xl' },
                                 content: <GcodePreview printerId={printerId} file={f} />,
                             })
@@ -113,7 +114,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
                     type="button"
                     onClick={pick}
                     disabled={actions.isUploading}
-                    className="flex min-h-44 flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground disabled:opacity-50"
+                    className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground disabled:opacity-50"
                 >
                     <Plus className="size-6" />
                     {actions.isUploading ? m.files_uploading() : m.files_add_gcode()}

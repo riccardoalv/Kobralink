@@ -10,6 +10,7 @@ import { usePrintClock } from '@/hooks/use-print-clock';
 import { usePrinterAction } from '@/hooks/use-printer-action';
 import { useLiveState } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
+import { parseFilename } from '@/lib/filename';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filesQuery } from '@/lib/queries';
@@ -39,6 +40,16 @@ export function PrintCard({ printerId }: { printerId: string }) {
     const pct = Math.round(state.progress * 100);
     const remaining =
         clock.remainSec || (state.slicerTimeSec ? Math.max(0, state.slicerTimeSec - clock.elapsedSec) : 0);
+    const thumbnail = liveFile?.thumbnail || state.thumbnail;
+    const title = state.filename ? parseFilename(state.filename) : null;
+    const openPreview = liveFile
+        ? () =>
+              openDialog({
+                  title: parseFilename(liveFile.filename).name,
+                  props: { className: 'rounded-3xl sm:max-w-4xl' },
+                  content: <GcodePreview printerId={printerId} file={liveFile} />,
+              })
+        : undefined;
 
     return (
         <section
@@ -53,10 +64,17 @@ export function PrintCard({ printerId }: { printerId: string }) {
                     <p
                         className={cn(
                             'truncate text-sm',
-                            active ? 'text-primary-foreground/70' : 'text-muted-foreground',
+                            active ? 'text-primary-foreground/80' : 'text-muted-foreground',
                         )}
+                        title={state.filename || undefined}
                     >
-                        {state.filename || (state.connected ? m.print_none() : m.common_printer_offline())}
+                        {title
+                            ? [title.name, title.plate !== null ? m.files_plate({ n: title.plate }) : '']
+                                  .filter(Boolean)
+                                  .join(', ')
+                            : state.connected
+                              ? m.print_none()
+                              : m.common_printer_offline()}
                     </p>
                 </div>
                 {active && (
@@ -105,27 +123,13 @@ export function PrintCard({ printerId }: { printerId: string }) {
                         >
                             <Ban />
                         </CircleButton>
-                        {liveFile && (
-                            <CircleButton
-                                className="absolute top-full right-0 mt-2"
-                                title={m.print_view_3d()}
-                                onClick={() =>
-                                    openDialog({
-                                        title: liveFile.filename,
-                                        props: { className: 'rounded-3xl sm:max-w-4xl' },
-                                        content: <GcodePreview printerId={printerId} file={liveFile} />,
-                                    })
-                                }
-                            >
-                                <Box />
-                            </CircleButton>
-                        )}
                     </div>
                 )}
             </div>
 
-            <div className="my-6 flex-1 flex items-center justify-center">
-                {active ? (
+            <div className="my-6 flex flex-1 flex-wrap items-center justify-center gap-6">
+                <PreviewTile thumbnail={thumbnail} active={active} onOpen={openPreview} />
+                {active && (
                     <Ring
                         value={state.progress}
                         size={150}
@@ -135,23 +139,11 @@ export function PrintCard({ printerId }: { printerId: string }) {
                     >
                         <div className="text-center">
                             <div className="text-3xl font-semibold tabular-nums">{pct}%</div>
-                            <div className="text-xs text-primary-foreground/70">
+                            <div className="text-xs text-primary-foreground/80">
                                 {paused ? m.print_paused() : m.print_in_progress()}
                             </div>
                         </div>
                     </Ring>
-                ) : (
-                    <div className="flex size-36 items-center justify-center overflow-hidden rounded-3xl bg-secondary">
-                        {state.thumbnail ? (
-                            <img
-                                src={`data:image/png;base64,${state.thumbnail}`}
-                                alt=""
-                                className="size-full object-contain"
-                            />
-                        ) : (
-                            <span className="text-xs text-muted-foreground">{m.print_preview()}</span>
-                        )}
-                    </div>
                 )}
             </div>
 
@@ -226,19 +218,63 @@ function LayerKv({
     return <Kv k={m.print_layer()} v={total ? `${currLayer}/${total}` : '—'} strong={strong} />;
 }
 
+function PreviewTile({ thumbnail, active, onOpen }: { thumbnail: string; active: boolean; onOpen?: () => void }) {
+    const body = thumbnail ? (
+        <img src={`data:image/png;base64,${thumbnail}`} alt="" className="size-full object-contain p-2" />
+    ) : (
+        <Box className={cn('size-10', active ? 'text-primary-foreground/50' : 'text-muted-foreground/60')} />
+    );
+    const frame = cn(
+        'relative flex size-40 items-center justify-center overflow-hidden rounded-3xl',
+        active ? 'bg-primary-foreground/12' : 'bg-secondary',
+    );
+    if (!onOpen) {
+        return (
+            <div className={frame} role="img" aria-label={m.print_preview()}>
+                {body}
+            </div>
+        );
+    }
+    return (
+        <button
+            type="button"
+            onClick={onOpen}
+            aria-label={m.print_view_3d()}
+            title={m.print_view_3d()}
+            className={cn(
+                frame,
+                'group outline-none transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-primary-foreground',
+            )}
+        >
+            {body}
+            <span
+                className={cn(
+                    'absolute bottom-2 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                    active ? 'bg-primary-foreground/20' : 'bg-background/70 text-foreground',
+                )}
+            >
+                <Box className="size-3.5" />
+                3D
+            </span>
+        </button>
+    );
+}
+
 function Kv({ k, v, strong }: { k: string; v: string; strong: boolean }) {
     return (
         <div>
-            <dt className="text-xs uppercase tracking-wide">{k}</dt>
+            <dt className="text-xs">{k}</dt>
             <dd className={cn('tabular-nums', strong ? 'text-primary-foreground' : 'text-foreground')}>{v}</dd>
         </div>
     );
 }
 
-function CircleButton({ className, ...props }: React.ComponentProps<'button'>) {
+function CircleButton({ className, title, ...props }: React.ComponentProps<'button'>) {
     return (
         <button
             type="button"
+            title={title}
+            aria-label={title}
             {...props}
             className={cn(
                 'flex size-10 items-center justify-center rounded-full bg-primary-foreground/15 text-primary-foreground transition-colors hover:bg-primary-foreground/25 disabled:opacity-50 [&_svg]:size-4',

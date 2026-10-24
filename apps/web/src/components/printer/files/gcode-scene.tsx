@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { BoxGeometry, BufferAttribute, BufferGeometry, Color, InstancedMesh, MOUSE, Object3D, TOUCH } from 'three';
 import { type ThemeColors, useThemeColors } from '@/hooks/use-theme-colors';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
+import { fitCamera } from '@/lib/scene-fit';
 
 export type SceneMode = 'lines' | 'solid';
 
@@ -142,6 +143,34 @@ function Solid({ data, shown, colors }: { data: ParsedGcode; shown: number; colo
     );
 }
 
+type Controls = {
+    target: { set: (x: number, y: number, z: number) => void };
+    update: () => void;
+    saveState: () => void;
+    reset?: () => void;
+};
+
+function FitView({ size }: { size: { x: number; y: number; z: number } }) {
+    const camera = useThree((s) => s.camera);
+    const controls = useThree((s) => s.controls) as Controls | null;
+    const width = useThree((s) => s.size.width);
+    const height = useThree((s) => s.size.height);
+    const fitted = useRef('');
+    useLayoutEffect(() => {
+        if (!controls || !width || !height) return;
+        const key = `${size.x}|${size.y}|${size.z}`;
+        if (fitted.current === key) return;
+        fitted.current = key;
+        const fov = 'fov' in camera ? (camera.fov as number) : 45;
+        const fit = fitCamera(size, fov, width / height);
+        camera.position.set(...fit.position);
+        controls.target.set(...fit.target);
+        controls.update();
+        controls.saveState();
+    }, [camera, controls, width, height, size]);
+    return null;
+}
+
 function ResetView({ signal }: { signal: number }) {
     const controls = useThree((s) => s.controls) as { reset?: () => void } | null;
     const last = useRef(signal);
@@ -170,7 +199,11 @@ export function GcodeScene({
     const span = Math.max(1, data.maxX - data.minX, data.maxY - data.minY);
     const height = data.layers.length ? data.layers[data.layers.length - 1].z : 1;
     const bed = Math.max(Math.ceil((span * 1.6) / 10) * 10, 40);
-    const distance = Math.max(span, height) * 1.9 + 20;
+    const size = useMemo(
+        () => ({ x: Math.max(1, data.maxX - data.minX), y: Math.max(1, data.maxY - data.minY), z: height }),
+        [data.maxX, data.minX, data.maxY, data.minY, height],
+    );
+    const distance = fitCamera(size, 45).distance;
 
     return (
         <Canvas
@@ -213,6 +246,7 @@ export function GcodeScene({
                 maxDistance={distance * 6}
                 maxPolarAngle={Math.PI / 2}
             />
+            <FitView size={size} />
             <ResetView signal={resetSignal} />
         </Canvas>
     );
