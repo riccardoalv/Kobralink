@@ -134,6 +134,17 @@ Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘    
 | `packages/shared`         | zod schemas + types shared between API and UI                                             |
 | `packages/i18n`           | Paraglide (inlang) messages: `fr`, `en`, `de`, `es`, `it`, `zh-cn`                        |
 
+## Documentation and contributing
+
+- [Documentation](docs/README.md): [development](docs/development.md), [testing with your printer](docs/testing.md),
+  [decisions](docs/decisions.md)
+- [Contributing](CONTRIBUTING.md): Conventional Commits, squash-merged pull requests, tests with every change
+- [Changelog](CHANGELOG.md)
+
+Printer support is the most valuable contribution: open a
+[printer support](https://github.com/riccardoalv/Kobralink/issues/new?template=printer_support.yml) issue with your
+model and anonymized MQTT messages.
+
 ## Development
 
 ```bash
@@ -170,7 +181,10 @@ Desktop: `KOBRALINK_URL` forces the bridge URL without spawning the API;
 
 ### Releases
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`: multi-arch Docker image on Docker Hub
+Releases of this fork are made by release-please (see [Development](docs/development.md#commits-and-releases)): the
+release PR bumps every version and the changelog, and merging it publishes the versioned image to GHCR.
+
+The upstream workflow is still there: pushing a `v*` tag by hand runs `.github/workflows/release.yml`: multi-arch Docker image on Docker Hub
 (`<version>`, `<major>.<minor>`, `latest`) and a GitHub release with the desktop builds for macOS
 (Apple Silicon + Intel), Windows and Linux. Required secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
 

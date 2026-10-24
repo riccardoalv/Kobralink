@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: 1.4.2
+  ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+jobs:
+  checks:
+    name: Lint, type-check, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Type-check
+        run: bun run check-types
+
+      - name: Test
+        run: bun run test
+
+      - name: Coverage summary
+        run: |
+          {
+            echo "### Test coverage"
+            for dir in packages/shared packages/kobra-protocol apps/api; do
+              echo
+              echo "#### $dir"
+              echo
+              echo '```'
+              (cd "$dir" && bun test --coverage 2>&1 | sed -n '/^---/,$p' | grep -v '^$')
+              echo '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the web UI
+        run: bun run --filter @kobralink/web build
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+        with:
+          context: .
+          file: infra/Dockerfile
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha
