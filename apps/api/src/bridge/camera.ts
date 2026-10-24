@@ -34,6 +34,7 @@ export class CameraCache {
     private lastError = '';
     latestJpeg: Buffer | null = null;
     latestJpegAt = 0;
+    keepAlive = false;
 
     constructor(private readonly log: Logger) {}
 
@@ -171,7 +172,7 @@ export class CameraCache {
     private touch(): void {
         if (this.idleTimer) clearTimeout(this.idleTimer);
         this.idleTimer = setTimeout(() => {
-            if (this.subscribers.size === 0 && this.tsSubscribers.size === 0 && this.proc) {
+            if (!this.keepAlive && this.subscribers.size === 0 && this.tsSubscribers.size === 0 && this.proc) {
                 this.log.log('Camera idle, stopping ffmpeg');
                 this.stop();
             }
@@ -285,7 +286,8 @@ export class CameraCache {
         this.log.warn(`ffmpeg exited (code ${code}), retrying in ${Math.round(delay / 1000)} s — ${detail}`);
         this.restartTimer = setTimeout(() => {
             this.restartTimer = null;
-            if (this.subscribers.size > 0 || this.tsSubscribers.size > 0 || this.waiters.size > 0) this.spawnFfmpeg();
+            if (this.keepAlive || this.subscribers.size > 0 || this.tsSubscribers.size > 0 || this.waiters.size > 0)
+                this.spawnFfmpeg();
         }, delay);
     }
 }

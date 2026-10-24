@@ -271,6 +271,8 @@
     "settings_vibration": "Compensación de vibraciones",
     "settings_camera_on_print": "Cámara al iniciar la impresión",
     "settings_camera_on_print_hint": "Inicia la transmisión de la cámara cuando empieza una impresión",
+    "settings_camera_always_on": "Cámara siempre activa",
+    "settings_camera_always_on_hint": "Mantiene la transmisión de la cámara para que la vista en vivo y las vistas previas estén siempre disponibles",
     "settings_default_slot": "Ranura AMS por defecto",
     "settings_default_slot_hint": "auto = cada ranura usada por el GCode",
     "settings_slot_n": "Ranura {n}",

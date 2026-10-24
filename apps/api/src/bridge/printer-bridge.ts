@@ -51,6 +51,8 @@ const MAX_SAMPLES = 120;
 const SAMPLE_INTERVAL_MS = 2000;
 const RECONNECT_WINDOW_MS = 30000;
 const PRINT_HOLD_MS = 60000;
+const CAMERA_STALE_MS = 30000;
+const CAMERA_KICK_INTERVAL_MS = 60000;
 
 export interface BridgePrinterConfig {
     id: string;
@@ -129,6 +131,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private firstLayerHeight = 0;
     private cameraAutostarted = false;
     private cameraUserStopped = false;
+    private cameraKickAt = 0;
     private buried: {
         taskName: string;
         gcodeSize: number;
@@ -318,6 +321,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private markOffline(error: ConnectionError): void {
         const wasConnected = this.s.connected;
+        this.camera.keepAlive = false;
+        this.camera.stop();
         this.offline = true;
         this.jobsReconciled = false;
         this.s.connected = false;
@@ -405,6 +410,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 }
                 const box = await this.client.queryMultiColorBox();
                 if (box) this.onMultiColorBox(box);
+                this.maintainCamera();
             } catch (e) {
                 this.log.warn(`Poll error: ${(e as Error).message}`);
                 if (!(await this.printerReachable())) {
@@ -525,7 +531,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             }
         } else if (kobraState === 'free' || TERMINAL_PRINT_STATES.has(kobraState)) {
             this.cameraAutostarted = false;
-            this.cameraUserStopped = false;
+            if (!this.config.settings.cameraAlwaysOn) this.cameraUserStopped = false;
         }
     }
 
@@ -1265,8 +1271,27 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     async stopCamera(): Promise<void> {
         this.ensureConnected();
         this.cameraUserStopped = true;
+        this.camera.keepAlive = false;
         this.camera.stop();
         await this.client.stopCamera();
+    }
+
+    private maintainCamera(): void {
+        const wanted = this.config.settings.cameraAlwaysOn && !this.cameraUserStopped;
+        this.camera.keepAlive = wanted;
+        if (!wanted) return;
+        if (this.camera.hasUrl) this.camera.ensureRunning();
+        const now = Date.now();
+        if (now - this.camera.latestJpegAt < CAMERA_STALE_MS || now - this.cameraKickAt < CAMERA_KICK_INTERVAL_MS)
+            return;
+        this.cameraKickAt = now;
+        void this.client
+            .startCamera()
+            .then(() => {
+                this.camera.reset();
+                this.camera.ensureRunning();
+            })
+            .catch((e) => this.log.warn(`Camera keep-alive: ${String(e)}`));
     }
 
     resetCamera(): void {

@@ -241,6 +241,13 @@ export function PrinterSettingsForm({
                             </Row>
                         )}
                     </form.Field>
+                    <form.Field name="settings.cameraAlwaysOn">
+                        {(field) => (
+                            <Row label={m.settings_camera_always_on()} hint={m.settings_camera_always_on_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
                     <form.Field name="settings.cameraOnPrint">
                         {(field) => (
                             <Row label={m.settings_camera_on_print()} hint={m.settings_camera_on_print_hint()}>
