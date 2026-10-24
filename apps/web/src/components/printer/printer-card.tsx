@@ -259,14 +259,17 @@ function Filament({ printerId, live }: { printerId: string; live: PrinterLiveSta
                     {slots.map((s) => {
                         const empty = s.status !== 5 && !s.type;
                         return (
-                            <span key={s.globalIndex} title={empty ? m.ams_slot_empty() : s.type} className="w-16">
+                            <span
+                                key={s.globalIndex}
+                                title={empty ? m.ams_slot_empty() : s.type}
+                                className="flex w-20 flex-col gap-1.5"
+                            >
                                 <SlotSpool
                                     printerId={printerId}
                                     slotKey={String(s.globalIndex)}
                                     color={rgbCss(s.color)}
-                                    label={s.type}
                                     empty={empty}
-                                    className="size-16"
+                                    className="w-full"
                                 />
                             </span>
                         );
@@ -286,9 +289,9 @@ function ExternalSpoolLine({ printerId }: { printerId: string }) {
     const spool = useExternalSpool(printerId);
     return (
         <div className="flex items-center gap-4 rounded-2xl bg-secondary p-3 text-sm">
-            <SpoolArt color={spool.hex} label={spool.material} className="size-20" />
+            <SpoolArt color={spool.hex} fraction={spool.fraction ?? 1} className="w-20" />
             <div className="min-w-0 flex-1 space-y-2">
-                <div className="flex items-baseline justify-between gap-3">
+                <div>
                     {spool.material ? (
                         <p className="min-w-0 truncate">
                             <span className="font-medium">{spool.material}</span>
@@ -296,11 +299,6 @@ function ExternalSpoolLine({ printerId }: { printerId: string }) {
                         </p>
                     ) : (
                         <p className="text-muted-foreground">{m.printers_no_spool()}</p>
-                    )}
-                    {spool.fraction !== undefined && spool.hex && (
-                        <span className="shrink-0 text-lg font-semibold tabular-nums">
-                            {Math.round(spool.fraction * 100)}%
-                        </span>
                     )}
                 </div>
                 <SpoolProgress fraction={spool.hex ? spool.fraction : undefined} color={spool.hex} />

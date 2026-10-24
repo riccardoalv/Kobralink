@@ -60,27 +60,24 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                             content: <SlotForm key={s.globalIndex} printerId={printerId} slot={s} />,
                                         })
                                     }
-                                    className="group flex w-24 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                                    className={TILE}
                                     title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                 >
-                                    <span className="relative w-full transition-transform group-enabled:group-hover:scale-105">
-                                        <SlotSpool
-                                            printerId={printerId}
-                                            slotKey={String(s.globalIndex)}
-                                            color={rgbCss(s.color)}
-                                            label={s.type}
-                                            empty={empty}
-                                            className={cn(
-                                                'size-24',
-                                                (s.activity === 'feeding' || s.activity === 'retracting') &&
-                                                    'animate-pulse',
-                                            )}
-                                        />
-                                        <SlotBadge>{s.index + 1}</SlotBadge>
-                                    </span>
-                                    <div className="w-full truncate text-center text-xs text-muted-foreground">
-                                        {empty ? m.ams_empty() : activity && !isLoaded ? activity : null}
-                                    </div>
+                                    <TileHeader
+                                        title={empty ? m.ams_empty() : activity && !isLoaded ? activity : s.type || '?'}
+                                        badge={s.index + 1}
+                                    />
+                                    <SlotSpool
+                                        printerId={printerId}
+                                        slotKey={String(s.globalIndex)}
+                                        color={rgbCss(s.color)}
+                                        empty={empty}
+                                        className={cn(
+                                            'w-full',
+                                            (s.activity === 'feeding' || s.activity === 'retracting') &&
+                                                'animate-pulse',
+                                        )}
+                                    />
                                 </button>
                             );
                         })}
@@ -111,28 +108,29 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
                         content: <ExternalSpoolForm printerId={printerId} />,
                     })
                 }
-                className="group flex w-24 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                className={TILE}
                 title={m.ams_external_spool()}
             >
-                <span className="relative flex w-full flex-col items-center gap-1.5 transition-transform group-enabled:group-hover:scale-105">
-                    <SpoolArt color={hex} label={material} className="size-24" />
-                    <SpoolProgress fraction={hex ? fraction : undefined} color={hex} />
-                    <SlotBadge>E</SlotBadge>
-                </span>
-                <div className="w-full truncate text-center text-xs text-muted-foreground">
-                    {hex && fraction !== undefined
-                        ? `${Math.round(fraction * 100)}%`
-                        : (material ?? m.ams_external_spool_empty())}
-                </div>
+                <TileHeader title={material ?? m.ams_external_spool_empty()} badge="E" />
+                <SpoolArt color={hex} fraction={fraction ?? 1} className="w-full" />
+                {hex && fraction !== undefined ? (
+                    <SpoolProgress fraction={fraction} color={hex} />
+                ) : (
+                    <div className="h-4" />
+                )}
             </button>
         </div>
     );
 }
 
-function SlotBadge({ children }: { children: React.ReactNode }) {
+const TILE =
+    'flex w-36 cursor-pointer flex-col gap-2 rounded-2xl bg-secondary p-3 text-left outline-none transition-colors enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
+
+function TileHeader({ title, badge }: { title: string; badge: React.ReactNode }) {
     return (
-        <span className="absolute -left-1 -top-1 flex size-5 items-center justify-center rounded-full bg-secondary text-[0.6875rem] font-semibold text-secondary-foreground ring-2 ring-card">
-            {children}
+        <span className="flex w-full items-center justify-between gap-2 text-xs">
+            <span className="truncate font-medium">{title}</span>
+            <span className="shrink-0 text-muted-foreground">{badge}</span>
         </span>
     );
 }

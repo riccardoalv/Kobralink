@@ -82,7 +82,7 @@ describe('PrinterCard', () => {
 
     it('shows the external spool and what is left on it', async () => {
         await renderWithProviders(<PrinterCard printer={printer(idle)} canOperate {...actions()} />);
-        expect(screen.getAllByText('PETG')).toHaveLength(2);
+        expect(screen.getByText('PETG')).toBeTruthy();
         expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('81');
         expect(screen.getByText('812 g left')).toBeTruthy();
         expect(screen.getByText('81%')).toBeTruthy();

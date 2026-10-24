@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { remainingFraction } from '@/hooks/use-slot-spool';
 import { isDark } from '@/lib/color';
-import { SpoolArt, SpoolProgress } from './spool-art';
+import { SpoolArt, SpoolProgress, spoolRadius } from './spool-art';
+
+const filamentRadius = (container: HTMLElement) =>
+    Number(container.querySelector('[data-filament]')?.getAttribute('r'));
 
 describe('remainingFraction', () => {
     it('divides what is left by the total', () => {
@@ -23,22 +26,28 @@ describe('isDark', () => {
     });
 });
 
-describe('SpoolArt', () => {
-    it('fills the roll with the filament colour and writes the material on it', () => {
-        const { container } = render(<SpoolArt color="#ff7a00" label="PETG" />);
-        expect(container.querySelector('[fill="#ff7a00"]')).not.toBeNull();
-        expect(screen.getByText('PETG')).toBeTruthy();
+describe('spoolRadius', () => {
+    it('goes from the hub to a full spool', () => {
+        expect(spoolRadius(0)).toBe(17);
+        expect(spoolRadius(1)).toBe(44);
     });
 
-    it('writes light text on dark filament', () => {
-        render(<SpoolArt color="#111111" label="PLA" />);
-        expect(screen.getByText('PLA').getAttribute('fill')).toBe('white');
+    it('follows the wound volume, so half a spool is past half the radius', () => {
+        expect(spoolRadius(0.5)).toBeGreaterThan((17 + 44) / 2);
+    });
+});
+
+describe('SpoolArt', () => {
+    it('draws a thinner ring of filament as the spool runs out', () => {
+        const full = render(<SpoolArt color="#ff7a00" fraction={1} />).container;
+        const low = render(<SpoolArt color="#ff7a00" fraction={0.2} />).container;
+        expect(filamentRadius(low)).toBeLessThan(filamentRadius(full));
+        expect(full.querySelector('[data-filament]')?.getAttribute('fill')).toBe('#ff7a00');
     });
 
     it('draws a bare spool when nothing is loaded', () => {
-        const { container } = render(<SpoolArt label="PETG" />);
-        expect(container.querySelector('text')).toBeNull();
-        expect(container.querySelector('[stroke-dasharray]')).not.toBeNull();
+        const { container } = render(<SpoolArt fraction={1} />);
+        expect(container.querySelector('[data-filament]')).toBeNull();
     });
 });
 
@@ -46,6 +55,7 @@ describe('SpoolProgress', () => {
     it('shows what is left as a progress bar', () => {
         render(<SpoolProgress fraction={0.74} color="#111111" />);
         expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('74');
+        expect(screen.getByText('74%')).toBeTruthy();
     });
 
     it('is hidden when the amount left is unknown', () => {
