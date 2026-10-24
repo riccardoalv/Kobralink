@@ -271,6 +271,8 @@
     "settings_vibration": "Vibration compensation",
     "settings_camera_on_print": "Camera on print start",
     "settings_camera_on_print_hint": "Starts the camera stream when a print begins",
+    "settings_camera_always_on": "Camera always on",
+    "settings_camera_always_on_hint": "Keeps the printer camera streaming so the live view and previews are always available",
     "settings_default_slot": "Default AMS slot",
     "settings_default_slot_hint": "auto = every slot used by the GCode",
     "settings_slot_n": "Slot {n}",

@@ -271,6 +271,8 @@
     "settings_vibration": "Compensazione delle vibrazioni",
     "settings_camera_on_print": "Fotocamera all'avvio della stampa",
     "settings_camera_on_print_hint": "Avvia il flusso della fotocamera quando inizia una stampa",
+    "settings_camera_always_on": "Fotocamera sempre attiva",
+    "settings_camera_always_on_hint": "Mantiene attivo lo streaming della fotocamera così la vista dal vivo e le anteprime sono sempre disponibili",
     "settings_default_slot": "Slot AMS predefinito",
     "settings_default_slot_hint": "auto = ogni slot usato dal GCode",
     "settings_slot_n": "Slot {n}",

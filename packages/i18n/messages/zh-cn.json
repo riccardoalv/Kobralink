@@ -271,6 +271,8 @@
     "settings_vibration": "振动补偿",
     "settings_camera_on_print": "打印开始时启动摄像头",
     "settings_camera_on_print_hint": "打印开始时启动摄像头视频流",
+    "settings_camera_always_on": "摄像头常开",
+    "settings_camera_always_on_hint": "保持打印机摄像头推流，实时画面和预览始终可用",
     "settings_default_slot": "默认 AMS 槽位",
     "settings_default_slot_hint": "auto = GCode 使用的每个槽位",
     "settings_slot_n": "槽位 {n}",

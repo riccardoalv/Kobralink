@@ -29,7 +29,8 @@ import { m } from '@/lib/i18n';
 import { connectionErrorText } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
-const SNAPSHOT_INTERVAL_MS = 10_000;
+const SNAPSHOT_INTERVAL_MS = 5_000;
+const CAMERA_RETRY_MS = 30_000;
 
 export interface PrinterCardActions {
     onPause: () => void;
@@ -56,7 +57,7 @@ export function PrinterCard({
                 aria-label={`${m.common_open()} ${printer.name}`}
                 className={cn(
                     'relative block bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-                    printing ? 'aspect-video' : 'h-28',
+                    printing || (live?.connected && live.cameraUrl) ? 'aspect-video' : 'h-28',
                 )}
             >
                 <CardMedia printerId={printer.id} live={live} printing={printing} />
@@ -205,15 +206,19 @@ function CardMedia({
     live: PrinterLiveState | null;
     printing: boolean;
 }) {
-    const camera = printing && Boolean(live?.cameraUrl);
+    const camera = Boolean(live?.connected && live.cameraUrl);
     const [tick, setTick] = useState(() => Date.now());
     const [failed, setFailed] = useState(false);
-    const cameraUrl = live?.cameraUrl;
+    const thumbnail = printing ? live?.thumbnail : '';
 
     useEffect(() => {
-        if (!cameraUrl) return;
-        setFailed(false);
-    }, [cameraUrl]);
+        if (!failed) return;
+        const id = setTimeout(() => {
+            setFailed(false);
+            setTick(Date.now());
+        }, CAMERA_RETRY_MS);
+        return () => clearTimeout(id);
+    }, [failed]);
 
     useEffect(() => {
         if (!camera || failed) return;
@@ -236,11 +241,18 @@ function CardMedia({
                     <Video />
                     {m.camera_title()}
                 </span>
+                {thumbnail && (
+                    <img
+                        src={`data:image/png;base64,${thumbnail}`}
+                        alt=""
+                        className="absolute bottom-4 right-3 size-16 rounded-xl bg-background/75 object-contain p-1.5 backdrop-blur-sm"
+                    />
+                )}
             </>
         );
     }
-    if (printing && live?.thumbnail) {
-        return <img src={`data:image/png;base64,${live.thumbnail}`} alt="" className="size-full object-contain p-4" />;
+    if (thumbnail) {
+        return <img src={`data:image/png;base64,${thumbnail}`} alt="" className="size-full object-contain p-4" />;
     }
     return (
         <div className="flex size-full items-center justify-center">

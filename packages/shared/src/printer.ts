@@ -14,6 +14,7 @@ export const printerSettingsSchema = z.object({
 
     defaultAmsSlot: z.union([z.literal('auto'), z.number().int().min(0).max(15)]).default('auto'),
     pollIntervalSec: z.number().int().min(1).max(60).default(3),
+    cameraAlwaysOn: z.boolean().default(true),
     cameraOnPrint: z.boolean().default(false),
     deletePrinterFileAfterPrint: z.boolean().default(false),
     visibleVendors: z.array(z.string().trim().min(1)).default([]),

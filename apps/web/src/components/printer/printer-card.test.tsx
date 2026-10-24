@@ -110,6 +110,12 @@ describe('PrinterCard', () => {
         expect(screen.queryByRole('button', { name: 'Turn light off' })).toBeNull();
     });
 
+    it('shows the camera even when the printer is idle', async () => {
+        const live = { ...idle, cameraUrl: 'http://printer/live' } as PrinterLiveState;
+        await renderWithProviders(<PrinterCard printer={printer(live)} canOperate {...actions()} />);
+        expect(screen.getByRole('img', { name: 'Camera stream' }).getAttribute('src')).toContain('/camera/snapshot');
+    });
+
     it('renders a printer that has not reported yet', async () => {
         await renderWithProviders(<PrinterCard printer={printer(null)} canOperate {...actions()} />);
         expect(screen.getByRole('heading', { name: 'Kobra' })).toBeTruthy();

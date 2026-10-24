@@ -13,7 +13,9 @@ type Phase = 'off' | 'starting' | 'live' | 'error';
 
 export function CameraCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
-    const cameraOnPrint = usePrinter(printerId)?.settings.cameraOnPrint ?? false;
+    const settings = usePrinter(printerId)?.settings;
+    const cameraOnPrint = settings?.cameraOnPrint ?? false;
+    const cameraAlwaysOn = settings?.cameraAlwaysOn ?? true;
     const [phase, setPhase] = useState<Phase>('off');
     const [src, setSrc] = useState('');
     const userStopped = useRef(false);
@@ -57,7 +59,8 @@ export function CameraCard({ printerId }: { printerId: string }) {
         if (!printing) userStopped.current = false;
     }, [printing]);
 
-    const autostart = printing && cameraOnPrint && phase === 'off' && !offline && !userStopped.current;
+    const autostart =
+        (cameraAlwaysOn || (printing && cameraOnPrint)) && phase === 'off' && !offline && !userStopped.current;
     useEffect(() => {
         if (autostart && !start.isPending) start.mutate();
     }, [autostart, start]);
