@@ -6,8 +6,15 @@ import type { PrinterWithLive } from '@/lib/api';
 import { renderWithProviders } from '@/test/render';
 import { PrinterCard } from './printer-card';
 
-vi.mock('@/hooks/use-external-spool', () => ({
-    useExternalSpool: () => ({ hex: '#ff7a00', material: 'PETG', name: 'Elegoo Rapid PETG', remainingG: 812.4 }),
+vi.mock('@/hooks/use-slot-spool', () => ({
+    useExternalSpool: () => ({
+        hex: '#ff7a00',
+        material: 'PETG',
+        name: 'Elegoo Rapid PETG',
+        remainingG: 812.4,
+        fraction: 0.81,
+    }),
+    useSlotSpool: () => ({}),
 }));
 
 const idle = {

@@ -1,6 +1,6 @@
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useExternalSpool } from '@/hooks/use-external-spool';
 import { useLiveState } from '@/hooks/use-printers';
+import { useExternalSpool } from '@/hooks/use-slot-spool';
 import { rgbCss } from '@/lib/color';
 import { m } from '@/lib/i18n';
 import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
@@ -9,7 +9,7 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
 import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
-import { SpoolIcon } from './spool-icon';
+import { SlotSpoolArt, SpoolArt } from './spool-art';
 
 export function AmsCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
@@ -60,15 +60,18 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                             content: <SlotForm key={s.globalIndex} printerId={printerId} slot={s} />,
                                         })
                                     }
-                                    className="group flex w-14 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="group flex w-16 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                                     title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                 >
                                     <span className="relative transition-transform group-enabled:group-hover:scale-105">
-                                        <SpoolIcon
-                                            color={empty ? undefined : rgbCss(s.color)}
+                                        <SlotSpoolArt
+                                            printerId={printerId}
+                                            slotKey={String(s.globalIndex)}
+                                            color={rgbCss(s.color)}
+                                            empty={empty}
                                             active={isLoaded}
                                             className={cn(
-                                                'size-14',
+                                                'size-16',
                                                 (s.activity === 'feeding' || s.activity === 'retracting') &&
                                                     'animate-pulse',
                                             )}
@@ -93,7 +96,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
 }
 
 function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disabled: boolean }) {
-    const { hex, material } = useExternalSpool(printerId);
+    const { hex, material, fraction } = useExternalSpool(printerId);
     const openDialog = confirmationDialogStore.actions.openDialog;
 
     return (
@@ -108,11 +111,11 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
                         content: <ExternalSpoolForm printerId={printerId} />,
                     })
                 }
-                className="group flex w-14 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                className="group flex w-16 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 title={m.ams_external_spool()}
             >
                 <span className="relative transition-transform group-enabled:group-hover:scale-105">
-                    <SpoolIcon color={hex} active={Boolean(hex)} className="size-14" />
+                    <SpoolArt color={hex} fraction={fraction ?? 1} active={Boolean(hex)} className="size-16" />
                     <SlotBadge>E</SlotBadge>
                 </span>
                 <div className="w-full truncate text-center text-xs text-muted-foreground">
