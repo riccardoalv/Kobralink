@@ -18,9 +18,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { SpoolIcon } from '@/components/printer/ams/spool-icon';
+import { SlotSpoolArt, SpoolArt } from '@/components/printer/ams/spool-art';
 import { StatusBadge } from '@/components/printer/status-badge';
-import { useExternalSpool } from '@/hooks/use-external-spool';
+import { useExternalSpool } from '@/hooks/use-slot-spool';
 import { api, type PrinterWithLive } from '@/lib/api';
 import { rgbCss } from '@/lib/color';
 import { parseFilename } from '@/lib/filename';
@@ -265,10 +265,13 @@ function Filament({ printerId, live }: { printerId: string; live: PrinterLiveSta
                         const empty = s.status !== 5 && !s.type;
                         return (
                             <span key={s.globalIndex} title={empty ? m.ams_slot_empty() : s.type}>
-                                <SpoolIcon
-                                    color={empty ? undefined : rgbCss(s.color)}
+                                <SlotSpoolArt
+                                    printerId={printerId}
+                                    slotKey={String(s.globalIndex)}
+                                    color={rgbCss(s.color)}
+                                    empty={empty}
                                     active={s.globalIndex === live.amsLoadedSlot}
-                                    className="size-9"
+                                    className="size-12"
                                 />
                             </span>
                         );
@@ -288,7 +291,7 @@ function ExternalSpoolLine({ printerId }: { printerId: string }) {
     const spool = useExternalSpool(printerId);
     return (
         <div className="flex items-center gap-3 text-sm">
-            <SpoolIcon color={spool.hex} className="size-9" />
+            <SpoolArt color={spool.hex} fraction={spool.fraction ?? 1} className="size-12" />
             {spool.material ? (
                 <span className="min-w-0 truncate">
                     <span className="font-medium">{spool.material}</span>
