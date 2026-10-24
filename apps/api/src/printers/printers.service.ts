@@ -52,6 +52,7 @@ export class PrintersService {
             password: p.password,
             deviceId: p.deviceId,
             modeId: p.modeId,
+            model: p.model,
             httpPort: p.httpPort,
             settings: PrintersService.parseSettings(p.settings),
         };
@@ -98,7 +99,7 @@ export class PrintersService {
         if (clash) throw new ConflictException(m.api_port_in_use({ port: httpPort, name: clash.name }));
         return this.prisma.client.printer.create({
             data: {
-                name: input.name?.trim() || creds.model || 'Anycubic Kobra X',
+                name: input.name?.trim() || creds.model || 'Anycubic Kobra',
                 ip: creds.printerIp || input.ip,
                 username: creds.username,
                 password: creds.password,

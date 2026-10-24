@@ -126,7 +126,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             identifiers: [`kobralink_${id}`],
             name: bridge.config.name,
             manufacturer: 'Anycubic',
-            model: 'Kobra X',
+            model: bridge.modelName,
             sw_version: bridge.snapshot().firmwareVersion,
         };
         const availability = [{ topic: `${cfg.topicPrefix}/status` }, { topic: this.topic(id, 'availability') }];

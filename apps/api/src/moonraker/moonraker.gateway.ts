@@ -141,7 +141,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
                 await bridge.cancel();
                 return 'ok';
             case 'machine.system_info':
-                return { system_info: { cpu_info: { cpu_desc: 'Kobra X Bridge' } } };
+                return { system_info: { cpu_info: { cpu_desc: `${bridge.modelName} Bridge` } } };
             case 'server.files.list':
                 return [];
             case 'printer.gcode.script':

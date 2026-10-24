@@ -61,6 +61,7 @@ export interface BridgePrinterConfig {
     password: string;
     deviceId: string;
     modeId: string;
+    model: string;
     httpPort: number;
     settings: PrinterSettings;
 }
@@ -117,6 +118,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private filamentMode: FilamentMode = 'toolhead';
     private externalSpoolOnly = false;
+    private reportedModel = '';
     private currentJobId = '';
     private currentJobFilename = '';
     private jobSync: Promise<void> | null = null;
@@ -724,6 +726,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         return this.currentJobId;
     }
 
+    get modelName(): string {
+        return (this.reportedModel || this.config.model || 'Anycubic Kobra').replace(/^Anycubic\s+/i, '');
+    }
+
     private adoptFileMeta(file: StoredFile): void {
         if (!this.s.slicerTimeSec) this.s.slicerTimeSec = file.estPrintTimeSec;
         if (!this.s.thumbnail && file.thumbnail) this.s.thumbnail = file.thumbnail;
@@ -736,6 +742,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private onInfo(p: KobraMessage<KobraInfoData>): void {
         const d = p.data ?? {};
         this.s.firmwareVersion = String(d.version ?? this.s.firmwareVersion);
+        if (d.model) this.reportedModel = String(d.model);
 
         const project = d.project ?? {};
         const kobraState = project.state || d.state || '';

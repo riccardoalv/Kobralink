@@ -18,6 +18,7 @@ export interface KobraTemp {
 
 export interface KobraInfoData {
     printerName?: string;
+    model?: string;
     version?: string;
     state?: string;
     temp?: Partial<KobraTemp>;
