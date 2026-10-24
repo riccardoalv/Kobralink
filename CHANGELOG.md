@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/riccardoalv/Kobralink/compare/v0.6.0...v0.7.0) (2026-10-24)
+
+
+### Features
+
+* keep the printer camera on by default ([#12](https://github.com/riccardoalv/Kobralink/issues/12)) ([f443796](https://github.com/riccardoalv/Kobralink/commit/f44379699fe4689708d5114dbc7a5704a48686d8))
+
 ## [0.6.0](https://github.com/riccardoalv/Kobralink/compare/v0.5.0...v0.6.0) (2026-10-24)
 
 
