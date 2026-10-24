@@ -1,86 +1,123 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guide for agents (and humans) working on Kobralink: a bridge that makes Anycubic Kobra printers in LAN mode
+(Kobra X, Kobra 4) look like Moonraker printers, with a web dashboard, OrcaSlicer support, Spoolman, camera,
+AI failure detection, notifications and Home Assistant discovery.
 
-Kobralink = bridge Moonraker pour Anycubic Kobra X (TypeScript).
-Référence Python d'origine : `/Users/nathan/Developer/Python/KX-Bridge-Release` (protocole MQTT,
-payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT propose : pas de M220/M221 réels,
-`print_speed_mode` 1–4 seulement, pas de position live (Z estimé depuis les couches).
+This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/Kobralink). Read the
+[README](README.md) for the product, [docs/decisions.md](docs/decisions.md) for what was decided and why, and
+[docs/development.md](docs/development.md) for how to work on it.
+
+## How we work
+
+- **Decisions are made by consensus with the maintainer.** Raise questions and trade-offs instead of deciding alone;
+  record what was agreed in [docs/decisions.md](docs/decisions.md) (and the README when users see it).
+- **Every change ships with tests** that run in CI; run `bun run lint`, `bun run check-types` and `bun run test`
+  before saying something is done.
+- **Never commit or push** unless the maintainer asks.
+- **Docs follow the code**: a change that users or contributors notice updates the guide in `docs/` it touches.
+- **Everything is in English**: code, docs, commits, issues and PRs. UI strings go through i18n (six locales).
+- **Commits and PR titles follow Conventional Commits** ([CONTRIBUTING.md](CONTRIBUTING.md)); PRs are squash-merged.
+
+## Principles
+
+1. **No firmware change.** Kobralink only speaks the printer's own LAN protocol; it never modifies the printer.
+2. **Printers without an ACE are first-class.** The external spool is a slot like any other for filament tracking.
+3. **Never invent printer data.** Unknown fields stay empty; behavior is derived from what the printer reports.
+4. **One printer failing never breaks the rest.** Each printer has its own bridge, MQTT session and Moonraker port.
+5. **Small first.** When in doubt, leave it out and put it on the roadmap.
 
 ## Layout (Turborepo + Bun workspaces)
 
-- `apps/api` — NestJS 11 (CJS, `module: NodeNext`), Prisma 7 + `@prisma/adapter-libsql` (fonctionne
-  sous Bun ET Node — Electron lance `dist/main.js` sous Node, dev/Docker tournent `bun src/main.ts`),
-  Better Auth via `@thallesp/nestjs-better-auth`. Ne pas utiliser d'API `Bun.*` dans l'API. Client Prisma généré dans `src/generated/prisma`
-  (gitignoré, `prisma generate` avant tsc). Migrations appliquées au boot par `src/prisma/migrator.ts`.
-  `bun run --filter @kobralink/api bundle` produit `apps/api/bundle` (esbuild → `dist/server/main.js`, `@libsql/client`/`express`/`qs` externes installés dans `bundle/node_modules`, certs + migrations copiés) pour Electron.
-- `apps/web` — Vite + React 19, TanStack Router **file-based** (`src/routes`, `routeTree.gen.ts`
-  gitignoré), TanStack Query, TanStack Store (`src/stores`), Tailwind v4, shadcn (`src/components/ui`, exclu de biome). Thème
-  dark uniquement (`class="dark"` fixé sur `<html>` dans `index.html`, pas de toggle).
-  Primary = emerald shadcn, radius 1.5rem, police Outfit.
-  Design : rail d'icônes à gauche, cartes très arrondies, carte d'impression en accent quand ça imprime.
-  `bun run --filter @kobralink/web generate` = `tsr generate` + compilation Paraglide (`src/paraglide`, gitignoré) ; lancé par `check-types`.
-- `apps/desktop` — electron-vite. En dev lance `apps/api/dist/main.js` ; packagé (`dist:mac`) embarque
-  `apps/api/bundle` → `Resources/api` et `apps/web/dist` → `Resources/web` via `extraResources`. Mode local uniquement (pas de bridge distant).
-  Version `electron` pinnée (électron-builder l'exige). `KOBRALINK_SHOT=/x.png [KOBRALINK_SHOT_LOGIN="mail|mdp|/path"] [KOBRALINK_URL=http://…]`
-  capture la fenêtre puis quitte (smoke test) ; `KOBRALINK_URL` force l'URL du bridge sans spawn.
-- `packages/shared` — schémas Zod + types partagés API ↔ web (`control.ts`, `state.ts`, `macros.ts`, `sse.ts`…). Tout body
-  d'endpoint `/api/v1` a son schéma ici, validé côté API par `ZodPipe`, typé côté web dans `src/lib/api.ts`.
-- `packages/kobra-protocol` — client MQTT Kobra X (`mqtt-client.ts`), types des payloads, parsing GCode, upload.
-- `packages/i18n` — projet inlang/Paraglide, `messages/{fr,en,de,es,it,zh-cn}.json` (base `fr`). Liste des locales dupliquée dans
-  `APP_LOCALES` (`packages/shared/src/settings.ts`) ; ajouter une langue = skill `/add-locale`. Le package compile ses
-  propres runtime + messages pour l'API ; le web recompile les mêmes messages dans `apps/web/src/paraglide`.
-- Les trois packages : tsdown, sortie ESM + CJS. `build` des packages requis avant `dev`/`check-types`/`test` des apps (turbo `^build`).
-- `infra/` — `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`. Pas de Dockerfile à la racine.
-- `.github/workflows/release.yml` — sur tag `v*` : image Docker Hub multi-arch (`DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN`)
-  + release GitHub avec les builds Electron mac/win/linux (`bun run --filter @kobralink/desktop dist -- --mac|--win|--linux`).
-  macOS = arm64 + x64 dans un seul job (`KOBRALINK_BUNDLE_ARCHS=arm64,x64` fait installer les natifs libsql/ffmpeg des deux archs dans `apps/api/bundle`).
+- `apps/api`: NestJS 11 (CJS, `module: NodeNext`), Prisma 7 + `@prisma/adapter-libsql` (works under Bun and Node:
+  Electron runs `dist/main.js` under Node, dev and Docker run `bun src/main.ts`), Better Auth via
+  `@thallesp/nestjs-better-auth`. Do not use `Bun.*` APIs in the API. The Prisma client is generated in
+  `src/generated/prisma` (gitignored, `prisma generate` before `tsc`). Migrations are applied at boot by
+  `src/prisma/migrator.ts`. `bun run --filter @kobralink/api bundle` produces `apps/api/bundle` (esbuild →
+  `dist/server/main.js`, with `@libsql/client`/`express`/`qs` external and installed in `bundle/node_modules`, certs
+  and migrations copied) for Electron.
+- `apps/web`: Vite + React 19, file-based TanStack Router (`src/routes`, `routeTree.gen.ts` gitignored), TanStack
+  Query, TanStack Store (`src/stores`), Tailwind v4, shadcn (`src/components/ui`, excluded from Biome). Dark theme only
+  (`class="dark"` on `<html>` in `index.html`, no toggle). Primary = emerald, radius 1.5rem, Outfit font. Design: icon
+  rail on the left, very rounded cards, the print card is accented while printing.
+  `bun run --filter @kobralink/web generate` = `tsr generate` + Paraglide compile (`src/paraglide`, gitignored); run
+  by `check-types`.
+- `apps/desktop`: electron-vite. In dev it starts `apps/api/dist/main.js`; packaged (`dist:mac`) it embeds
+  `apps/api/bundle` → `Resources/api` and `apps/web/dist` → `Resources/web` via `extraResources`. Local mode only (no
+  remote bridge). The `electron` version is pinned (electron-builder requires it).
+  `KOBRALINK_SHOT=/x.png [KOBRALINK_SHOT_LOGIN="mail|pwd|/path"] [KOBRALINK_URL=http://…]` captures the window and
+  quits (smoke test); `KOBRALINK_URL` forces the bridge URL without spawning it.
+- `packages/shared`: Zod schemas and types shared by the API and the web (`control.ts`, `state.ts`, `macros.ts`,
+  `sse.ts`…). Every `/api/v1` body has its schema here, validated in the API by `ZodPipe` and typed in the web in
+  `src/lib/api.ts`.
+- `packages/kobra-protocol`: Kobra MQTT client (`mqtt-client.ts`), payload types, G-code parsing, upload.
+- `packages/i18n`: inlang/Paraglide project, `messages/{fr,en,de,es,it,zh-cn}.json` (base `fr`). The locale list is
+  duplicated in `APP_LOCALES` (`packages/shared/src/settings.ts`); adding a language = the `/add-locale` skill. The
+  package compiles its own runtime and messages for the API; the web recompiles the same messages in
+  `apps/web/src/paraglide`.
+- The three packages build with tsdown, ESM + CJS output. Packages must be built before `dev`/`check-types`/`test` of
+  the apps (turbo `^build`).
+- `infra/`: `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `docker-compose.prod.yml`,
+  `.env.example`. No Dockerfile at the root.
+- `.github/workflows`: `ci.yml` (lint, types, tests, web build, Docker build), `commits.yml` (Conventional Commits),
+  `docker-image.yml` (image to GHCR on every push to `main`), `release-please.yml` (release PR, tag, versioned image)
+  and the upstream `release.yml` (Docker Hub + Electron builds on `v*` tags pushed by hand).
 
-## Points d'architecture
+## Architecture
 
-- Un `PrinterBridge` (`apps/api/src/bridge/printer-bridge.ts`) par imprimante : session MQTT,
-  état live (`LiveState` de `@kobralink/shared`), poll loop, commandes. `BridgeRegistry` les instancie depuis la table `printer`.
-- Chaque imprimante a **sa propre application Nest** Moonraker sur `httpPort`
-  (`moonraker.host.ts` → `MoonrakerAppModule.forPrinter`). Pas d'auth dessus, volontairement.
-  `moonraker.service.ts` traduit `LiveState` en objets Klipper (`gcode_move.speed_factor` = mapping 1→0.5/2→1.0/3→1.3/4→1.5,
-  `motion_report.live_velocity` toujours 0). `execGcodeScript` n'interprète qu'un petit sous-ensemble
-  (PAUSE/RESUME/CANCEL, M104/M140, SET_HEATER_TEMPERATURE, nom de macro Kobralink) ; tout le reste renvoie `ok` sans effet.
-- L'API principale (:7100) : `/api/auth/*` (Better Auth), `/api/v1/*` (protégé), sert `apps/web/dist`.
-  Un module Nest par domaine (`printers`, `core` = contrôle, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
-  `detection`, `notifications`, `ha` = discovery MQTT Home Assistant, `stats`, `system`, `users`, `settings`).
-- Live state UI : SSE `/api/v1/printers/:id/events` → `usePrinterEvents` écrit dans le cache Query ;
-  `patchLiveState` fait l'optimistic update local avant confirmation MQTT.
-- Macros = liste d'actions JSON (`macroActionSchema` dans `packages/shared/src/macros.ts`), pas du GCode ;
-  exécutées par `macro.service.ts` via les méthodes du `PrinterBridge`.
-- Caméra : `bridge/camera.ts` (`CameraCache`) = un seul ffmpeg par imprimante (FLV → MJPEG 15 fps/640px),
-  fanout vers `/api/v1/printers/:id/camera/{stream,snapshot}` (dashboard) et `/api/camera/{stream,snapshot}`
-  (Moonraker, annoncé par `server/webcams/list`). Binaire via `KOBRALINK_FFMPEG`, sinon `@ffmpeg-installer/ffmpeg`
-  (externe dans le bundle Electron), sinon `ffmpeg` du PATH. Arrêt auto après 60 s sans consommateur.
-- Détection d'échec IA : `apps/api/src/detection/` (modèle ONNX Obico YOLOv2 ~200 Mo téléchargé à la demande dans
-  `dataDir/models/failure-detection.onnx`, inférence `onnxruntime-node` CPU, décodage `jpeg-js`, algorithme EWM d'Obico
-  dans `prediction.ts`). Opt-in global (`settings.failureDetection`) + switch par imprimante ; une image toutes les
-  `intervalSec` pendant l'impression, événement `alert_print_failure`, action `notify|pause|cancel`.
-  `onnxruntime-node` est externe dans le bundle Electron (binaires des autres plateformes supprimés).
-- i18n : UI en fr, en, de, es, it, zh-cn. Toute chaîne visible passe par `m.xxx()` (Paraglide) — web : `import { m } from '@/lib/i18n'`
-  (locale persistée en localStorage, dayjs synchronisé) ; API : `import { m } from '../i18n/locale'` (locale par requête via
-  `AsyncLocalStorage`, lue dans `Accept-Language`, fallback `en`). Ajouter une clé = l'ajouter dans **tous** les `messages/*.json`.
-- Aucun commentaire dans le code (demande explicite).
+- One `PrinterBridge` (`apps/api/src/bridge/printer-bridge.ts`) per printer: MQTT session, live state (`LiveState` from
+  `@kobralink/shared`), poll loop, commands. `BridgeRegistry` creates them from the `printer` table.
+- Each printer has **its own Nest application** for Moonraker on `httpPort` (`moonraker.host.ts` →
+  `MoonrakerAppModule.forPrinter`). No auth on it, on purpose. `moonraker.service.ts` maps `LiveState` to Klipper
+  objects (`gcode_move.speed_factor` = mapping 1→0.5/2→1.0/3→1.3/4→1.5, `motion_report.live_velocity` always 0).
+  `execGcodeScript` only interprets a small subset (PAUSE/RESUME/CANCEL, M104/M140, SET_HEATER_TEMPERATURE, a
+  Kobralink macro name); everything else returns `ok` with no effect.
+- The main API (:7100): `/api/auth/*` (Better Auth), `/api/v1/*` (protected), serves `apps/web/dist`. One Nest module
+  per domain (`printers`, `core` = control, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
+  `detection`, `notifications`, `ha` = Home Assistant MQTT discovery, `stats`, `system`, `users`, `settings`).
+- Live UI state: SSE `/api/v1/printers/:id/events` → `usePrinterEvents` writes into the Query cache; `patchLiveState`
+  does the local optimistic update before the MQTT confirmation.
+- Macros are lists of JSON actions (`macroActionSchema` in `packages/shared/src/macros.ts`), not G-code; run by
+  `macro.service.ts` through the `PrinterBridge` methods.
+- Camera: `bridge/camera.ts` (`CameraCache`) = one ffmpeg per printer (FLV → MJPEG 15 fps/640px), fanned out to
+  `/api/v1/printers/:id/camera/{stream,snapshot}` (dashboard) and `/api/camera/{stream,snapshot}` (Moonraker,
+  announced by `server/webcams/list`). Binary from `KOBRALINK_FFMPEG`, else `@ffmpeg-installer/ffmpeg` (external in the
+  Electron bundle), else `ffmpeg` from the PATH. Stops after 60 s without consumers.
+- AI failure detection: `apps/api/src/detection/` (Obico YOLOv2 ONNX model, ~200 MB, downloaded on demand to
+  `dataDir/models/failure-detection.onnx`, `onnxruntime-node` inference on CPU, `jpeg-js` decoding, Obico's EWM
+  algorithm in `prediction.ts`). Global opt-in (`settings.failureDetection`) + a switch per printer; one frame every
+  `intervalSec` while printing, `alert_print_failure` event, `notify|pause|cancel` action. `onnxruntime-node` is
+  external in the Electron bundle (binaries of other platforms removed).
+- Filament without an ACE: when `multiColorBox` reports no box, `LiveState.externalSpoolOnly` is set, usage from
+  `print/report` (`supplies_usage`) is attributed to slot 0, and the filament card shows an external spool slot.
+  Changing the mapped spool reports pending usage to the previous spool first.
+- i18n: UI in fr, en, de, es, it, zh-cn. Every visible string goes through `m.xxx()` (Paraglide). Web:
+  `import { m } from '@/lib/i18n'` (locale kept in localStorage, dayjs in sync); API: `import { m } from
+  '../i18n/locale'` (locale per request through `AsyncLocalStorage`, read from `Accept-Language`, fallback `en`).
+  Adding a key = adding it to **every** `messages/*.json`.
 
-## Commandes
+## Commands
 
-`bun run dev` · `bun run dev:web` (api + web seulement) · `bun run dev:desktop` · `bun run build` · `bun run check-types`
+`bun run dev` · `bun run dev:web` (API + web only) · `bun run dev:desktop` · `bun run build` · `bun run check-types`
 · `bun run test` · `bun run lint` (biome check) · `bun run format` · `bun run db:migrate` (prisma migrate dev)
-· `bun run db:generate` · `bun run db:studio` · `bun run version:set <x.y.z|major|minor|patch>` (bump tous les package.json).
+· `bun run db:generate` · `bun run db:studio` · `bun run version:set <x.y.z|major|minor|patch>` (bumps every
+package.json; releases do it through release-please).
 
-Tests = `bun test`, fichiers dans `apps/api/test/*.test.ts` et `packages/kobra-protocol/test/*.test.ts`.
-Un seul fichier : `cd apps/api && bun test test/detection.test.ts` (ou `bun test -t "nom du test"`).
-Hook husky pre-commit : `biome check --write` sur les fichiers stagés (biome : 4 espaces, largeur 120).
+Tests use `bun test`: `packages/shared/test`, `packages/kobra-protocol/test` and `apps/api/test`. One file:
+`cd apps/api && bun test test/spool-usage.test.ts` (or `bun test -t "test name"`). Husky hooks: pre-commit runs
+`biome check --write` on staged files (4 spaces, width 120), commit-msg checks Conventional Commits, pre-push runs lint
+and type-check.
 
-Pas de pnpm/npm : lockfile = `bun.lock`, scripts de workspace via `bun run --filter <pkg> <script>`. Tous les scripts package.json invoquent `bun`/`bunx` explicitement (Vite tourne sous `bunx --bun vite`).
+No pnpm/npm: the lockfile is `bun.lock`, workspace scripts run through `bun run --filter <pkg> <script>`. Every
+package.json script calls `bun`/`bunx` explicitly (Vite runs under `bunx --bun vite`).
 
-## Règles
+## Rules that are easy to break
 
-- Ne jamais committer sans demande explicite.
-- Les certificats `apps/api/certs/*` (cert client Anycubic Slicer) sont du matériel tiers :
-  ne pas les modifier. Ils sont embarqués tels quels dans le repo, l'image Docker et le bundle Electron pour que
-  l'utilisateur n'ait rien à fournir ; pas de génération possible (le broker MQTT de l'imprimante vérifie ce cert précis).
+- **No comments in the code** (explicit request of the original author, kept in this fork).
+- The certificates in `apps/api/certs/*` (Anycubic Slicer client certificate) are third-party material: do not modify
+  them. They ship as is in the repo, the Docker image and the Electron bundle so users have nothing to provide; they
+  cannot be generated (the printer's MQTT broker checks this exact certificate).
+- **Never put real printer data in fixtures**: MQTT username/password, device ID, `/info` token, serial numbers and
+  public IPs are anonymized first.
+- **A printer allows a single MQTT session.** A second client (a test script, another bridge) is refused while
+  Kobralink is connected.
