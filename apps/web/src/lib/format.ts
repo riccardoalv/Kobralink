@@ -42,6 +42,10 @@ export function formatTime(value: string | number | Date): string {
     return dayjs(value).format('LTS');
 }
 
+export function formatClock(value: string | number | Date): string {
+    return dayjs(value).format('LT');
+}
+
 export function greeting(now = new Date()): string {
     const h = now.getHours();
     if (h < 6) return m.greeting_night();
