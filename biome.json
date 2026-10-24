@@ -15,7 +15,8 @@
             "!**/routeTree.gen.ts",
             "!**/components/ui",
             "!**/src/paraglide",
-            "!**/*.svg"
+            "!**/*.svg",
+            "!.release-please-manifest.json"
         ]
     },
     "formatter": {

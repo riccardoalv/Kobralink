@@ -17,6 +17,8 @@ import {
     Video,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+import { SpoolIcon } from '@/components/printer/ams/spool-icon';
 import { StatusBadge } from '@/components/printer/status-badge';
 import { useExternalSpool } from '@/hooks/use-external-spool';
 import { api, type PrinterWithLive } from '@/lib/api';
@@ -262,17 +264,13 @@ function Filament({ printerId, live }: { printerId: string; live: PrinterLiveSta
                     {slots.map((s) => {
                         const empty = s.status !== 5 && !s.type;
                         return (
-                            <span
-                                key={s.globalIndex}
-                                title={empty ? m.ams_slot_empty() : s.type}
-                                className={cn(
-                                    'size-6 rounded-full',
-                                    empty && 'border-2 border-dashed border-muted-foreground/40',
-                                    s.globalIndex === live.amsLoadedSlot &&
-                                        'ring-2 ring-primary ring-offset-2 ring-offset-card',
-                                )}
-                                style={empty ? undefined : { background: rgbCss(s.color) }}
-                            />
+                            <span key={s.globalIndex} title={empty ? m.ams_slot_empty() : s.type}>
+                                <SpoolIcon
+                                    color={empty ? undefined : rgbCss(s.color)}
+                                    active={s.globalIndex === live.amsLoadedSlot}
+                                    className="size-9"
+                                />
+                            </span>
                         );
                     })}
                 </div>
@@ -290,13 +288,7 @@ function ExternalSpoolLine({ printerId }: { printerId: string }) {
     const spool = useExternalSpool(printerId);
     return (
         <div className="flex items-center gap-3 text-sm">
-            <span
-                className={cn(
-                    'size-6 shrink-0 rounded-full',
-                    !spool.hex && 'border-2 border-dashed border-muted-foreground/40',
-                )}
-                style={spool.hex ? { background: spool.hex } : undefined}
-            />
+            <SpoolIcon color={spool.hex} className="size-9" />
             {spool.material ? (
                 <span className="min-w-0 truncate">
                     <span className="font-medium">{spool.material}</span>
