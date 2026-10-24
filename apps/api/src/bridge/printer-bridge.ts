@@ -117,7 +117,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private loopDone: Promise<void> | null = null;
 
     private filamentMode: FilamentMode = 'toolhead';
-    private externalSpoolOnly = false;
     private reportedModel = '';
     private currentJobId = '';
     private currentJobFilename = '';
@@ -182,6 +181,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             filamentMode: 'toolhead',
             amsSlots: [],
             amsLoadedSlot: -1,
+            externalSpoolOnly: false,
             aceUnits: [],
             aceDrying: EMPTY_DRYING,
             skippedObjects: [],
@@ -534,7 +534,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const kobraState = p.state ?? '';
         if (d.supplies_usage !== undefined) {
             this.suppliesUsageMm = Number(d.supplies_usage) || 0;
-            if (this.externalSpoolOnly) this.spoolmanAttribute(0, new Map());
+            if (this.s.externalSpoolOnly) this.spoolmanAttribute(0, new Map());
         }
         if (kobraState) this.applyKobraState(kobraState, 'printing');
 
@@ -796,7 +796,11 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             return;
         }
         const boxes = p.data?.multi_color_box ?? [];
-        this.externalSpoolOnly = boxes.length === 0;
+        const externalOnly = boxes.length === 0;
+        if (this.s.externalSpoolOnly !== externalOnly) {
+            this.s.externalSpoolOnly = externalOnly;
+            this.publish();
+        }
         if (!boxes.length) return;
         this.filamentMode = detectFilamentMode(boxes);
         this.s.filamentMode = this.filamentMode;

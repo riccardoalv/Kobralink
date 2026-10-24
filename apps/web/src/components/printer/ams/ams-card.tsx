@@ -1,11 +1,14 @@
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLiveState } from '@/hooks/use-printers';
-import { rgbCss, textOn } from '@/lib/color';
+import { hexToRgb, rgbCss, textOn } from '@/lib/color';
 import { m } from '@/lib/i18n';
 import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
+import { spoolAssignmentsQuery, spoolmanSpoolsQuery, spoolmanStatusQuery, spoolsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
+import { EXTERNAL_SLOT, ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
 
 export function AmsCard({ printerId }: { printerId: string }) {
@@ -27,7 +30,11 @@ export function AmsCard({ printerId }: { printerId: string }) {
             </CardHeader>
             <CardContent className="space-y-5">
                 {slots.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{m.ams_no_slots()}</p>
+                    state.externalSpoolOnly ? (
+                        <ExternalSpoolSlot printerId={printerId} disabled={offline} />
+                    ) : (
+                        <p className="text-sm text-muted-foreground">{m.ams_no_slots()}</p>
+                    )
                 ) : (
                     <div className="flex flex-wrap gap-3">
                         {slots.map((s) => {
@@ -82,5 +89,52 @@ export function AmsCard({ printerId }: { printerId: string }) {
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disabled: boolean }) {
+    const spoolman = useQuery(spoolmanStatusQuery(printerId));
+    const spools = useQuery(spoolmanSpoolsQuery(Boolean(spoolman.data?.configured)));
+    const localSpools = useQuery(spoolsQuery());
+    const localAssign = useQuery(spoolAssignmentsQuery(printerId));
+    const spoolmanSpool = spools.data?.find((sp) => sp.id === spoolman.data?.slotSpools[EXTERNAL_SLOT]);
+    const localSpool = localSpools.data?.find((sp) => sp.id === localAssign.data?.slotSpools[EXTERNAL_SLOT]);
+    const hex = spoolmanSpool?.filament.color_hex
+        ? `#${spoolmanSpool.filament.color_hex.replace(/^#/, '')}`
+        : localSpool?.colorHex;
+    const material = spoolmanSpool?.filament.material ?? localSpool?.material;
+    const openDialog = confirmationDialogStore.actions.openDialog;
+
+    return (
+        <div className="flex flex-wrap gap-3">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() =>
+                    openDialog({
+                        title: m.ams_external_spool(),
+                        description: m.ams_external_spool_hint(),
+                        content: <ExternalSpoolForm printerId={printerId} />,
+                    })
+                }
+                className="group flex w-14 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                title={m.ams_external_spool()}
+            >
+                <div
+                    className={cn(
+                        'flex size-14 items-center justify-center rounded-full border-2 text-sm font-semibold ring-4 ring-primary/40 transition-all group-enabled:group-hover:scale-105 group-enabled:group-hover:shadow-md',
+                        hex
+                            ? 'border-transparent group-enabled:group-hover:brightness-110'
+                            : 'border-dashed border-muted-foreground/40 text-muted-foreground group-enabled:group-hover:bg-muted',
+                    )}
+                    style={hex ? { background: hex, color: textOn(hexToRgb(hex)) } : undefined}
+                >
+                    E
+                </div>
+                <div className="w-full truncate text-center text-xs text-muted-foreground">
+                    {material ?? m.ams_external_spool_empty()}
+                </div>
+            </button>
+        </div>
     );
 }

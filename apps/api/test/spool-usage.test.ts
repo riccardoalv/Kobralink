@@ -68,6 +68,15 @@ const totals = (calls: { spoolId: string | number; mm: number }[]) => {
     return out;
 };
 
+describe('external spool detection', () => {
+    it('flags the printer as external-spool-only when multiColorBox reports no box', async () => {
+        const h = harness();
+        expect(h.bridge.snapshot().externalSpoolOnly).toBe(false);
+        await h.report('multiColorBox/report', noAce);
+        expect(h.bridge.snapshot().externalSpoolOnly).toBe(true);
+    });
+});
+
 describe('filament usage without an ACE', () => {
     it('reports the whole print to the mapped spool when it ends', async () => {
         const h = harness();

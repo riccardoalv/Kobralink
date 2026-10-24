@@ -107,6 +107,7 @@ export interface PrinterLiveState {
     filamentMode: FilamentMode;
     amsSlots: AmsSlot[];
     amsLoadedSlot: number;
+    externalSpoolOnly: boolean;
     aceUnits: AceUnit[];
     aceDrying: AceDrying;
     skippedObjects: string[];
