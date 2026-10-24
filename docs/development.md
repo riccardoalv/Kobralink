@@ -45,13 +45,14 @@ Every change ships with tests that run in CI.
 | Shared schemas | `packages/shared/test` | `cd packages/shared && bun test` |
 | Protocol | `packages/kobra-protocol/test` | `cd packages/kobra-protocol && bun test` |
 | API and bridge | `apps/api/test` | `cd apps/api && bun test` |
+| Web UI | `apps/web/src/**/*.test.{ts,tsx}` (Vitest + Testing Library, happy-dom) | `cd apps/web && bun run test` |
 
 - Bridge tests build a `PrinterBridge` and feed it MQTT payloads (`info/report`, `print/report`,
   `multiColorBox/report`) shaped like the ones a real printer sends; the network, the database and Spoolman are replaced
   by small fakes. See `apps/api/test/spool-usage.test.ts`.
 - Payloads in tests come from real printers and are **anonymized**: no MQTT credentials, device IDs, tokens, serial
   numbers or public IPs.
-- The web UI has no automated tests yet; `bun run check-types` and the web build cover it in CI.
+- Web tests render components with Testing Library in happy-dom; the locale is set to English in `src/test/setup.ts`.
 
 ## Style and hooks
 
