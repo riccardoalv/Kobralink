@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0](https://github.com/riccardoalv/Kobralink/compare/v0.4.0...v0.5.0) (2026-10-24)
+
+
+### Features
+
+* **web:** draw filament slots as spools ([#6](https://github.com/riccardoalv/Kobralink/issues/6)) ([88c7822](https://github.com/riccardoalv/Kobralink/commit/88c782262eefe4d5b01159e93daab9adb8d659aa))
+* **web:** side view of the spool with one filament layer per 10 percent ([#9](https://github.com/riccardoalv/Kobralink/issues/9)) ([ec3c45b](https://github.com/riccardoalv/Kobralink/commit/ec3c45b6cb018016e946cb60bf7d75c263f1b541))
+* **web:** spool illustration that shows colour and how much is left ([#8](https://github.com/riccardoalv/Kobralink/issues/8)) ([abb8562](https://github.com/riccardoalv/Kobralink/commit/abb8562ee8347ca1e5d3c88a04fcf2cc4919c21d))
+
 ## [0.4.0](https://github.com/riccardoalv/Kobralink/compare/v0.3.6...v0.4.0) (2026-10-24)
 
 
