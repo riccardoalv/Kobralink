@@ -62,4 +62,4 @@ reasons behind them.
 - Whether the fork publishes Electron installers, and how (the upstream `release.yml` also pushes to Docker Hub with
   secrets the fork does not have).
 - A Kobra MQTT simulator that replays captured messages, so the whole bridge can be tested in CI without a printer.
-- Automated tests for the web UI.
+
