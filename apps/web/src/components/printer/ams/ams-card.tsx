@@ -9,7 +9,7 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
 import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
-import { SlotSpoolArt, SpoolArt, SpoolPercent } from './spool-art';
+import { SlotSpool, SpoolArt, SpoolProgress } from './spool-art';
 
 export function AmsCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
@@ -63,14 +63,13 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                     className="group flex w-24 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                                     title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                 >
-                                    <span className="relative transition-transform group-enabled:group-hover:scale-105">
-                                        <SlotSpoolArt
+                                    <span className="relative w-full transition-transform group-enabled:group-hover:scale-105">
+                                        <SlotSpool
                                             printerId={printerId}
                                             slotKey={String(s.globalIndex)}
                                             color={rgbCss(s.color)}
+                                            label={s.type}
                                             empty={empty}
-                                            active={isLoaded}
-                                            showPercent
                                             className={cn(
                                                 'size-24',
                                                 (s.activity === 'feeding' || s.activity === 'retracting') &&
@@ -80,7 +79,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                         <SlotBadge>{s.index + 1}</SlotBadge>
                                     </span>
                                     <div className="w-full truncate text-center text-xs text-muted-foreground">
-                                        {empty ? m.ams_empty() : activity && !isLoaded ? activity : s.type || '?'}
+                                        {empty ? m.ams_empty() : activity && !isLoaded ? activity : null}
                                     </div>
                                 </button>
                             );
@@ -115,13 +114,15 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
                 className="group flex w-24 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 title={m.ams_external_spool()}
             >
-                <span className="relative transition-transform group-enabled:group-hover:scale-105">
-                    <SpoolArt color={hex} fraction={fraction ?? 1} active={Boolean(hex)} className="size-24" />
+                <span className="relative flex w-full flex-col items-center gap-1.5 transition-transform group-enabled:group-hover:scale-105">
+                    <SpoolArt color={hex} label={material} className="size-24" />
+                    <SpoolProgress fraction={hex ? fraction : undefined} color={hex} />
                     <SlotBadge>E</SlotBadge>
                 </span>
-                {hex && <SpoolPercent fraction={fraction} />}
                 <div className="w-full truncate text-center text-xs text-muted-foreground">
-                    {material ?? m.ams_external_spool_empty()}
+                    {hex && fraction !== undefined
+                        ? `${Math.round(fraction * 100)}%`
+                        : (material ?? m.ams_external_spool_empty())}
                 </div>
             </button>
         </div>
