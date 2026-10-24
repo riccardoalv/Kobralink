@@ -1,28 +1,11 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { remainingFraction } from '@/hooks/use-slot-spool';
-import { SpoolArt, spoolLayers } from './spool-art';
+import { isDark } from '@/lib/color';
+import { SpoolArt, SpoolProgress, spoolRadius } from './spool-art';
 
-const count = (container: HTMLElement, kind: string) => container.querySelectorAll(`[data-layer="${kind}"]`).length;
-
-describe('spoolLayers', () => {
-    it('gives one layer per 10 percent', () => {
-        expect(spoolLayers(1)).toEqual({ full: 10, partial: 0 });
-        expect(spoolLayers(0.6)).toEqual({ full: 6, partial: 0 });
-        expect(spoolLayers(0)).toEqual({ full: 0, partial: 0 });
-    });
-
-    it('keeps the rest as a partly wound layer', () => {
-        const { full, partial } = spoolLayers(0.81);
-        expect(full).toBe(8);
-        expect(partial).toBeCloseTo(0.1, 5);
-    });
-
-    it('clamps out-of-range values', () => {
-        expect(spoolLayers(-1)).toEqual({ full: 0, partial: 0 });
-        expect(spoolLayers(3)).toEqual({ full: 10, partial: 0 });
-    });
-});
+const filamentRadius = (container: HTMLElement) =>
+    Number(container.querySelector('[data-filament]')?.getAttribute('r'));
 
 describe('remainingFraction', () => {
     it('divides what is left by the total', () => {
@@ -35,23 +18,48 @@ describe('remainingFraction', () => {
     });
 });
 
-describe('SpoolArt', () => {
-    it('winds one layer above and below the hub per 10 percent', () => {
-        const { container } = render(<SpoolArt color="#ff7a00" fraction={0.6} />);
-        expect(count(container, 'full')).toBe(12);
-        expect(count(container, 'partial')).toBe(0);
-        expect(count(container, 'empty')).toBe(8);
+describe('isDark', () => {
+    it('reads hex and rgb colours', () => {
+        expect(isDark('#111111')).toBe(true);
+        expect(isDark('rgb(20, 20, 22)')).toBe(true);
+        expect(isDark('#e6e6e6')).toBe(false);
+    });
+});
+
+describe('spoolRadius', () => {
+    it('goes from the hub to a full spool', () => {
+        expect(spoolRadius(0)).toBe(17);
+        expect(spoolRadius(1)).toBe(44);
     });
 
-    it('draws the remainder as a shorter layer', () => {
-        const { container } = render(<SpoolArt color="#ff7a00" fraction={0.65} />);
-        expect(count(container, 'full')).toBe(12);
-        expect(count(container, 'partial')).toBe(2);
-        expect(container.querySelectorAll('[fill="#ff7a00"]').length).toBeGreaterThan(0);
+    it('follows the wound volume, so half a spool is past half the radius', () => {
+        expect(spoolRadius(0.5)).toBeGreaterThan((17 + 44) / 2);
+    });
+});
+
+describe('SpoolArt', () => {
+    it('draws a thinner ring of filament as the spool runs out', () => {
+        const full = render(<SpoolArt color="#ff7a00" fraction={1} />).container;
+        const low = render(<SpoolArt color="#ff7a00" fraction={0.2} />).container;
+        expect(filamentRadius(low)).toBeLessThan(filamentRadius(full));
+        expect(full.querySelector('[data-filament]')?.getAttribute('fill')).toBe('#ff7a00');
     });
 
     it('draws a bare spool when nothing is loaded', () => {
         const { container } = render(<SpoolArt fraction={1} />);
-        expect(count(container, 'empty')).toBe(20);
+        expect(container.querySelector('[data-filament]')).toBeNull();
+    });
+});
+
+describe('SpoolProgress', () => {
+    it('shows what is left as a progress bar', () => {
+        render(<SpoolProgress fraction={0.74} color="#111111" />);
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('74');
+        expect(screen.getByText('74%')).toBeTruthy();
+    });
+
+    it('is hidden when the amount left is unknown', () => {
+        render(<SpoolProgress color="#111111" />);
+        expect(screen.queryByRole('progressbar')).toBeNull();
     });
 });
