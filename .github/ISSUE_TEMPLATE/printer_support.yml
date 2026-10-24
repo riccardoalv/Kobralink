@@ -1,0 +1,59 @@
+name: Printer support
+description: Ask for (or help with) support for an Anycubic printer or accessory.
+labels: [printer-support]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Real printer data is the most valuable contribution to Kobralink.
+        **Anonymize everything** (MQTT username and password, device ID, tokens, public IPs, serial numbers) before attaching files.
+  - type: input
+    id: model
+    attributes:
+      label: Printer model
+      placeholder: Anycubic Kobra 4
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware version
+      placeholder: 1.2.1.3
+    validations:
+      required: true
+  - type: input
+    id: model_id
+    attributes:
+      label: Model ID
+      description: The `modelId` field of `http://<printer-ip>:18910/info` (LAN mode on). Do not paste the token.
+      placeholder: "20028"
+  - type: checkboxes
+    id: hardware
+    attributes:
+      label: What is attached?
+      options:
+        - label: ACE / ACE Pro / ACE 2 Pro
+        - label: Camera
+        - label: Prints from the external spool holder
+  - type: textarea
+    id: what_works
+    attributes:
+      label: What works and what does not
+      description: Connection, status, camera, printing from OrcaSlicer, filament slots, Spoolman usage...
+    validations:
+      required: true
+  - type: textarea
+    id: messages
+    attributes:
+      label: MQTT messages
+      description: |
+        Anonymized `info/report`, `print/report` and `multiColorBox/report` payloads help most.
+        Docs → Testing explains how to capture them.
+      render: json
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Can you help?
+      options:
+        - label: I can test a development image on this printer
+        - label: I can write the code

@@ -1,0 +1,46 @@
+name: Bug report
+description: Something does not work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Kobralink version or image
+      description: Settings → System, or the image tag you run.
+      placeholder: ghcr.io/riccardoalv/kobralink:0.4.0
+    validations:
+      required: true
+  - type: input
+    id: printer
+    attributes:
+      label: Printer
+      description: Model, firmware version and whether an ACE is attached.
+      placeholder: Kobra 4, firmware 1.2.1.3, no ACE
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run Kobralink?
+      options: [Docker, Desktop app, From source]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Container or app logs around the problem. Remove MQTT passwords, device IDs, tokens and public IPs before pasting.
+      render: shell
