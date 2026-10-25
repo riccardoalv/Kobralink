@@ -133,6 +133,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private cameraAutostarted = false;
     private cameraUserStopped = false;
     private cameraKickAt = 0;
+    private jobOptions: { timelapse?: boolean; failureDetection?: boolean } = {};
     private buried: {
         taskName: string;
         gcodeSize: number;
@@ -232,6 +233,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     get settings(): PrinterSettings {
         return this.config.settings;
+    }
+
+    get timelapseForJob(): boolean {
+        return this.jobOptions.timelapse ?? this.config.settings.timelapseEnabled;
+    }
+
+    get failureDetectionForJob(): boolean {
+        return this.jobOptions.failureDetection ?? this.config.settings.failureDetection;
     }
 
     snapshot(): PrinterLiveState {
@@ -653,6 +662,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             .finishJob(jobId, status, this.suppliesUsageMm, usage, durationSec)
             .catch((e) => this.log.warn(`Job finish: ${(e as Error).message}`));
         this.emit('job', 'end', jobId, filename);
+        this.jobOptions = {};
         this.emitEvent(status === 'completed' ? 'print_finished' : 'print_cancelled', {
             filename,
             durationSec,
@@ -1450,10 +1460,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.publish();
     }
 
-    private taskSettings(autoLeveling: boolean | undefined, excluded: string[]): PrintStartPayload['task_settings'] {
+    private taskSettings(
+        autoLeveling: boolean | undefined,
+        excluded: string[],
+        vibrationCompensation?: boolean,
+    ): PrintStartPayload['task_settings'] {
         return {
             auto_leveling: (autoLeveling ?? this.config.settings.autoLeveling) ? 1 : 0,
-            vibration_compensation: this.config.settings.vibrationCompensation ? 1 : 0,
+            vibration_compensation: (vibrationCompensation ?? this.config.settings.vibrationCompensation) ? 1 : 0,
             flow_calibration: 0,
             dry_mode: 0,
             ai_settings: { status: 0, count: 0, type: 1 },
@@ -1493,8 +1507,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             project_type: 1,
             filesize: file.sizeBytes,
             ams_settings: { use_ams: mapping.length > 0, ams_box_mapping: mapping },
-            task_settings: this.taskSettings(opts.autoLeveling, excluded),
+            task_settings: this.taskSettings(opts.autoLeveling, excluded, opts.vibrationCompensation),
         };
+        this.jobOptions = { timelapse: opts.timelapse, failureDetection: opts.failureDetection };
         this.s.slicerTimeSec = file.estPrintTimeSec;
         this.s.thumbnail = file.thumbnail ?? '';
         this.layerHeight = file.layerHeight;
@@ -1527,6 +1542,9 @@ export interface StartPrintOptions {
     autoLeveling?: boolean;
     excludedObjects?: string[];
     filamentAssignments?: FilamentAssignment[];
+    vibrationCompensation?: boolean;
+    timelapse?: boolean;
+    failureDetection?: boolean;
 }
 
 export class BridgeOfflineError extends Error {}

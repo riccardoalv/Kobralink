@@ -266,7 +266,7 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
         const now = Date.now();
         for (const w of this.watches.values()) {
             const printing = w.bridge.snapshot().printState === 'printing';
-            const wanted = printing && w.bridge.settings.failureDetection && !w.acted;
+            const wanted = printing && w.bridge.failureDetectionForJob && !w.acted;
             if (!wanted) {
                 if (w.unsubscribe) this.stopWatching(w);
                 continue;
