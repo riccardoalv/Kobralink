@@ -9,6 +9,17 @@ import { fitCamera } from '@/lib/scene-fit';
 
 export type SceneMode = 'lines' | 'solid';
 
+const MIN_TINT_LIGHTNESS = 0.24;
+
+function visibleTint(tint: string | undefined): string | undefined {
+    if (!tint) return undefined;
+    const color = new Color(tint);
+    const hsl = { h: 0, s: 0, l: 0 };
+    color.getHSL(hsl);
+    if (hsl.l < MIN_TINT_LIGHTNESS) color.setHSL(hsl.h, hsl.s, MIN_TINT_LIGHTNESS);
+    return `#${color.getHexString()}`;
+}
+
 const STRIDE = 5;
 const FILAMENT_AREA = Math.PI * 0.875 ** 2;
 
@@ -78,7 +89,17 @@ function buildSolid(data: ParsedGcode) {
     return { mesh, geometry, ends };
 }
 
-function Lines({ data, shown, colors }: { data: ParsedGcode; shown: number; colors: ThemeColors }) {
+function Lines({
+    data,
+    shown,
+    colors,
+    tint,
+}: {
+    data: ParsedGcode;
+    shown: number;
+    colors: ThemeColors;
+    tint?: string;
+}) {
     const built = useMemo(() => buildLines(data), [data]);
     useEffect(() => {
         const { base, top } = built;
@@ -100,18 +121,29 @@ function Lines({ data, shown, colors }: { data: ParsedGcode; shown: number; colo
     return (
         <group>
             <lineSegments geometry={built.base}>
-                <lineBasicMaterial color={colors.muted} transparent opacity={0.35} />
+                <lineBasicMaterial color={tint ?? colors.muted} transparent opacity={tint ? 0.85 : 0.35} />
             </lineSegments>
             <lineSegments geometry={built.top}>
-                <lineBasicMaterial color={colors.primary} />
+                <lineBasicMaterial color={tint ?? colors.primary} />
             </lineSegments>
         </group>
     );
 }
 
-function Solid({ data, shown, colors }: { data: ParsedGcode; shown: number; colors: ThemeColors }) {
+function Solid({
+    data,
+    shown,
+    colors,
+    tint,
+}: {
+    data: ParsedGcode;
+    shown: number;
+    colors: ThemeColors;
+    tint?: string;
+}) {
     const built = useMemo(() => buildSolid(data), [data]);
     const painted = useRef(-1);
+    const palette = useRef('');
     useEffect(() => {
         const { mesh, geometry } = built;
         painted.current = -1;
@@ -124,8 +156,13 @@ function Solid({ data, shown, colors }: { data: ParsedGcode; shown: number; colo
         const { mesh, ends } = built;
         if (!ends.length) return;
         const index = Math.min(Math.max(shown, 1), ends.length) - 1;
-        const base = new Color(colors.muted);
-        const top = new Color(colors.primary);
+        const base = new Color(tint ?? colors.muted);
+        const top = tint ? new Color(tint).offsetHSL(0, 0, 0.08) : new Color(colors.primary);
+        const key = `${tint}|${colors.muted}|${colors.primary}`;
+        if (palette.current !== key) {
+            palette.current = key;
+            painted.current = -1;
+        }
         const prev = painted.current;
         const from = prev < 0 ? 0 : Math.min(prev, index) > 0 ? ends[Math.min(prev, index) - 1] : 0;
         const to = ends[Math.max(prev < 0 ? index : prev, index)];
@@ -134,7 +171,7 @@ function Solid({ data, shown, colors }: { data: ParsedGcode; shown: number; colo
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
         mesh.count = ends[index];
         painted.current = index;
-    }, [built, shown, colors]);
+    }, [built, shown, colors, tint]);
 
     return (
         <primitive object={built.mesh}>
@@ -188,14 +225,17 @@ export function GcodeScene({
     mode,
     pan,
     resetSignal,
+    tint,
 }: {
     data: ParsedGcode;
     shown: number;
     mode: SceneMode;
     pan: boolean;
     resetSignal: number;
+    tint?: string;
 }) {
     const colors = useThemeColors();
+    const shownTint = visibleTint(tint);
     const span = Math.max(1, data.maxX - data.minX, data.maxY - data.minY);
     const height = data.layers.length ? data.layers[data.layers.length - 1].z : 1;
     const bed = Math.max(Math.ceil((span * 1.6) / 10) * 10, 40);
@@ -211,6 +251,7 @@ export function GcodeScene({
             camera={{ position: [distance * 0.7, distance * 0.6, distance * 0.7], fov: 45, near: 0.1, far: 10000 }}
         >
             <ambientLight intensity={mode === 'solid' ? 0.9 : 1} />
+            {mode === 'solid' && <hemisphereLight args={['#ffffff', '#444444', 0.6]} />}
             {mode === 'solid' && (
                 <>
                     <directionalLight position={[distance, distance * 1.5, distance * 0.5]} intensity={1.6} />
@@ -229,9 +270,9 @@ export function GcodeScene({
                 fadeStrength={1}
             />
             {mode === 'solid' ? (
-                <Solid data={data} shown={shown} colors={colors} />
+                <Solid data={data} shown={shown} colors={colors} tint={shownTint} />
             ) : (
-                <Lines data={data} shown={shown} colors={colors} />
+                <Lines data={data} shown={shown} colors={colors} tint={shownTint} />
             )}
             <OrbitControls
                 makeDefault

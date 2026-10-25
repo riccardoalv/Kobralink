@@ -80,7 +80,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     );
 }
 
-function SceneOverlay({
+export function SceneOverlay({
     mode,
     pan,
     onToggleMode,

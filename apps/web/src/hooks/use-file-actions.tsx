@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
+import { parseFilename } from '@/lib/filename';
 import { m } from '@/lib/i18n';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -54,7 +55,8 @@ export function useFileActions(printerId: string) {
 
     const openPrintDialog = (f: GcodeFileDto, withQueue: boolean) =>
         openDialog({
-            title: m.files_print_title({ name: f.filename }),
+            title: m.files_print_title({ name: parseFilename(f.filename).name }),
+            props: { className: 'sm:max-w-5xl' },
             description: m.print_ready_hint(),
             content: (
                 <PrintReadyForm

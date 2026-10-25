@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { api } from '@/lib/api';
+import { parseFilename } from '@/lib/filename';
 import { m } from '@/lib/i18n';
 import { filesQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -34,7 +35,8 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'history'] });
     };
     confirmationDialogStore.actions.openDialog({
-        title: m.files_print_title({ name: file.filename }),
+        title: m.files_print_title({ name: parseFilename(file.filename).name }),
+        props: { className: 'sm:max-w-5xl' },
         description: m.print_ready_hint(),
         content: (
             <PrintReadyForm

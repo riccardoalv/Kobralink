@@ -11,16 +11,21 @@ import { useQuery } from '@tanstack/react-query';
 import {
     ArrowLeft,
     ArrowRight,
+    AudioWaveform,
     ChevronDown,
     Clock,
+    Film,
+    Grid3x3,
     Layers,
     ListPlus,
     Play,
+    ScanEye,
     Scissors,
     TriangleAlert,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { SlotForm } from '@/components/printer/ams/slot-form';
+import { PrintPreview3D } from '@/components/printer/files/print-preview-3d';
 import { ObjectPicker } from '@/components/printer/skip/object-picker';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -40,6 +45,9 @@ export interface PrintReadyResult {
     filamentAssignments?: FilamentAssignment[];
     excludedObjects: string[];
     autoLeveling: boolean;
+    vibrationCompensation: boolean;
+    timelapse: boolean;
+    failureDetection: boolean;
 }
 
 interface Channel {
@@ -142,6 +150,11 @@ export function PrintReadyForm({
     const [excluded, setExcluded] = useState<string[]>([]);
     const [showObjects, setShowObjects] = useState(false);
     const [autoLeveling, setAutoLeveling] = useState(printer?.settings.autoLeveling ?? true);
+    const [vibrationCompensation, setVibrationCompensation] = useState(
+        printer?.settings.vibrationCompensation ?? false,
+    );
+    const [timelapse, setTimelapse] = useState(printer?.settings.timelapseEnabled ?? false);
+    const [failureDetection, setFailureDetection] = useState(printer?.settings.failureDetection ?? true);
     const [pending, setPending] = useState(false);
     const [editing, setEditing] = useState<AmsSlot | null>(null);
 
@@ -163,6 +176,8 @@ export function PrintReadyForm({
     const mismatches = channels.filter((ch) => ch.isUsed && compatibleSlots(ch, usable).length === 0);
     const blocked = usable.length > 0 && mismatches.length > 0;
     const remaining = names.length - excluded.length;
+    const { name, plate } = parseFilename(file.filename);
+    const tint = channels.find((ch) => ch.isUsed)?.colorHex ?? channels[0]?.colorHex;
 
     const build = (): PrintReadyResult => ({
         filamentAssignments: usable.length
@@ -174,6 +189,9 @@ export function PrintReadyForm({
             : undefined,
         excludedObjects: excluded,
         autoLeveling,
+        vibrationCompensation,
+        timelapse,
+        failureDetection,
     });
 
     if (editing) {
@@ -196,193 +214,227 @@ export function PrintReadyForm({
     }
 
     return (
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 py-2">
-            <div className="flex items-center gap-4 rounded-2xl bg-secondary p-4">
-                <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-background/40">
-                    {file.thumbnail ? (
-                        <img
-                            src={`data:image/png;base64,${file.thumbnail}`}
-                            alt=""
-                            className="size-full object-contain"
-                        />
-                    ) : (
-                        <span className="text-[10px] text-muted-foreground">GCode</span>
-                    )}
-                </div>
-                <div className="min-w-0 space-y-1">
-                    <div className="truncate font-medium" title={file.filename}>
-                        {parseFilename(file.filename).name}
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 py-2 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+            <div className="grid content-start gap-3">
+                <PrintPreview3D printerId={printerId} file={file} tint={tint} className="h-72 md:h-[26rem]" />
+                <div className="min-w-0 space-y-1.5 px-1">
+                    <div className="flex items-center gap-2">
+                        <span className="truncate font-medium" title={file.filename}>
+                            {name}
+                        </span>
+                        {plate !== null && (
+                            <span className="shrink-0 text-sm text-muted-foreground">
+                                {m.files_plate({ n: plate })}
+                            </span>
+                        )}
                     </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                         {file.estPrintTimeSec > 0 && (
-                            <span className="inline-flex items-center gap-1">
-                                <Clock className="size-3.5" /> {formatDuration(file.estPrintTimeSec)}
+                            <span className="inline-flex items-center gap-1.5">
+                                <Clock className="size-4" /> {formatDuration(file.estPrintTimeSec)}
                             </span>
                         )}
                         {file.layerHeight > 0 && (
-                            <span className="inline-flex items-center gap-1">
-                                <Layers className="size-3.5" /> {file.layerHeight} mm
+                            <span className="inline-flex items-center gap-1.5">
+                                <Layers className="size-4" /> {file.layerHeight} mm
                             </span>
                         )}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
                         {channels.map((ch) => (
-                            <Chip key={ch.paintIndex} color={ch.colorHex} className="size-6 text-[10px]">
-                                {ch.paintIndex + 1}
-                            </Chip>
+                            <span key={ch.paintIndex} className="inline-flex items-center gap-1.5">
+                                <span className="size-3 rounded-full" style={{ background: ch.colorHex }} />
+                                {ch.material || '?'}
+                            </span>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {allSlots.length > 0 && (
-                <div className="grid gap-2">
-                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        {m.print_ready_slots()}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {allSlots.map((s) => {
-                            const empty = s.status !== 5 && !s.type;
-                            return (
-                                <button
-                                    type="button"
-                                    key={s.globalIndex}
-                                    disabled={!state.connected}
-                                    onClick={() => setEditing(s)}
-                                    title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
-                                    className={cn(
-                                        'flex size-9 items-center justify-center rounded-full text-xs font-semibold transition-transform enabled:hover:scale-105 disabled:opacity-60',
-                                        empty &&
-                                            'border border-dashed border-muted-foreground/40 text-muted-foreground',
-                                    )}
-                                    style={empty ? undefined : { background: rgbCss(s.color), color: textOn(s.color) }}
-                                >
-                                    {s.globalIndex + 1}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {channels.length > 0 && (
-                <div className="grid gap-2">
-                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        {m.print_ready_channels()}
-                    </div>
-                    {usable.length === 0 ? (
-                        <p className="rounded-2xl bg-secondary/60 px-4 py-3 text-sm text-muted-foreground">
-                            {m.print_ready_no_slots()}
-                        </p>
-                    ) : (
-                        <div className="grid gap-2">
-                            {channels.map((ch) => {
-                                const options = compatibleSlots(ch, usable);
-                                const current = assignments[ch.paintIndex] ?? -1;
-                                const chosen = usable.find((s) => s.globalIndex === current);
+            <div className="grid min-w-0 content-start gap-4">
+                {allSlots.length > 0 && (
+                    <div className="grid gap-2">
+                        <div className="text-sm font-medium text-muted-foreground">{m.print_ready_slots()}</div>
+                        <div className="flex flex-wrap gap-2">
+                            {allSlots.map((s) => {
+                                const empty = s.status !== 5 && !s.type;
                                 return (
-                                    <div
-                                        key={ch.paintIndex}
+                                    <button
+                                        type="button"
+                                        key={s.globalIndex}
+                                        disabled={!state.connected}
+                                        onClick={() => setEditing(s)}
+                                        title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                         className={cn(
-                                            'flex items-center gap-3 rounded-2xl bg-secondary/60 px-3 py-2',
-                                            !ch.isUsed && 'opacity-60',
+                                            'flex size-9 items-center justify-center rounded-full text-xs font-semibold transition-transform enabled:hover:scale-105 disabled:opacity-60',
+                                            empty &&
+                                                'border border-dashed border-muted-foreground/40 text-muted-foreground',
                                         )}
+                                        style={
+                                            empty ? undefined : { background: rgbCss(s.color), color: textOn(s.color) }
+                                        }
                                     >
-                                        <Chip color={ch.colorHex}>{ch.paintIndex + 1}</Chip>
-                                        <div className="w-16 shrink-0">
-                                            <div className="truncate text-sm">{ch.material || '?'}</div>
-                                            <div className="text-[10px] uppercase text-muted-foreground">
-                                                {ch.isUsed ? m.print_ready_used() : m.print_ready_unused()}
-                                            </div>
-                                        </div>
-                                        <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
-                                        {chosen ? (
-                                            <Chip color={rgbToHex(chosen.color)}>{chosen.globalIndex + 1}</Chip>
-                                        ) : (
-                                            <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 text-xs text-muted-foreground">
-                                                ?
-                                            </span>
-                                        )}
-                                        <Select
-                                            value={String(current)}
-                                            disabled={!options.length}
-                                            onValueChange={(v) =>
-                                                setAssignments((cur) => ({ ...cur, [ch.paintIndex]: Number(v) }))
-                                            }
-                                        >
-                                            <SelectTrigger className="w-0 min-w-0 flex-1">
-                                                <SelectValue placeholder={m.print_ready_no_match()} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {options.map((s) => (
-                                                    <SelectItem key={s.globalIndex} value={String(s.globalIndex)}>
-                                                        {slotLabel(
-                                                            s,
-                                                            slotInfos.data?.find((i) => i.slotIndex === s.globalIndex),
-                                                        )}
-                                                    </SelectItem>
-                                                ))}
-                                                {!options.length && (
-                                                    <SelectItem value="-1" disabled>
-                                                        {m.print_ready_no_match()}
-                                                    </SelectItem>
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                        {s.globalIndex + 1}
+                                    </button>
                                 );
                             })}
                         </div>
-                    )}
-                    {blocked && (
-                        <div className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-                            <div className="space-y-0.5">
-                                <div className="font-medium">{m.print_ready_mismatch_title()}</div>
-                                {mismatches.map((ch) => (
-                                    <div key={ch.paintIndex} className="text-xs">
-                                        {m.print_ready_mismatch_line({ n: ch.paintIndex + 1, material: ch.material })}
-                                    </div>
-                                ))}
+                    </div>
+                )}
+
+                {channels.length > 0 && (
+                    <div className="grid gap-2">
+                        <div className="text-sm font-medium text-muted-foreground">{m.print_ready_channels()}</div>
+                        {usable.length === 0 ? (
+                            <p className="rounded-2xl bg-secondary/60 px-4 py-3 text-sm text-muted-foreground">
+                                {m.print_ready_no_slots()}
+                            </p>
+                        ) : (
+                            <div className="grid gap-2">
+                                {channels.map((ch) => {
+                                    const options = compatibleSlots(ch, usable);
+                                    const current = assignments[ch.paintIndex] ?? -1;
+                                    const chosen = usable.find((s) => s.globalIndex === current);
+                                    return (
+                                        <div
+                                            key={ch.paintIndex}
+                                            className={cn(
+                                                'flex items-center gap-3 rounded-2xl bg-secondary/60 px-3 py-2',
+                                                !ch.isUsed && 'opacity-60',
+                                            )}
+                                        >
+                                            <Chip color={ch.colorHex}>{ch.paintIndex + 1}</Chip>
+                                            <div className="w-16 shrink-0">
+                                                <div className="truncate text-sm">{ch.material || '?'}</div>
+                                                <div className="text-[10px] uppercase text-muted-foreground">
+                                                    {ch.isUsed ? m.print_ready_used() : m.print_ready_unused()}
+                                                </div>
+                                            </div>
+                                            <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                                            {chosen ? (
+                                                <Chip color={rgbToHex(chosen.color)}>{chosen.globalIndex + 1}</Chip>
+                                            ) : (
+                                                <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 text-xs text-muted-foreground">
+                                                    ?
+                                                </span>
+                                            )}
+                                            <Select
+                                                value={String(current)}
+                                                disabled={!options.length}
+                                                onValueChange={(v) =>
+                                                    setAssignments((cur) => ({ ...cur, [ch.paintIndex]: Number(v) }))
+                                                }
+                                            >
+                                                <SelectTrigger className="w-0 min-w-0 flex-1">
+                                                    <SelectValue placeholder={m.print_ready_no_match()} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {options.map((s) => (
+                                                        <SelectItem key={s.globalIndex} value={String(s.globalIndex)}>
+                                                            {slotLabel(
+                                                                s,
+                                                                slotInfos.data?.find(
+                                                                    (i) => i.slotIndex === s.globalIndex,
+                                                                ),
+                                                            )}
+                                                        </SelectItem>
+                                                    ))}
+                                                    {!options.length && (
+                                                        <SelectItem value="-1" disabled>
+                                                            {m.print_ready_no_match()}
+                                                        </SelectItem>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        </div>
-                    )}
-                </div>
-            )}
+                        )}
+                        {blocked && (
+                            <div className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                                <div className="space-y-0.5">
+                                    <div className="font-medium">{m.print_ready_mismatch_title()}</div>
+                                    {mismatches.map((ch) => (
+                                        <div key={ch.paintIndex} className="text-xs">
+                                            {m.print_ready_mismatch_line({
+                                                n: ch.paintIndex + 1,
+                                                material: ch.material,
+                                            })}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
-            {names.length >= 2 && (
+                {names.length >= 2 && (
+                    <div className="grid gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowObjects((v) => !v)}
+                            className="flex items-center gap-2 rounded-2xl bg-secondary/60 px-4 py-2 text-left text-sm"
+                        >
+                            <Scissors className="size-4 text-muted-foreground" />
+                            <span className="flex-1">{m.print_ready_objects()}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {excluded.length ? m.preprint_count({ remaining, total: names.length }) : names.length}
+                            </span>
+                            <ChevronDown className={cn('size-4 transition-transform', showObjects && 'rotate-180')} />
+                        </button>
+                        {showObjects && (
+                            <ObjectPicker
+                                objects={names}
+                                selected={excluded}
+                                svgB64={objects.data?.svgB64}
+                                onToggle={(n) =>
+                                    setExcluded((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]))
+                                }
+                            />
+                        )}
+                    </div>
+                )}
+
                 <div className="grid gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setShowObjects((v) => !v)}
-                        className="flex items-center gap-2 rounded-2xl bg-secondary/60 px-4 py-2 text-left text-sm"
-                    >
-                        <Scissors className="size-4 text-muted-foreground" />
-                        <span className="flex-1">{m.print_ready_objects()}</span>
-                        <span className="text-xs text-muted-foreground">
-                            {excluded.length ? m.preprint_count({ remaining, total: names.length }) : names.length}
-                        </span>
-                        <ChevronDown className={cn('size-4 transition-transform', showObjects && 'rotate-180')} />
-                    </button>
-                    {showObjects && (
-                        <ObjectPicker
-                            objects={names}
-                            selected={excluded}
-                            svgB64={objects.data?.svgB64}
-                            onToggle={(n) =>
-                                setExcluded((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]))
-                            }
+                    <div className="text-sm font-medium text-muted-foreground">{m.print_ready_options()}</div>
+                    <div className="divide-y divide-border/60 overflow-hidden rounded-2xl bg-secondary/60">
+                        <OptionRow
+                            id="print-ready-auto-leveling"
+                            icon={<Grid3x3 />}
+                            label={m.settings_auto_leveling()}
+                            hint={m.print_ready_leveling_hint()}
+                            checked={autoLeveling}
+                            onChange={setAutoLeveling}
                         />
-                    )}
+                        <OptionRow
+                            id="print-ready-vibration"
+                            icon={<AudioWaveform />}
+                            label={m.settings_vibration()}
+                            hint={m.print_ready_vibration_hint()}
+                            checked={vibrationCompensation}
+                            onChange={setVibrationCompensation}
+                        />
+                        <OptionRow
+                            id="print-ready-timelapse"
+                            icon={<Film />}
+                            label={m.settings_timelapse_enabled()}
+                            hint={m.settings_timelapse_hint()}
+                            checked={timelapse}
+                            onChange={setTimelapse}
+                        />
+                        <OptionRow
+                            id="print-ready-detection"
+                            icon={<ScanEye />}
+                            label={m.settings_failure_detection()}
+                            hint={m.print_ready_detection_hint()}
+                            checked={failureDetection}
+                            onChange={setFailureDetection}
+                        />
+                    </div>
                 </div>
-            )}
-
-            <div className="flex items-center justify-between gap-3 rounded-2xl bg-secondary/60 px-4 py-2 text-sm">
-                <Label htmlFor="print-ready-auto-leveling">{m.settings_auto_leveling()}</Label>
-                <Switch id="print-ready-auto-leveling" checked={autoLeveling} onCheckedChange={setAutoLeveling} />
             </div>
 
-            <DialogFooter className="gap-2 sm:justify-between">
+            <DialogFooter className="gap-2 sm:justify-between md:col-span-2">
                 <Button type="button" variant="ghost" className="rounded-full" onClick={close}>
                     {m.upload_ready_later()}
                 </Button>
@@ -418,6 +470,33 @@ export function PrintReadyForm({
                     </Button>
                 </div>
             </DialogFooter>
+        </div>
+    );
+}
+
+function OptionRow({
+    id,
+    icon,
+    label,
+    hint,
+    checked,
+    onChange,
+}: {
+    id: string;
+    icon: ReactNode;
+    label: string;
+    hint: string;
+    checked: boolean;
+    onChange: (value: boolean) => void;
+}) {
+    return (
+        <div className="flex items-center gap-3 px-4 py-3">
+            <span className="text-muted-foreground [&_svg]:size-4">{icon}</span>
+            <Label htmlFor={id} className="min-w-0 flex-1 cursor-pointer flex-col items-start gap-0.5 font-normal">
+                <span className="text-sm">{label}</span>
+                <span className="text-xs text-muted-foreground">{hint}</span>
+            </Label>
+            <Switch id={id} checked={checked} onCheckedChange={onChange} />
         </div>
     );
 }

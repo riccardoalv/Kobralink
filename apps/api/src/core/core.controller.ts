@@ -264,6 +264,9 @@ export class CoreController {
                 autoLeveling: body.autoLeveling,
                 excludedObjects: body.excludedObjects,
                 filamentAssignments: body.filamentAssignments,
+                vibrationCompensation: body.vibrationCompensation,
+                timelapse: body.timelapse,
+                failureDetection: body.failureDetection,
             }),
         );
     }

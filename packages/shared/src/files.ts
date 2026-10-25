@@ -53,6 +53,9 @@ export const startPrintSchema = z.object({
     autoLeveling: z.boolean().optional(),
     excludedObjects: z.array(z.string().min(1)).max(500).default([]),
     filamentAssignments: z.array(filamentAssignmentSchema).max(64).optional(),
+    vibrationCompensation: z.boolean().optional(),
+    timelapse: z.boolean().optional(),
+    failureDetection: z.boolean().optional(),
 });
 
 export const skipObjectsSchema = z.object({ names: z.array(z.string().min(1)).min(1).max(500) });
