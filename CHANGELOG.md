@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/riccardoalv/Kobralink/compare/v0.7.1...v0.8.0) (2026-10-25)
+
+
+### Features
+
+* 3D preview and per-print options in the print dialog ([#16](https://github.com/riccardoalv/Kobralink/issues/16)) ([30fb48b](https://github.com/riccardoalv/Kobralink/commit/30fb48bf6203b58221e2417ecf53cfc78d6c7653))
+
 ## [0.7.1](https://github.com/riccardoalv/Kobralink/compare/v0.7.0...v0.7.1) (2026-10-25)
 
 
