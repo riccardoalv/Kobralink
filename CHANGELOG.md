@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/riccardoalv/Kobralink/compare/v0.7.0...v0.7.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* compact filament tiles, file material in stats, no camera restart ([#14](https://github.com/riccardoalv/Kobralink/issues/14)) ([58bae82](https://github.com/riccardoalv/Kobralink/commit/58bae82e19c5ac5b0fd40ce2ae1c9bd83105db98))
+
 ## [0.7.0](https://github.com/riccardoalv/Kobralink/compare/v0.6.0...v0.7.0) (2026-10-24)
 
 
