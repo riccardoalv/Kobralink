@@ -274,15 +274,18 @@ function Filament({ printerId, live }: { printerId: string; live: PrinterLiveSta
                             <span
                                 key={s.globalIndex}
                                 title={empty ? m.ams_slot_empty() : s.type}
-                                className="flex w-20 flex-col gap-1.5"
+                                className="flex w-44 items-center gap-2.5"
                             >
                                 <SlotSpool
                                     printerId={printerId}
                                     slotKey={String(s.globalIndex)}
                                     color={rgbCss(s.color)}
                                     empty={empty}
-                                    className="w-full"
-                                />
+                                >
+                                    <span className="truncate text-xs font-medium">
+                                        {empty ? m.ams_empty() : s.type || '?'}
+                                    </span>
+                                </SlotSpool>
                             </span>
                         );
                     })}
