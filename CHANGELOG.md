@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/riccardoalv/Kobralink/compare/v0.8.1...v0.8.2) (2026-10-25)
+
+
+### Bug Fixes
+
+* **bridge:** reuse the OrcaSlicer upload when confirming the print dialog ([#20](https://github.com/riccardoalv/Kobralink/issues/20)) ([8d7d04c](https://github.com/riccardoalv/Kobralink/commit/8d7d04c1aa397b6657f529f0ddd600dd3ee04401))
+
 ## [0.8.1](https://github.com/riccardoalv/Kobralink/compare/v0.8.0...v0.8.1) (2026-10-25)
 
 
