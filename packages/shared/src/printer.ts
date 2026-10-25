@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { patchSchema } from './patch';
 
 export const alertSettingsSchema = z.object({
     nozzleMaxC: z.number().int().min(0).max(350).default(300),
@@ -69,7 +70,7 @@ export const updatePrinterSchema = z.object({
     name: z.string().trim().min(1).max(64).optional(),
     ip: ipv4.optional(),
     httpPort: z.number().int().min(1024).max(65535).optional(),
-    settings: printerSettingsSchema.partial().optional(),
+    settings: patchSchema(printerSettingsSchema).optional(),
 });
 export type UpdatePrinterInput = z.infer<typeof updatePrinterSchema>;
 
