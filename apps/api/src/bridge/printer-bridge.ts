@@ -52,6 +52,7 @@ const SAMPLE_INTERVAL_MS = 2000;
 const RECONNECT_WINDOW_MS = 30000;
 const PRINT_HOLD_MS = 60000;
 const CAMERA_STALE_MS = 30000;
+const CAMERA_FRESH_MS = 5000;
 const CAMERA_KICK_INTERVAL_MS = 60000;
 
 export interface BridgePrinterConfig {
@@ -1260,6 +1261,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     async startCamera(): Promise<string> {
         this.ensureConnected();
+        if (this.camera.running && Date.now() - this.camera.latestJpegAt < CAMERA_FRESH_MS) {
+            this.cameraUserStopped = false;
+            return 'streaming';
+        }
         const result = await this.client.startCamera();
         this.log.log(`Camera startCapture: state=${result?.state ?? 'timeout'}`);
         this.cameraUserStopped = false;

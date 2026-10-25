@@ -10,6 +10,7 @@ import {
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
+import { jobMaterial } from './job-material';
 
 const DAILY_MAX_DAYS = 90;
 
@@ -27,7 +28,7 @@ export class StatsService {
         const [jobs, printerRows, spoolRows] = await Promise.all([
             this.prisma.client.printJob.findMany({
                 where: { ...(printerId ? { printerId } : {}), ...(since ? { startedAt: { gte: since } } : {}) },
-                include: { file: { select: { thumbnail: true, id: true } } },
+                include: { file: { select: { thumbnail: true, id: true, filaments: true } } },
                 orderBy: { startedAt: 'asc' },
             }),
             this.prisma.client.printer.findMany({ select: { id: true, name: true } }),
@@ -86,9 +87,10 @@ export class StatsService {
                 : j.filamentMm > 0
                   ? [{ slotIndex: 0, mm: j.filamentMm, material: '', spoolId: null }]
                   : [];
+            const fileMaterial = jobMaterial(j.file?.filaments, j.filename);
             const priced = entries.map((u) => {
                 const spool = u.spoolId ? spools.get(u.spoolId) : undefined;
-                const mat = (u.material || spool?.material || 'PLA').toUpperCase();
+                const mat = (u.material || spool?.material || fileMaterial).toUpperCase();
                 const weightG = filamentWeightG(
                     u.mm,
                     spool?.diameterMm ?? 1.75,

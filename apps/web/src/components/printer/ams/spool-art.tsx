@@ -92,20 +92,46 @@ export function SlotSpool({
     color,
     empty,
     className,
+    children,
 }: {
     printerId: string;
     slotKey: string;
     color?: string;
     empty?: boolean;
     className?: string;
+    children?: React.ReactNode;
 }) {
     const spool = useSlotSpool(printerId, slotKey);
     const fill = empty ? undefined : (color ?? spool.hex);
-    const fraction = fill ? spool.fraction : undefined;
+    return (
+        <SpoolTileBody color={fill} fraction={fill ? spool.fraction : undefined} className={className}>
+            {children}
+        </SpoolTileBody>
+    );
+}
+
+export function SpoolTileBody({
+    color,
+    fraction,
+    className,
+    children,
+}: {
+    color?: string;
+    fraction?: number;
+    className?: string;
+    children?: React.ReactNode;
+}) {
     return (
         <>
-            <SpoolArt color={fill} fraction={fraction ?? 1} className={className} />
-            {fraction !== undefined ? <SpoolProgress fraction={fraction} color={fill} /> : <div className="h-4" />}
+            <SpoolArt color={color} fraction={fraction ?? 1} className={cn('size-12', className)} />
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                {children}
+                {fraction !== undefined ? (
+                    <SpoolProgress fraction={fraction} color={color} />
+                ) : (
+                    <span className="h-4" />
+                )}
+            </span>
         </>
     );
 }

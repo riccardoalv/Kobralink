@@ -9,7 +9,7 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
 import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
-import { SlotSpool, SpoolArt, SpoolProgress } from './spool-art';
+import { SlotSpool, SpoolTileBody } from './spool-art';
 
 export function AmsCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
@@ -63,21 +63,23 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                     className={TILE}
                                     title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                 >
-                                    <TileHeader
-                                        title={empty ? m.ams_empty() : activity && !isLoaded ? activity : s.type || '?'}
-                                        badge={s.index + 1}
-                                    />
                                     <SlotSpool
                                         printerId={printerId}
                                         slotKey={String(s.globalIndex)}
                                         color={rgbCss(s.color)}
                                         empty={empty}
                                         className={cn(
-                                            'w-full',
                                             (s.activity === 'feeding' || s.activity === 'retracting') &&
                                                 'animate-pulse',
                                         )}
-                                    />
+                                    >
+                                        <TileHeader
+                                            title={
+                                                empty ? m.ams_empty() : activity && !isLoaded ? activity : s.type || '?'
+                                            }
+                                            badge={s.index + 1}
+                                        />
+                                    </SlotSpool>
                                 </button>
                             );
                         })}
@@ -111,20 +113,16 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
                 className={TILE}
                 title={m.ams_external_spool()}
             >
-                <TileHeader title={material ?? m.ams_external_spool_empty()} badge="E" />
-                <SpoolArt color={hex} fraction={fraction ?? 1} className="w-full" />
-                {hex && fraction !== undefined ? (
-                    <SpoolProgress fraction={fraction} color={hex} />
-                ) : (
-                    <div className="h-4" />
-                )}
+                <SpoolTileBody color={hex} fraction={hex ? fraction : undefined}>
+                    <TileHeader title={material ?? m.ams_external_spool_empty()} badge="E" />
+                </SpoolTileBody>
             </button>
         </div>
     );
 }
 
 const TILE =
-    'flex w-36 cursor-pointer flex-col gap-2 rounded-2xl bg-secondary p-3 text-left outline-none transition-colors enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
+    'flex w-56 cursor-pointer items-center gap-3 rounded-2xl bg-secondary p-2.5 text-left outline-none transition-colors enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
 
 function TileHeader({ title, badge }: { title: string; badge: React.ReactNode }) {
     return (
