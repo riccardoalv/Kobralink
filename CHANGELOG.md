@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/riccardoalv/Kobralink/compare/v0.8.0...v0.8.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* partial updates no longer reset other settings to defaults ([#18](https://github.com/riccardoalv/Kobralink/issues/18)) ([c8cf0c6](https://github.com/riccardoalv/Kobralink/commit/c8cf0c64e84b9b83630a05db01d77ded282e3732))
+
 ## [0.8.0](https://github.com/riccardoalv/Kobralink/compare/v0.7.1...v0.8.0) (2026-10-25)
 
 
