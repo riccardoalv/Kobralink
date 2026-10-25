@@ -1,6 +1,7 @@
 import { fetchPrinterCredentials } from '@kobralink/kobra-protocol';
 import {
     type AddPrinterInput,
+    mergePatch,
     type Printer as PrinterDto,
     type PrinterSettings,
     printerSettingsSchema,
@@ -121,10 +122,7 @@ export class PrintersService {
             if (clash) throw new ConflictException(m.api_port_in_use({ port: input.httpPort, name: clash.name }));
         }
         const settings = input.settings
-            ? printerSettingsSchema.parse({
-                  ...PrintersService.parseSettings(current.settings),
-                  ...input.settings,
-              })
+            ? printerSettingsSchema.parse(mergePatch(PrintersService.parseSettings(current.settings), input.settings))
             : undefined;
         return this.prisma.client.printer.update({
             where: { id },

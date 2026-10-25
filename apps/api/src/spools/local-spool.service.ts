@@ -4,6 +4,7 @@ import {
     type LocalSpoolInput,
     localSpoolSchema,
     type UpdateLocalSpoolInput,
+    updateLocalSpoolSchema,
 } from '@kobralink/shared';
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import type { FilamentUsageSink } from '../bridge/printer-bridge';
@@ -65,7 +66,7 @@ export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
     }
 
     async update(id: string, input: UpdateLocalSpoolInput): Promise<LocalSpoolDto> {
-        const data = localSpoolSchema.partial().parse(input);
+        const data = updateLocalSpoolSchema.parse(input);
         const row = await this.prisma.client.localSpool.update({ where: { id }, data }).catch(() => null);
         if (!row) throw new NotFoundException();
         this.lowAlerted.delete(id);

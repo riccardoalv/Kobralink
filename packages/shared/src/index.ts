@@ -6,6 +6,7 @@ export * from './filament';
 export * from './files';
 export * from './forms';
 export * from './macros';
+export * from './patch';
 export * from './printer';
 export * from './queue';
 export * from './settings';

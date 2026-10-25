@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { patchSchema } from './patch';
 
 export interface LocalSpoolDto {
     id: string;
@@ -48,7 +49,7 @@ export const localSpoolSchema = z.object({
     archived: z.boolean().default(false),
 });
 export type LocalSpoolInput = z.input<typeof localSpoolSchema>;
-export const updateLocalSpoolSchema = localSpoolSchema.partial();
+export const updateLocalSpoolSchema = patchSchema(localSpoolSchema);
 export type UpdateLocalSpoolInput = z.input<typeof updateLocalSpoolSchema>;
 
 export const setLocalSpoolMapSchema = z.object({
