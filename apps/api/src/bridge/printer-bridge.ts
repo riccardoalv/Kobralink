@@ -980,7 +980,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.log.warn(`deleteBatch refused: state=${res.state} code=${res.code} msg=${res.msg ?? ''}`);
             throw new BridgeRequestError(m.api_printer_refused({ code: String(res.code ?? '?'), msg: res.msg ?? '' }));
         }
-        for (const f of filenames) this.printerThumbs.delete(f);
+        for (const f of filenames) {
+            this.printerThumbs.delete(f);
+            if (this.lastUpload?.filename === f) this.lastUpload = null;
+        }
     }
 
     async printerFileThumbnail(filename: string): Promise<string> {
@@ -1403,9 +1406,24 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.printHold = null;
         const loaded = await this.gcode.readData(fileId);
         if (!loaded) throw new BridgeRequestError(m.api_file_not_in_store());
-        await this.pushToPrinter(loaded.file, loaded.data);
-        await this.startPrint(loaded.file, opts);
+        if (!this.alreadyOnPrinter(loaded.file)) {
+            await this.pushToPrinter(loaded.file, loaded.data);
+            await this.startPrint(loaded.file, opts);
+            return loaded.file;
+        }
+        this.log.log(`${loaded.file.filename} already on the printer, upload skipped`);
+        try {
+            await this.startPrint(loaded.file, opts);
+        } catch (e) {
+            this.lastUpload = null;
+            throw e;
+        }
         return loaded.file;
+    }
+
+    private alreadyOnPrinter(file: StoredFile): boolean {
+        const last = this.lastUpload;
+        return !!last && last.filename === file.filename && last.md5 === file.md5 && last.size === file.sizeBytes;
     }
 
     private loadedSlotsForPrint(): AmsSlot[] {

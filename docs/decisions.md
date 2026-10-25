@@ -31,6 +31,10 @@ reasons behind them.
   fallback, from the stored printer. UI texts do not name a specific model.
 - **A printer allows a single MQTT session.** Kobralink owns it while connected; tools that capture messages must stop
   Kobralink first.
+- **A file is uploaded to the printer once.** With the "Dialog after upload" setting, an OrcaSlicer upload pushes the
+  file to the printer and opens the dialog in the dashboard; confirming the dialog reuses that upload (same name, MD5
+  and size as the last one) instead of sending the file again, so the print starts right away. The upload is forgotten
+  when the file is deleted from the printer.
 
 ## Filament and Spoolman
 
