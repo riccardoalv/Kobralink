@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { m } from '@kobralink/i18n';
+import { m } from '@farolprint/i18n';
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import appIcon from '../../resources/icon.png?asset';
 import { installLocale } from '../shared/locale';
@@ -11,10 +11,10 @@ import { checkForUpdates, setupUpdater } from './updater';
 
 let win: BrowserWindow | null = null;
 
-if (!app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), 'Kobralink Dev'));
+if (!app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), 'Farol Print Dev'));
 
 function baseUrl(): string {
-    if (process.env.KOBRALINK_URL) return process.env.KOBRALINK_URL.replace(/\/$/, '');
+    if (process.env.FAROLPRINT_URL) return process.env.FAROLPRINT_URL.replace(/\/$/, '');
     return `http://localhost:${LOCAL_PORT}`;
 }
 
@@ -25,7 +25,7 @@ function createWindow(): BrowserWindow {
         minWidth: 900,
         minHeight: 600,
         show: false,
-        title: 'Kobralink',
+        title: 'Farol Print',
         icon: appIcon,
         titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
         autoHideMenuBar: process.platform !== 'darwin',
@@ -62,7 +62,7 @@ async function boot(w: BrowserWindow): Promise<void> {
     const url = baseUrl();
     await loadLauncher(w, { status: 'starting' });
 
-    if (!process.env.KOBRALINK_URL) {
+    if (!process.env.FAROLPRINT_URL) {
         const alreadyUp = !app.isPackaged && (await waitForApi(url, 1500));
         if (!alreadyUp) {
             if (!apiAvailable()) {
@@ -136,7 +136,7 @@ ipcMain.handle('app:show-log', () => {
 });
 
 ipcMain.handle('app:report-issue', () => {
-    const u = new URL('https://github.com/nathacks/Kobralink/issues/new');
+    const u = new URL('https://github.com/riccardoalv/farolprint/issues/new');
     u.searchParams.set('title', m.desktop_issue_title());
     u.searchParams.set(
         'body',
@@ -158,16 +158,16 @@ app.whenReady().then(async () => {
     installLocale(app.getLocale());
     buildMenu();
     win = createWindow();
-    if (!process.env.KOBRALINK_SHOT) {
+    if (!process.env.FAROLPRINT_SHOT) {
         setupUpdater(() => win);
         setupTray(ensureWindow);
     }
     await boot(win);
 
-    if (process.env.KOBRALINK_SHOT && win) {
+    if (process.env.FAROLPRINT_SHOT && win) {
         await new Promise((r) => setTimeout(r, 2500));
 
-        const login = process.env.KOBRALINK_SHOT_LOGIN?.split('|');
+        const login = process.env.FAROLPRINT_SHOT_LOGIN?.split('|');
         if (login && login.length >= 3) {
             await win.webContents.executeJavaScript(
                 `fetch('/api/auth/sign-in/email',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:${JSON.stringify(login[0])},password:${JSON.stringify(login[1])}})}).then(r=>r.status)`,
@@ -175,12 +175,12 @@ app.whenReady().then(async () => {
             await win.loadURL(`${baseUrl()}${login[2]}`);
             await new Promise((r) => setTimeout(r, 2500));
         }
-        if (process.env.KOBRALINK_SHOT_JS) {
-            await win.webContents.executeJavaScript(process.env.KOBRALINK_SHOT_JS);
+        if (process.env.FAROLPRINT_SHOT_JS) {
+            await win.webContents.executeJavaScript(process.env.FAROLPRINT_SHOT_JS);
             await new Promise((r) => setTimeout(r, 3000));
         }
         const img = await win.webContents.capturePage();
-        await import('node:fs/promises').then((fs) => fs.writeFile(process.env.KOBRALINK_SHOT as string, img.toPNG()));
+        await import('node:fs/promises').then((fs) => fs.writeFile(process.env.FAROLPRINT_SHOT as string, img.toPNG()));
         app.quit();
         return;
     }

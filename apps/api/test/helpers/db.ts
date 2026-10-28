@@ -17,7 +17,7 @@ export interface TestDb {
 }
 
 export async function testDb(): Promise<TestDb> {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kobralink-db-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'farolprint-db-'));
     const file = path.join(dir, 'test.db');
     await applyMigrations(`file:${file}`, MIGRATIONS_DIR, () => undefined);
     const client = new PrismaClient({ adapter: new PrismaLibSql({ url: `file:${file}` }) });

@@ -1,4 +1,4 @@
-import type { ConnectionError, FilamentMode } from '@kobralink/shared';
+import type { ConnectionError, FilamentMode } from '@farolprint/shared';
 import { m } from '@/lib/i18n';
 
 export const FILAMENT_MODE_LABEL: Record<FilamentMode, () => string> = {

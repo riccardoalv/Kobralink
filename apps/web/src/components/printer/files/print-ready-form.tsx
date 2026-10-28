@@ -6,7 +6,7 @@ import {
     materialFamily,
     type SlotFilamentInfo,
     slotUsableForPrint,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { useQuery } from '@tanstack/react-query';
 import {
     ArrowLeft,

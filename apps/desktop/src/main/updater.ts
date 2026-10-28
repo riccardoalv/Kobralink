@@ -1,4 +1,4 @@
-import { m } from '@kobralink/i18n';
+import { m } from '@farolprint/i18n';
 import { app, type BrowserWindow, dialog, type MessageBoxOptions } from 'electron';
 import { autoUpdater } from 'electron-updater';
 

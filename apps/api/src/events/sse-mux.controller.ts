@@ -1,10 +1,10 @@
 import {
-    type KobralinkEvent,
+    type FarolPrintEvent,
     type PrinterLiveState,
     parseSseChannelKey,
     type SseChannel,
     type SseEnvelope,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { BadRequestException, Controller, MessageEvent, Query, Sse } from '@nestjs/common';
 import { EMPTY, filter, fromEvent, interval, map, merge, Observable, of } from 'rxjs';
 import type { CommandRefused } from '../bridge/printer-bridge';
@@ -60,7 +60,7 @@ export class SseMuxController {
     }
 
     private printers(): Observable<Frame> {
-        const notifications = (fromEvent(this.notifications, 'notification') as Observable<KobralinkEvent>).pipe(
+        const notifications = (fromEvent(this.notifications, 'notification') as Observable<FarolPrintEvent>).pipe(
             map((ev): Frame => ({ event: 'notification', data: ev })),
         );
         const states = (

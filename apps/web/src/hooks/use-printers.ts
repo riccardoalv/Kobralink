@@ -1,4 +1,4 @@
-import type { PrinterLiveState } from '@kobralink/shared';
+import type { PrinterLiveState } from '@farolprint/shared';
 import { shallow, useSelector } from '@tanstack/react-store';
 import { useEffect } from 'react';
 import { EMPTY_SAMPLES, printersStore } from '@/stores/printers';

@@ -1,6 +1,6 @@
 # Development
 
-How to work on Kobralink: setup, commands, tests, CI, commits and releases. The conventions are in
+How to work on Farol Print: setup, commands, tests, CI, commits and releases. The conventions are in
 [CONTRIBUTING.md](../CONTRIBUTING.md) and [CLAUDE.md](../CLAUDE.md).
 
 ## Requirements
@@ -26,14 +26,14 @@ How to work on Kobralink: setup, commands, tests, CI, commits and releases. The 
 | `bun run db:migrate` | New Prisma migration (`prisma migrate dev`) |
 
 Scripts of one workspace run with `bun run --filter <package> <script>`, for example
-`bun run --filter @kobralink/web build`.
+`bun run --filter @farolprint/web build`.
 
 ## Running it
 
 `bun run dev:web` starts the API and the web UI. Open the URL Vite prints, create the first account and add a printer
-by IP. Data goes to `KOBRALINK_DATA_DIR` (default `data/`).
+by IP. Data goes to `FAROLPRINT_DATA_DIR` (default `data/`).
 
-A printer accepts **a single MQTT session**: stop any other Kobralink connected to it (a server, the desktop app)
+A printer accepts **a single MQTT session**: stop any other Farol Print connected to it (a server, the desktop app)
 before connecting a development build to the same printer.
 
 ## Tests
@@ -63,7 +63,7 @@ Tests are written in the same change as the code, never in a follow-up.
 
 - API service tests run against a real SQLite database: `test/helpers/db.ts` creates a temporary file, applies every
   migration with the same migrator as production and seeds printers, files and jobs. `apps/api/bunfig.toml` preloads
-  `test/helpers/preload.ts`, which points `KOBRALINK_DATA_DIR` at a temporary directory. Controllers are tested by
+  `test/helpers/preload.ts`, which points `FAROLPRINT_DATA_DIR` at a temporary directory. Controllers are tested by
   calling them with fake services; `installI18n()` must be called in tests that check translated texts.
 - Bridge tests build a `PrinterBridge` and feed it MQTT payloads (`info/report`, `print/report`,
   `multiColorBox/report`) shaped like the ones a real printer sends; the network, the database and Spoolman are replaced
@@ -94,7 +94,7 @@ GitHub Actions run on every push to `main` and on every pull request:
 |---|---|
 | `ci.yml` | lint, type-check, tests with a coverage summary, web build, Docker image build |
 | `commits.yml` | every commit message and the PR title follow Conventional Commits |
-| `docker-image.yml` | on `main`: builds and pushes `ghcr.io/riccardoalv/kobralink:latest` and `sha-<commit>` |
+| `docker-image.yml` | on `main`: builds and pushes `ghcr.io/riccardoalv/farolprint:latest` and `sha-<commit>` |
 | `release-please.yml` | keeps the release PR up to date; on release, pushes the versioned image |
 
 ## Commits and releases
@@ -108,7 +108,7 @@ Releases are made by [release-please](https://github.com/googleapis/release-plea
    release (`feat` → minor, `fix` → patch; before 1.0.0, a breaking change bumps the minor).
 2. The release PR bumps the version of every `package.json` and updates `CHANGELOG.md`.
 3. Merging it tags the release (`vX.Y.Z`) and creates the GitHub release.
-4. The same workflow builds the Docker image for amd64 and arm64 and pushes it to `ghcr.io/riccardoalv/kobralink`
+4. The same workflow builds the Docker image for amd64 and arm64 and pushes it to `ghcr.io/riccardoalv/farolprint`
    with the tags `X.Y.Z`, `X.Y` and `latest`.
 
 The upstream `release.yml` (Docker Hub image and Electron installers) only runs on `v*` tags pushed by hand and needs

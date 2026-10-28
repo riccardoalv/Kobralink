@@ -1,4 +1,4 @@
-import { type PrinterSettingsFormValues, printerSettingsFormSchema } from '@kobralink/shared';
+import { type PrinterSettingsFormValues, printerSettingsFormSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';

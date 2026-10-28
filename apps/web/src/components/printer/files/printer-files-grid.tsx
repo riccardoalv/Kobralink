@@ -1,4 +1,4 @@
-import type { PrinterFileDto } from '@kobralink/shared';
+import type { PrinterFileDto } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Box, Check, Eye, HardDrive, ImageOff, Loader2, MoreVertical, Play, RefreshCw, Trash2 } from 'lucide-react';
 import { useState } from 'react';

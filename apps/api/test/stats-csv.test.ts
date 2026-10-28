@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { PrintJobDto } from '@kobralink/shared';
+import type { PrintJobDto } from '@farolprint/shared';
 import { jobsToCsv } from '../src/stats/stats-csv';
 
 const base: PrintJobDto = {

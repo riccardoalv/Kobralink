@@ -12,7 +12,7 @@ export class StatsController {
 
     @Get('export.csv')
     @Header('content-type', 'text/csv; charset=utf-8')
-    @Header('content-disposition', 'attachment; filename="kobralink-prints.csv"')
+    @Header('content-disposition', 'attachment; filename="farolprint-prints.csv"')
     exportCsv(@Query('printerId') printerId?: string, @Query('days') days?: string) {
         return this.stats.exportCsv(printerId || undefined, Math.max(0, Number(days) || 0));
     }

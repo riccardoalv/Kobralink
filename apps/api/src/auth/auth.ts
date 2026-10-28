@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { apiKey } from '@better-auth/api-key';
-import { canOperate, type UserRole } from '@kobralink/shared';
+import { canOperate, type UserRole } from '@farolprint/shared';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
@@ -14,7 +14,7 @@ export function createAuth() {
     const env = loadEnv();
     const prisma = getPrisma();
     return betterAuth({
-        appName: 'Kobralink',
+        appName: 'Farol Print',
         baseURL: env.baseUrl,
         basePath: '/api/auth',
         secret: env.authSecret,
@@ -80,4 +80,4 @@ export function createAuth() {
     });
 }
 
-export type KobralinkAuth = ReturnType<typeof createAuth>;
+export type FarolPrintAuth = ReturnType<typeof createAuth>;

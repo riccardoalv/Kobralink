@@ -1,4 +1,4 @@
-import type { KobralinkEvent } from '@kobralink/shared';
+import type { FarolPrintEvent } from '@farolprint/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -31,7 +31,7 @@ function fakeClient() {
     return { client, emit: (event: string, data: unknown) => act(() => handlers.get(event)?.(data)) };
 }
 
-const event = (type: KobralinkEvent['type'], id = 'e1'): KobralinkEvent => ({
+const event = (type: FarolPrintEvent['type'], id = 'e1'): FarolPrintEvent => ({
     id,
     type,
     printerId: 'p1',
@@ -101,6 +101,6 @@ describe('SseProvider notifications', () => {
         expect(h.keys()).toEqual([]);
         await h.emit('notification', event('alert_print_failure', 'e2'));
         expect(toast.warning).toHaveBeenCalledOnce();
-        expect(h.qc.getQueryData<KobralinkEvent[]>(['notifications'])?.map((e) => e.id)).toEqual(['e1', 'e2']);
+        expect(h.qc.getQueryData<FarolPrintEvent[]>(['notifications'])?.map((e) => e.id)).toEqual(['e1', 'e2']);
     });
 });

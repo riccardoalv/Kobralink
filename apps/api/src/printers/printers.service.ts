@@ -1,4 +1,4 @@
-import { fetchPrinterCredentials } from '@kobralink/kobra-protocol';
+import { fetchPrinterCredentials } from '@farolprint/kobra-protocol';
 import {
     type AddPrinterInput,
     mergePatch,
@@ -6,7 +6,7 @@ import {
     type PrinterSettings,
     printerSettingsSchema,
     type UpdatePrinterInput,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import type { BridgePrinterConfig } from '../bridge/printer-bridge';
 import type { Printer } from '../generated/prisma/client';

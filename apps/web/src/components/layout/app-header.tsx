@@ -8,7 +8,7 @@ import { m } from '@/lib/i18n';
 
 const isDesktop =
     typeof window !== 'undefined' &&
-    (window as unknown as { kobralinkDesktop?: { platform?: string } }).kobralinkDesktop?.platform === 'darwin';
+    (window as unknown as { farolprintDesktop?: { platform?: string } }).farolprintDesktop?.platform === 'darwin';
 
 interface AppHeaderProps {
     user: {

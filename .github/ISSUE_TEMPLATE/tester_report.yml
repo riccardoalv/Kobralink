@@ -1,24 +1,24 @@
 name: Tester report
-description: You ran Kobralink with your printer. Tell us how it went, good or bad.
+description: You ran Farol Print with your printer. Tell us how it went, good or bad.
 labels: [tester-report]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for testing Kobralink! [Testing Kobralink](https://github.com/riccardoalv/Kobralink/blob/main/docs/testing.md) lists what to look at.
+        Thank you for testing Farol Print! [Testing Farol Print](https://github.com/riccardoalv/farolprint/blob/main/docs/testing.md) lists what to look at.
         Blunt is good: what is wrong, confusing, missing or not worth having.
   - type: input
     id: version
     attributes:
-      label: Kobralink version or image
-      placeholder: ghcr.io/riccardoalv/kobralink:0.4.0
+      label: Farol Print version or image
+      placeholder: ghcr.io/riccardoalv/farolprint:0.4.0
     validations:
       required: true
   - type: textarea
     id: setup
     attributes:
       label: Your setup
-      description: Printer model and firmware, ACE or external spool, slicer, Spoolman, Home Assistant, how you run Kobralink.
+      description: Printer model and firmware, ACE or external spool, slicer, Spoolman, Home Assistant, how you run Farol Print.
       placeholder: Kobra 4 (firmware 1.2.1.3, no ACE), OrcaSlicer 2.4, Spoolman, Docker on a homelab server
     validations:
       required: true

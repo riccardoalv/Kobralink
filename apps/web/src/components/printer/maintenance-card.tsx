@@ -3,7 +3,7 @@ import {
     type MaintenancePreset,
     type MaintenanceTaskDto,
     maintenanceTaskSchema,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, History, Pencil, Plus, Trash2, Wrench } from 'lucide-react';

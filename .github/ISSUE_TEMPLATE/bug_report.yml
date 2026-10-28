@@ -18,9 +18,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Kobralink version or image
+      label: Farol Print version or image
       description: Settings → System, or the image tag you run.
-      placeholder: ghcr.io/riccardoalv/kobralink:0.4.0
+      placeholder: ghcr.io/riccardoalv/farolprint:0.4.0
     validations:
       required: true
   - type: input
@@ -34,7 +34,7 @@ body:
   - type: dropdown
     id: install
     attributes:
-      label: How do you run Kobralink?
+      label: How do you run Farol Print?
       options: [Docker, Desktop app, From source]
     validations:
       required: true

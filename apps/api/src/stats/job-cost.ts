@@ -5,7 +5,7 @@ import {
     type JobCost,
     jobCost,
     type SpoolUsageEntry,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { jobMaterial } from './job-material';
 
 export type PricedSpool = {

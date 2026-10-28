@@ -1,4 +1,4 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import type { GcodeFileDto } from '@farolprint/shared';
 import { lazy, Suspense, useState } from 'react';
 import { SceneOverlay } from '@/components/printer/files/gcode-preview';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';

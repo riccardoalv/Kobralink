@@ -1,4 +1,4 @@
-import type { PrinterLiveState } from '@kobralink/shared';
+import type { PrinterLiveState } from '@farolprint/shared';
 import { Link } from '@tanstack/react-router';
 import {
     Ban,

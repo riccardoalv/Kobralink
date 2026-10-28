@@ -1,4 +1,4 @@
-import type { PrintJobDto } from '@kobralink/shared';
+import type { PrintJobDto } from '@farolprint/shared';
 
 const COLUMNS = [
     'started_at',

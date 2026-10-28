@@ -7,7 +7,7 @@ export interface RouterContext {
 
 const isDesktop =
     typeof window !== 'undefined' &&
-    (window as unknown as { kobralinkDesktop?: { platform?: string } }).kobralinkDesktop?.platform === 'darwin';
+    (window as unknown as { farolprintDesktop?: { platform?: string } }).farolprintDesktop?.platform === 'darwin';
 
 export const Route = createRootRouteWithContext<RouterContext>()({
     component: () => (

@@ -1,4 +1,4 @@
-import { addPrinterFormSchema } from '@kobralink/shared';
+import { addPrinterFormSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';

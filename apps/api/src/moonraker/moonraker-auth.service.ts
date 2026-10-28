@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { Injectable, Logger } from '@nestjs/common';
 import { AuthService } from '@thallesp/nestjs-better-auth';
-import type { KobralinkAuth } from '../auth/auth';
+import type { FarolPrintAuth } from '../auth/auth';
 import { SettingsService } from '../settings/settings.service';
 
 const KEY_CACHE_TTL_MS = 30_000;
@@ -21,7 +21,7 @@ export class MoonrakerAuthService {
     private readonly oneshots = new Map<string, number>();
 
     constructor(
-        private readonly auth: AuthService<KobralinkAuth>,
+        private readonly auth: AuthService<FarolPrintAuth>,
         private readonly settings: SettingsService,
     ) {}
 

@@ -9,7 +9,7 @@ export function useDesktopNavigation() {
             const to = (ev as CustomEvent<string>).detail;
             if (typeof to === 'string') void navigate({ to });
         };
-        window.addEventListener('kobralink:navigate', onNav);
-        return () => window.removeEventListener('kobralink:navigate', onNav);
+        window.addEventListener('farolprint:navigate', onNav);
+        return () => window.removeEventListener('farolprint:navigate', onNav);
     }, [navigate]);
 }

@@ -1,4 +1,4 @@
-import type { MacroIcon } from '@kobralink/shared';
+import type { MacroIcon } from '@farolprint/shared';
 import {
     Droplets,
     Flame,

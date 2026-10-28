@@ -34,7 +34,7 @@ export const haMqttSettingsSchema = z.object({
     username: z.string().trim().default(''),
     password: z.string().default(''),
     discoveryPrefix: z.string().trim().min(1).max(64).default('homeassistant'),
-    topicPrefix: z.string().trim().min(1).max(64).default('kobralink'),
+    topicPrefix: z.string().trim().min(1).max(64).default('farolprint'),
 });
 export type HaMqttSettings = z.infer<typeof haMqttSettingsSchema>;
 

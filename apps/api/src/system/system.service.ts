@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Writable } from 'node:stream';
-import type { BackupInfoDto, SystemInfoDto } from '@kobralink/shared';
+import type { BackupInfoDto, SystemInfoDto } from '@farolprint/shared';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Unzip, UnzipInflate, Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import { lanIps } from '../common/net';
@@ -40,14 +40,14 @@ export class SystemService {
     }
 
     async checkUpdate(force = false): Promise<SystemInfoDto['update']> {
-        const repo = process.env.KOBRALINK_UPDATE_REPO ?? 'riccardoalv/Kobralink';
+        const repo = process.env.FAROLPRINT_UPDATE_REPO ?? 'riccardoalv/farolprint';
         if (!repo) return null;
         if (!force && this.updateCache && Date.now() - this.updateCache.at < UPDATE_TTL_MS)
             return this.updateCache.result;
         let result: SystemInfoDto['update'] = { checked: false, available: false, latest: '', url: '' };
         try {
             const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-                headers: { accept: 'application/vnd.github+json', 'user-agent': `kobralink/${this.version}` },
+                headers: { accept: 'application/vnd.github+json', 'user-agent': `farolprint/${this.version}` },
                 signal: AbortSignal.timeout(8000),
             });
             if (res.ok) {
@@ -112,7 +112,7 @@ export class SystemService {
             new TextEncoder().encode(JSON.stringify({ version: this.version, createdAt: new Date().toISOString() })),
             true,
         );
-        await addFile('kobralink.db', this.dbPath(), true);
+        await addFile('farolprint.db', this.dbPath(), true);
         for (const name of listFiles(this.env.gcodeDir)) {
             await addFile(`gcodes/${name}`, path.join(this.env.gcodeDir, name), false);
         }
@@ -137,7 +137,7 @@ export class SystemService {
             const unzip = new Unzip((file) => {
                 const rel = file.name.replace(/\\/g, '/');
                 if (rel.endsWith('/') || rel.includes('..') || rel.startsWith('/')) return;
-                if (!/^(kobralink\.db|manifest\.json|gcodes\/[^/]+|timelapses\/[^/]+\/[^/]+)$/.test(rel)) return;
+                if (!/^(farolprint\.db|manifest\.json|gcodes\/[^/]+|timelapses\/[^/]+\/[^/]+)$/.test(rel)) return;
                 const target = path.join(staging, rel);
                 fs.mkdirSync(path.dirname(target), { recursive: true });
                 const ws = fs.createWriteStream(target);
@@ -150,7 +150,7 @@ export class SystemService {
                     if (final) {
                         ws.end();
                         count += 1;
-                        if (rel === 'kobralink.db') hasDb = true;
+                        if (rel === 'farolprint.db') hasDb = true;
                     }
                 };
                 file.start();
@@ -180,7 +180,7 @@ export class SystemService {
 }
 
 function readVersion(): string {
-    if (process.env.KOBRALINK_VERSION) return process.env.KOBRALINK_VERSION;
+    if (process.env.FAROLPRINT_VERSION) return process.env.FAROLPRINT_VERSION;
     for (const dir of [path.resolve(__dirname, '..', '..'), path.resolve(__dirname, '..', '..', '..')]) {
         try {
             const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')) as { version?: string };
@@ -191,7 +191,7 @@ function readVersion(): string {
 }
 
 function packaged(): SystemInfoDto['packaged'] {
-    const v = process.env.KOBRALINK_PACKAGED;
+    const v = process.env.FAROLPRINT_PACKAGED;
     return v === 'docker' || v === 'electron' ? v : 'source';
 }
 

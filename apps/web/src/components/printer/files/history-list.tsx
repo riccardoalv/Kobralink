@@ -1,4 +1,4 @@
-import type { PrintJobDto } from '@kobralink/shared';
+import type { PrintJobDto } from '@farolprint/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Camera, Tag } from 'lucide-react';
 import { parseFilename } from '@/lib/filename';

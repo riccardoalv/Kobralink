@@ -1,4 +1,4 @@
-import { type SetSpoolMapInput, setSpoolMapSchema } from '@kobralink/shared';
+import { type SetSpoolMapInput, setSpoolMapSchema } from '@farolprint/shared';
 import { Body, Controller, Get, Param, Post, ServiceUnavailableException } from '@nestjs/common';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { ZodPipe } from '../common/zod.pipe';

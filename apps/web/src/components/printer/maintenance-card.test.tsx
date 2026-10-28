@@ -1,4 +1,4 @@
-import { MAINTENANCE_PRESETS, type MaintenanceTaskDto } from '@kobralink/shared';
+import { MAINTENANCE_PRESETS, type MaintenanceTaskDto } from '@farolprint/shared';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

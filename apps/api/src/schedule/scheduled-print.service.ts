@@ -1,4 +1,4 @@
-import type { ScheduledPrintDto, SchedulePrintInput } from '@kobralink/shared';
+import type { ScheduledPrintDto, SchedulePrintInput } from '@farolprint/shared';
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import type { PrinterBridge, StartPrintOptions } from '../bridge/printer-bridge';

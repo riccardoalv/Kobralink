@@ -10,7 +10,7 @@ import { filesQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { printersStore } from '@/stores/printers';
 
-const DISMISSED_KEY = 'kobralink:print-ready-dismissed';
+const DISMISSED_KEY = 'farolprint:print-ready-dismissed';
 
 function readDismissed(): string {
     try {

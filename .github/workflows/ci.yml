@@ -54,7 +54,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build the web UI
-        run: bun run --filter @kobralink/web build
+        run: bun run --filter @farolprint/web build
 
   docker:
     name: Docker image builds

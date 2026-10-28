@@ -28,8 +28,8 @@ await build({
     format: 'cjs',
     target: 'node22',
     external: [...externals, ...optionalNest],
-    define: { 'import.meta.url': '__kobralinkImportMetaUrl' },
-    banner: { js: "const __kobralinkImportMetaUrl = require('node:url').pathToFileURL(__filename).href;" },
+    define: { 'import.meta.url': '__farolprintImportMetaUrl' },
+    banner: { js: "const __farolprintImportMetaUrl = require('node:url').pathToFileURL(__filename).href;" },
     logLevel: 'info',
 });
 
@@ -47,7 +47,7 @@ fs.writeFileSync(
     path.join(outDir, 'package.json'),
     JSON.stringify(
         {
-            name: 'kobralink-api-bundle',
+            name: 'farolprint-api-bundle',
             version: JSON.parse(fs.readFileSync(path.join(apiRoot, 'package.json'), 'utf8')).version,
             private: true,
             main: 'dist/server/main.js',
@@ -59,13 +59,13 @@ fs.writeFileSync(
 );
 execSync('bun install --production --no-save', { cwd: outDir, stdio: 'inherit' });
 
-const targetOs = process.env.KOBRALINK_BUNDLE_OS ?? process.platform;
-const extraArchs = (process.env.KOBRALINK_BUNDLE_ARCHS ?? '')
+const targetOs = process.env.FAROLPRINT_BUNDLE_OS ?? process.platform;
+const extraArchs = (process.env.FAROLPRINT_BUNDLE_ARCHS ?? '')
     .split(',')
     .map((a) => a.trim())
     .filter((a) => a && (a !== process.arch || targetOs !== process.platform));
 for (const arch of extraArchs) {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `kobralink-bundle-${targetOs}-${arch}-`));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `farolprint-bundle-${targetOs}-${arch}-`));
     fs.copyFileSync(path.join(outDir, 'package.json'), path.join(tmp, 'package.json'));
     execSync(`bun install --production --no-save --os ${targetOs} --cpu ${arch}`, {
         cwd: tmp,

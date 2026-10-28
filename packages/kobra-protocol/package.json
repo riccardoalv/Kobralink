@@ -1,5 +1,5 @@
 {
-    "name": "@kobralink/kobra-protocol",
+    "name": "@farolprint/kobra-protocol",
     "version": "0.8.2",
     "private": true,
     "description": "Anycubic Kobra X LAN protocol: MQTT client, credential fetch, GCode upload, GCode metadata parsing.",

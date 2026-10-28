@@ -1,4 +1,4 @@
-import { type ScheduleDryInput, scheduleDrySchema } from '@kobralink/shared';
+import { type ScheduleDryInput, scheduleDrySchema } from '@farolprint/shared';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ZodPipe } from '../common/zod.pipe';
 import { DryScheduleService } from './dry-schedule.service';

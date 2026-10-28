@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import type { KobralinkEvent, KobralinkEventType, NotificationSettings, PrinterLiveState } from '@kobralink/shared';
+import type { FarolPrintEvent, FarolPrintEventType, NotificationSettings, PrinterLiveState } from '@farolprint/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import type { BridgeDomainEvent, CommandRefused, PrinterBridge } from '../bridge/printer-bridge';
 import { m, runWithLocale } from '../i18n/locale';
@@ -10,7 +10,7 @@ const HISTORY_MAX = 200;
 
 type EventData = NonNullable<BridgeDomainEvent['data']>;
 
-const EVENT_FLAG: Record<KobralinkEventType, keyof NotificationSettings['events']> = {
+const EVENT_FLAG: Record<FarolPrintEventType, keyof NotificationSettings['events']> = {
     print_started: 'printStarted',
     print_finished: 'printFinished',
     print_cancelled: 'printCancelled',
@@ -30,12 +30,12 @@ const EVENT_FLAG: Record<KobralinkEventType, keyof NotificationSettings['events'
 
 @Injectable()
 export class NotificationService extends EventEmitter<{
-    notification: [KobralinkEvent];
+    notification: [FarolPrintEvent];
     state: [printerId: string, state: PrinterLiveState];
     refused: [refused: CommandRefused];
 }> {
     private readonly log = new Logger(NotificationService.name);
-    private readonly history: KobralinkEvent[] = [];
+    private readonly history: FarolPrintEvent[] = [];
     private readonly detached = new Map<string, () => void>();
 
     constructor(private readonly settings: SettingsService) {
@@ -73,7 +73,7 @@ export class NotificationService extends EventEmitter<{
         this.detached.delete(printerId);
     }
 
-    recent(): KobralinkEvent[] {
+    recent(): FarolPrintEvent[] {
         return [...this.history];
     }
 
@@ -82,7 +82,7 @@ export class NotificationService extends EventEmitter<{
         this.push(event);
     }
 
-    push(event: KobralinkEvent): void {
+    push(event: FarolPrintEvent): void {
         this.history.push(event);
         if (this.history.length > HISTORY_MAX) this.history.splice(0, this.history.length - HISTORY_MAX);
         this.emit('notification', event);
@@ -91,11 +91,11 @@ export class NotificationService extends EventEmitter<{
         void this.deliver(event, cfg);
     }
 
-    emitCustom(printerId: string, printerName: string, type: KobralinkEventType, data: EventData = {}): void {
+    emitCustom(printerId: string, printerName: string, type: FarolPrintEventType, data: EventData = {}): void {
         this.push(this.build(printerId, printerName, type, data));
     }
 
-    build(printerId: string, printerName: string, type: KobralinkEventType, data: EventData): KobralinkEvent {
+    build(printerId: string, printerName: string, type: FarolPrintEventType, data: EventData): FarolPrintEvent {
         const locale = this.settings.get().locale;
         const { title, body } = runWithLocale(locale, () => describe(type, printerName, data));
         return { id: randomUUID(), type, printerId, printerName, title, body, ts: Date.now(), data };
@@ -104,11 +104,11 @@ export class NotificationService extends EventEmitter<{
     async test(): Promise<{ delivered: string[]; failed: { channel: string; error: string }[] }> {
         const cfg = this.settings.get().notifications;
         const locale = this.settings.get().locale;
-        const event: KobralinkEvent = {
+        const event: FarolPrintEvent = {
             id: randomUUID(),
             type: 'print_finished',
             printerId: '',
-            printerName: 'Kobralink',
+            printerName: 'Farol Print',
             title: runWithLocale(locale, () => m.notify_test_title()),
             body: runWithLocale(locale, () => m.notify_test_body()),
             ts: Date.now(),
@@ -117,7 +117,7 @@ export class NotificationService extends EventEmitter<{
     }
 
     private async deliver(
-        event: KobralinkEvent,
+        event: FarolPrintEvent,
         cfg: NotificationSettings,
         collect = false,
     ): Promise<{ delivered: string[]; failed: { channel: string; error: string }[] }> {
@@ -161,14 +161,14 @@ export class NotificationService extends EventEmitter<{
         }
     }
 
-    private sendWebhook(url: string, event: KobralinkEvent): Promise<void> {
+    private sendWebhook(url: string, event: FarolPrintEvent): Promise<void> {
         return this.post(url, event);
     }
 
-    private sendDiscord(url: string, event: KobralinkEvent): Promise<void> {
+    private sendDiscord(url: string, event: FarolPrintEvent): Promise<void> {
         const color = event.type.startsWith('alert') ? 0xef4444 : event.type === 'print_finished' ? 0x10b981 : 0x3b82f6;
         return this.post(url, {
-            username: 'Kobralink',
+            username: 'Farol Print',
             embeds: [
                 {
                     title: event.title,
@@ -181,7 +181,7 @@ export class NotificationService extends EventEmitter<{
         });
     }
 
-    private sendTelegram(token: string, chatId: string, event: KobralinkEvent): Promise<void> {
+    private sendTelegram(token: string, chatId: string, event: FarolPrintEvent): Promise<void> {
         return this.post(`https://api.telegram.org/bot${token}/sendMessage`, {
             chat_id: chatId,
             text: `*${escapeMd(event.title)}*\n${escapeMd(event.body)}`,
@@ -189,7 +189,7 @@ export class NotificationService extends EventEmitter<{
         });
     }
 
-    private sendNtfy(url: string, event: KobralinkEvent): Promise<void> {
+    private sendNtfy(url: string, event: FarolPrintEvent): Promise<void> {
         const tags = event.type.startsWith('alert')
             ? 'rotating_light'
             : event.type === 'print_finished'
@@ -207,7 +207,7 @@ function escapeMd(s: string): string {
     return s.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, (c) => `\\${c}`);
 }
 
-function describe(type: KobralinkEventType, printer: string, d: EventData): { title: string; body: string } {
+function describe(type: FarolPrintEventType, printer: string, d: EventData): { title: string; body: string } {
     const filename = String(d.filename ?? '');
     switch (type) {
         case 'print_started':

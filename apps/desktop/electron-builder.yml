@@ -1,6 +1,6 @@
-appId: dev.kobralink.desktop
-productName: Kobralink
-artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+appId: dev.farolprint.desktop
+productName: Farol Print
+artifactName: farolprint-${version}-${os}-${arch}.${ext}
 directories:
   output: release
   buildResources: build
@@ -17,8 +17,8 @@ extraResources:
     to: web
 publish:
   provider: github
-  owner: nathacks
-  repo: Kobralink
+  owner: riccardoalv
+  repo: farolprint
 mac:
   icon: build/icon-mac.png
   category: public.app-category.utilities
@@ -49,7 +49,7 @@ dmg:
       type: link
       path: /Applications
 win:
-  artifactName: ${productName}-${version}-Installer-win-${arch}.${ext}
+  artifactName: farolprint-${version}-Installer-win-${arch}.${ext}
   target: [nsis]
 nsis:
   oneClick: false
@@ -59,11 +59,11 @@ nsis:
   uninstallerSidebar: build/installerSidebar.bmp
   installerHeader: build/installerHeader.bmp
 linux:
-  executableName: kobralink
+  executableName: farolprint
   category: Utility
   desktop:
     entry:
-      Name: Kobralink
-      StartupWMClass: kobralink
+      Name: Farol Print
+      StartupWMClass: farolprint
   target: [AppImage, deb]
   maintainer: NatHacks

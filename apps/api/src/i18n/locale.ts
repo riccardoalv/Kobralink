@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { type Locale, m, overwriteGetLocale, resolveLocale } from '@kobralink/i18n';
-import { KobraProtocolError } from '@kobralink/kobra-protocol';
-import type { ConnectionError } from '@kobralink/shared';
+import { type Locale, m, overwriteGetLocale, resolveLocale } from '@farolprint/i18n';
+import { KobraProtocolError } from '@farolprint/kobra-protocol';
+import type { ConnectionError } from '@farolprint/shared';
 import type { NextFunction, Request, Response } from 'express';
 import type { z } from 'zod';
 
