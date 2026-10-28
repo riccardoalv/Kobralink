@@ -55,7 +55,7 @@ function LoginPage() {
     return (
         <div className="flex min-h-svh items-center justify-center p-6 pt-(--inset-top)">
             <div className="w-full max-w-sm rounded-3xl bg-card p-8 text-card-foreground">
-                <img src="/logo-mark.svg" alt="Farol Print" className="mb-6 size-16" />
+                <img src="/logo-mark.svg" alt="FarolPrint" className="mb-6 size-16" />
                 <h1 className="text-2xl font-semibold">{needsSetup ? m.login_welcome() : m.login_welcome_back()}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     {needsSetup ? m.login_setup_hint() : m.login_hint()}

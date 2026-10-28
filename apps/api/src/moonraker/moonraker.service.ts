@@ -314,7 +314,7 @@ export class MoonrakerService {
         return {
             webcams: [
                 {
-                    name: 'Farol Print',
+                    name: 'FarolPrint',
                     location: 'printer',
                     service: 'mjpegstreamer',
                     enabled: true,

@@ -14,6 +14,6 @@ export class LogsController {
                 (e) =>
                     `[${new Date(e.ts).toISOString()}] ${e.level.toUpperCase().padEnd(7)} ${e.context}: ${e.message}`,
             );
-        return `# Farol Print log  |  ${new Date().toISOString()}  |  ${lines.length} entries\n${lines.join('\n')}\n`;
+        return `# FarolPrint log  |  ${new Date().toISOString()}  |  ${lines.length} entries\n${lines.join('\n')}\n`;
     }
 }

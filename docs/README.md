@@ -1,6 +1,6 @@
-# Farol Print documentation
+# FarolPrint documentation
 
-Farol Print makes an Anycubic Kobra printer in LAN mode (Kobra X, Kobra 4) look like a Moonraker printer. You add the
+FarolPrint makes an Anycubic Kobra printer in LAN mode (Kobra X, Kobra 4) look like a Moonraker printer. You add the
 printer by its IP address and then use it from OrcaSlicer, the web dashboard or any Moonraker client, with Spoolman,
 camera, AI failure detection, notifications and Home Assistant. It never changes the printer's firmware.
 
@@ -9,7 +9,7 @@ camera, AI failure detection, notifications and Home Assistant. It never changes
 | Guide | What it covers |
 |---|---|
 | [README](../README.md) | What you get, installing with Docker, connecting a printer and OrcaSlicer |
-| [Testing Farol Print](testing.md) | Trying Farol Print with your printer and reporting what you find |
+| [Testing FarolPrint](testing.md) | Trying FarolPrint with your printer and reporting what you find |
 
 ## For developers
 

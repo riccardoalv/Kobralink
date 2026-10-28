@@ -16,6 +16,7 @@ const { item, queue, schedule, printer } = vi.hoisted(() => {
         estPrintTimeSec: 600,
         position: 1,
         excludedObjects: [],
+        options: {},
         createdAt: '2026-10-01T00:00:00.000Z',
     };
     return {

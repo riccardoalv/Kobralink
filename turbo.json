@@ -6,13 +6,12 @@
         "FAROLPRINT_PORT",
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
-        "DATABASE_URL",
-        "FAROLPRINT_URL"
+        "DATABASE_URL"
     ],
     "tasks": {
         "build": {
             "dependsOn": ["^build"],
-            "outputs": ["dist/**", "out/**", "src/generated/**"]
+            "outputs": ["dist/**", "src/generated/**"]
         },
         "dev": {
             "dependsOn": ["^build"],
@@ -31,10 +30,6 @@
         },
         "db:migrate": {
             "cache": false
-        },
-        "bundle": {
-            "dependsOn": ["^build"],
-            "outputs": ["bundle/**", "dist/**", "src/generated/**"]
         }
     }
 }

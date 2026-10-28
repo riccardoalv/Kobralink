@@ -128,50 +128,8 @@
     }
 }
 
-.app-drag {
-    -webkit-app-region: drag;
-}
-
-.app-drag a,
-.app-drag button,
-.app-drag input {
-    -webkit-app-region: no-drag;
-}
-
 html {
     --inset-top: 1rem;
-}
-
-html.desktop {
-    scrollbar-width: none;
-}
-
-html.desktop-mac {
-    --inset-top: 2.5rem;
-}
-
-html.desktop-mac .app-dragbar {
-    position: fixed;
-    inset: 0 0 auto 0;
-    height: var(--inset-top);
-    z-index: 100;
-    pointer-events: none;
-    background: linear-gradient(to bottom, var(--background) 60%, transparent);
-    -webkit-app-region: drag;
-}
-
-html.desktop *::-webkit-scrollbar {
-    display: none;
-}
-
-html.desktop a,
-html.desktop button,
-html.desktop input,
-html.desktop select,
-html.desktop textarea,
-html.desktop [role='button'],
-html.desktop [role='dialog'] {
-    -webkit-app-region: no-drag;
 }
 
 @property --scroll-fade-t {

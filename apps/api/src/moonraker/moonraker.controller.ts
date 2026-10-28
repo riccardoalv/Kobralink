@@ -139,7 +139,7 @@ export class MoonrakerController {
 
     @Get('api/version')
     octoprintVersion() {
-        return { server: '1.5.0', api: '0.1', text: 'OctoPrint 1.5.0 (Farol Print)' };
+        return { server: '1.5.0', api: '0.1', text: 'OctoPrint 1.5.0 (FarolPrint)' };
     }
 
     @Get('server/database/list')

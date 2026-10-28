@@ -4,7 +4,7 @@ import { NotFoundException } from '@nestjs/common';
 import type { PrinterBridge } from '../src/bridge/printer-bridge';
 import type { GcodeService } from '../src/gcode/gcode.service';
 import type { NotificationService } from '../src/notifications/notification.service';
-import { QueueService } from '../src/queue/queue.service';
+import { parseQueueOptions, QueueService } from '../src/queue/queue.service';
 import { seedFile, seedPrinter, type TestDb, testDb } from './helpers/db';
 
 let db: TestDb;
@@ -80,6 +80,38 @@ describe('queue items', () => {
         expect((await svc.list('p1')).map((i) => i.id)).toEqual([b.id, a.id]);
         await svc.clear('p1');
     });
+
+    it('stores the print options of each item and defaults them to none', async () => {
+        const plain = await svc.add('p1', 'f1', []);
+        const tuned = await svc.add('p1', 'f2', [], false, {
+            autoLeveling: false,
+            vibrationCompensation: false,
+            timelapse: true,
+            failureDetection: false,
+            filamentAssignments: [{ paintIndex: 0, slotIndex: 2 }],
+        });
+        expect(plain.options).toEqual({});
+        expect(tuned.options).toEqual({
+            autoLeveling: false,
+            vibrationCompensation: false,
+            timelapse: true,
+            failureDetection: false,
+            filamentAssignments: [{ paintIndex: 0, slotIndex: 2, isUsed: true }],
+        });
+        expect((await svc.list('p1'))[1].options).toEqual(tuned.options);
+        await svc.clear('p1');
+    });
+});
+
+describe('parseQueueOptions', () => {
+    it('reads stored options and ignores invalid or unknown values', () => {
+        expect(parseQueueOptions('{"vibrationCompensation":false,"other":1}')).toEqual({
+            vibrationCompensation: false,
+        });
+        expect(parseQueueOptions('{"vibrationCompensation":"no"}')).toEqual({});
+        expect(parseQueueOptions('not json')).toEqual({});
+        expect(parseQueueOptions('{}')).toEqual({});
+    });
 });
 
 describe('queue status', () => {
@@ -106,6 +138,37 @@ describe('queue status', () => {
         expect(fileId).toBe('f1');
         expect(opts.excludedObjects).toEqual(['cube']);
         expect(await svc.status('p1')).toEqual({ awaitingBedClear: false, nextFilename: null });
+        h.detach();
+    });
+
+    it('starts the next file with the options chosen in the dialog', async () => {
+        const h = attach({ queueAutoStart: false, queueBedClearConfirm: false });
+        printStoredFile.mockClear();
+        await svc.add('p1', 'f1', ['cube'], false, {
+            vibrationCompensation: false,
+            autoLeveling: false,
+            timelapse: true,
+        });
+        await svc.startNext('p1');
+        const [, opts] = printStoredFile.mock.calls[0] as unknown as [string, Record<string, unknown>];
+        expect(opts).toMatchObject({
+            vibrationCompensation: false,
+            autoLeveling: false,
+            timelapse: true,
+            excludedObjects: ['cube'],
+        });
+        expect(String(opts.serveBase)).toMatch(/:7125$/);
+        h.detach();
+    });
+
+    it('leaves the options to the printer settings for items queued without any', async () => {
+        const h = attach({ queueAutoStart: false, queueBedClearConfirm: false });
+        printStoredFile.mockClear();
+        await svc.add('p1', 'f1', []);
+        await svc.startNext('p1');
+        const [, opts] = printStoredFile.mock.calls[0] as unknown as [string, Record<string, unknown>];
+        expect(opts.vibrationCompensation).toBeUndefined();
+        expect(opts.autoLeveling).toBeUndefined();
         h.detach();
     });
 

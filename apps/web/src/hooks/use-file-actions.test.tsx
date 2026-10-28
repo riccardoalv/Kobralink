@@ -8,18 +8,23 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { renderWithProviders } from '@/test/render';
 import { useFileActions } from './use-file-actions';
 
-const { create, verify, toast } = vi.hoisted(() => ({
+const { create, verify, upload, queueAdd, toast } = vi.hoisted(() => ({
     create: vi.fn(),
     verify: vi.fn(),
+    upload: vi.fn(),
+    queueAdd: vi.fn(),
     toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
 
 vi.mock('sonner', () => ({ toast }));
 
 vi.mock('@/lib/api', () => ({
-    api: new Proxy({ schedule: { create }, files: { verify } } as Record<string, unknown>, {
-        get: (target, key: string) => target[key] ?? new Proxy({}, { get: () => vi.fn().mockResolvedValue([]) }),
-    }),
+    api: new Proxy(
+        { schedule: { create }, files: { verify, upload }, queue: { add: queueAdd } } as Record<string, unknown>,
+        {
+            get: (target, key: string) => target[key] ?? new Proxy({}, { get: () => vi.fn().mockResolvedValue([]) }),
+        },
+    ),
 }));
 
 vi.mock('@/hooks/use-printers', () => ({
@@ -39,21 +44,30 @@ const result = {
 function Probe({ target }: { target: GcodeFileDto }) {
     const actions = useFileActions('p1');
     return (
-        <button type="button" onClick={() => actions.requestPrint(target)}>
-            open
-        </button>
+        <>
+            <button type="button" onClick={() => actions.requestPrint(target)}>
+                open
+            </button>
+            <button
+                type="button"
+                onClick={() => void actions.uploadMany([new File(['G28'], target.filename)] as unknown as FileList)}
+            >
+                upload
+            </button>
+        </>
     );
 }
 
 type FormProps = React.ComponentProps<typeof PrintReadyForm>;
 
-async function openDialogFor(target: GcodeFileDto): Promise<FormProps> {
+async function openDialogFor(target: GcodeFileDto, button = 'open'): Promise<FormProps> {
     let content: ReactElement<FormProps> | null = null;
     const open = vi.spyOn(confirmationDialogStore.actions, 'openDialog').mockImplementation((data) => {
         if (isValidElement<FormProps>(data?.content)) content = data.content;
     });
     await renderWithProviders(<Probe target={target} />);
-    await userEvent.click(screen.getByRole('button', { name: 'open' }));
+    await userEvent.click(screen.getByRole('button', { name: button }));
+    await waitFor(() => expect(open).toHaveBeenCalled());
     open.mockRestore();
     if (!content) throw new Error('dialog not opened');
     const element: ReactElement<FormProps> = content;
@@ -64,6 +78,8 @@ async function openDialogFor(target: GcodeFileDto): Promise<FormProps> {
 beforeEach(() => {
     create.mockReset().mockResolvedValue({ filename: 'bracket.gcode', startAt: '2026-11-01T08:00:00.000Z' });
     verify.mockReset().mockResolvedValue(undefined);
+    upload.mockReset().mockResolvedValue(file);
+    queueAdd.mockReset().mockResolvedValue({ filename: 'bracket.gcode' });
     toast.success.mockReset();
     toast.error.mockReset();
 });
@@ -104,5 +120,24 @@ describe('useFileActions scheduling', () => {
         });
         await waitFor(() => expect(toast.error).toHaveBeenCalledWith('too late'));
         expect(toast.success).not.toHaveBeenCalled();
+    });
+});
+
+describe('useFileActions queueing', () => {
+    it('queues an upload with every option chosen in the dialog', async () => {
+        const props = await openDialogFor(file, 'upload');
+        expect(props.onQueue).toBeTypeOf('function');
+        const chosen = {
+            ...result,
+            excludedObjects: ['cube'],
+            autoLeveling: false,
+            vibrationCompensation: false,
+            filamentAssignments: [{ paintIndex: 0, slotIndex: 2, isUsed: true }],
+        };
+        await act(async () => {
+            props.onQueue?.(chosen);
+        });
+        await waitFor(() => expect(queueAdd).toHaveBeenCalledWith('p1', { fileId: 'f1', ...chosen }));
+        await waitFor(() => expect(toast.success).toHaveBeenCalledOnce());
     });
 });

@@ -14,7 +14,7 @@ export function createAuth() {
     const env = loadEnv();
     const prisma = getPrisma();
     return betterAuth({
-        appName: 'Farol Print',
+        appName: 'FarolPrint',
         baseURL: env.baseUrl,
         basePath: '/api/auth',
         secret: env.authSecret,

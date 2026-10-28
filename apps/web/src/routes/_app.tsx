@@ -4,7 +4,6 @@ import { AppHeader } from '@/components/layout/app-header';
 import { AppRail } from '@/components/layout/app-rail';
 import { PrintReadyWatcher } from '@/components/printer/print-ready-watcher';
 import { SseProvider } from '@/components/providers/sse-provider';
-import { useDesktopNavigation } from '@/hooks/use-desktop-navigation';
 import { usePinnedPrinter } from '@/hooks/use-pinned-printer';
 import { usePrintersSync } from '@/hooks/use-printers-sync';
 import { printersQuery } from '@/lib/queries';
@@ -42,7 +41,6 @@ function AppLayout() {
     const pinned = usePinnedPrinter();
 
     usePrintersSync();
-    useDesktopNavigation();
 
     return (
         <SseProvider>

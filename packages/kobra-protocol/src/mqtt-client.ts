@@ -65,7 +65,7 @@ const noopLogger: KobraLogger = {
 };
 
 function usesBoringSsl(): boolean {
-    return Boolean(process.versions.bun || process.versions.electron);
+    return Boolean(process.versions.bun);
 }
 
 export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {

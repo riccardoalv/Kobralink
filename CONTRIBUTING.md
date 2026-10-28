@@ -1,4 +1,4 @@
-# Contributing to Farol Print
+# Contributing to FarolPrint
 
 Thanks for helping! The most valuable contributions are **printer support** (models, firmwares, accessories such as
 the ACE) and **real printer data** (anonymized MQTT messages). See [Development](docs/development.md) to get started,
@@ -63,7 +63,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org). They drive t
 | `revert` | Reverts a previous commit | |
 
 **Scopes** (optional): `api`, `bridge`, `protocol`, `moonraker`, `spoolman`, `filament`, `detection`, `camera`,
-`notifications`, `ha`, `settings`, `web`, `desktop`, `shared`, `i18n`, `docker`, `deps`, `docs`.
+`notifications`, `ha`, `settings`, `web`, `shared`, `i18n`, `docker`, `deps`, `docs`.
 
 Add `!` after the type/scope (`feat(protocol)!: ...`) or a `BREAKING CHANGE:` footer for breaking changes.
 

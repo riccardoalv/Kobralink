@@ -11,7 +11,7 @@ updates:
     groups:
       dependencies:
         patterns: ["*"]
-    # Major versions (Prisma, NestJS, React, Electron...) are upgraded by hand,
+    # Major versions (Prisma, NestJS, React...) are upgraded by hand,
     # once the code around them is ready.
     ignore:
       - dependency-name: "*"

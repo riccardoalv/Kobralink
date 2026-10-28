@@ -38,9 +38,6 @@ export function useSseStatus(): SseStatus {
     return status;
 }
 
-const desktop = (): { setTrayStatus?: (p: unknown[]) => void } | undefined =>
-    (window as unknown as { farolprintDesktop?: { setTrayStatus?: (p: unknown[]) => void } }).farolprintDesktop;
-
 interface RefusedPayload {
     printerId: string;
     printerName: string;
@@ -117,31 +114,6 @@ function GlobalSubscriptions() {
             duration: 8000,
         });
     });
-
-    useEffect(() => {
-        const d = desktop();
-        if (!d?.setTrayStatus) return;
-        const push = () => {
-            const s = printersStore.state;
-            d.setTrayStatus?.(
-                s.order
-                    .map((id) => s.printers[id])
-                    .filter(Boolean)
-                    .map((p) => ({
-                        id: p.id,
-                        name: p.name,
-                        connected: p.live?.connected ?? false,
-                        printState: p.live?.printState ?? 'error',
-                        progress: p.live?.progress ?? 0,
-                        remainTimeSec: p.live?.remainTimeSec ?? 0,
-                        filename: p.live?.filename ?? '',
-                    })),
-            );
-        };
-        push();
-        const sub = printersStore.subscribe(push);
-        return () => sub.unsubscribe();
-    }, []);
 
     return null;
 }

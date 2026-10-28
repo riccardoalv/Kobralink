@@ -192,7 +192,7 @@ function readVersion(): string {
 
 function packaged(): SystemInfoDto['packaged'] {
     const v = process.env.FAROLPRINT_PACKAGED;
-    return v === 'docker' || v === 'electron' ? v : 'source';
+    return v === 'docker' ? v : 'source';
 }
 
 function compareSemver(a: string, b: string): number {

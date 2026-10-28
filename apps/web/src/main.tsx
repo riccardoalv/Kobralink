@@ -10,9 +10,6 @@ import { installI18n, useLocale } from '@/lib/i18n';
 import { routeTree } from './routeTree.gen';
 import './styles.css';
 
-const desktop = (window as unknown as { farolprintDesktop?: { platform?: string } }).farolprintDesktop;
-if (desktop) document.documentElement.classList.add('desktop');
-if (desktop?.platform === 'darwin') document.documentElement.classList.add('desktop-mac');
 installI18n();
 
 const queryClient = new QueryClient({

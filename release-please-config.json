@@ -10,7 +10,6 @@
             "extra-files": [
                 { "type": "json", "path": "apps/api/package.json", "jsonpath": "$.version" },
                 { "type": "json", "path": "apps/web/package.json", "jsonpath": "$.version" },
-                { "type": "json", "path": "apps/desktop/package.json", "jsonpath": "$.version" },
                 { "type": "json", "path": "packages/shared/package.json", "jsonpath": "$.version" },
                 { "type": "json", "path": "packages/kobra-protocol/package.json", "jsonpath": "$.version" },
                 { "type": "json", "path": "packages/i18n/package.json", "jsonpath": "$.version" }

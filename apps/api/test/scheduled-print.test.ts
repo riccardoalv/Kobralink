@@ -61,7 +61,7 @@ describe('scheduled prints', () => {
         const h = harness({ connected: true, printState: 'printing' });
         await h.service.fire('s1');
         expect(h.printStoredFile).not.toHaveBeenCalled();
-        expect(h.queue.add).toHaveBeenCalledWith('p1', 'f1', ['cube'], true);
+        expect(h.queue.add).toHaveBeenCalledWith('p1', 'f1', ['cube'], true, { timelapse: true });
         expect(h.notifications.emitCustom).toHaveBeenCalledWith('p1', 'Kobra', 'scheduled_print', {
             filename: 'bracket.gcode',
             result: 'queued',

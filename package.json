@@ -6,7 +6,6 @@
     "scripts": {
         "dev": "bunx turbo run dev",
         "dev:web": "bunx turbo run dev --filter=@farolprint/api --filter=@farolprint/web --ui=tui",
-        "dev:desktop": "bunx turbo run dev --filter=@farolprint/desktop...",
         "build": "bunx turbo run build",
         "check-types": "bunx turbo run check-types",
         "test": "bunx turbo run test",
@@ -60,7 +59,6 @@
         "@nestjs/core",
         "@prisma/engines",
         "@tailwindcss/oxide",
-        "electron",
         "esbuild",
         "prisma"
     ]
