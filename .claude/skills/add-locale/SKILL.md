@@ -1,9 +1,9 @@
 ---
 name: add-locale
-description: Add a new UI language (locale) to Farol Print — creates the Paraglide message file, wires the locale into shared/api/web/desktop and verifies parity. Use when the user asks to add, translate or support a new language (e.g. "ajoute le japonais", "add pt-br", "support Dutch").
+description: Add a new UI language (locale) to FarolPrint — creates the Paraglide message file, wires the locale into shared/api/web and verifies parity. Use when the user asks to add, translate or support a new language (e.g. "ajoute le japonais", "add pt-br", "support Dutch").
 ---
 
-# Add a locale to Farol Print
+# Add a locale to FarolPrint
 
 Arguments: `<tag> [English name]` — e.g. `/add-locale ja Japanese`, `/add-locale pt-br "Brazilian Portuguese"`.
 
@@ -24,7 +24,7 @@ Locale tags are **lowercase BCP-47** (`ja`, `nl`, `pt-br`, `zh-tw`). Paraglide m
    - Keep `"$schema"` as first line, keep the exact key order of `fr.json`.
    - Keep every `{placeholder}` verbatim; never translate placeholder names.
    - Plural entries (`declarations` / `selectors` / `match`) keep the same structure and the same `=one` / `=other` categories. Languages without plural forms (zh, ja, ko…) still keep both keys with the same text.
-   - Never translate: product names (Farol Print, OrcaSlicer, Moonraker, Klipper, Spoolman, Fluidd, Mainsail, Obico, Home Assistant, ACE, Kobra X), protocol/API words (MQTT, GCode, `X-Api-Key`, `/api/camera/*`, `machine-ip`, `localhost`), unit suffixes, the `desktop_issue_body` Markdown skeleton and the backtick code (`bun run build`, `` `{log}` ``).
+   - Never translate: product names (FarolPrint, OrcaSlicer, Moonraker, Klipper, Spoolman, Fluidd, Mainsail, Obico, Home Assistant, ACE, Kobra X), protocol/API words (MQTT, GCode, `X-Api-Key`, `/api/camera/*`, `machine-ip`, `localhost`), unit suffixes and the backtick code.
    - Keep typography native to the language (guillemets « » for fr/es/it, „“ for de, “” for zh, full-width punctuation for zh).
    - "Bridge" stays *bridge* in latin languages; zh uses 桥接.
    - Sensible tone: informal "tu" in es/it/fr-style UIs, "Sie" in de, neutral in zh.
@@ -58,7 +58,7 @@ Locale tags are **lowercase BCP-47** (`ja`, `nl`, `pt-br`, `zh-tw`). Paraglide m
 
 ## What NOT to touch
 
-- `apps/api/src/i18n/locale.ts` and `apps/desktop/src/shared/locale.ts` read `locales` from the compiled runtime — nothing to edit there.
+- `apps/api/src/i18n/locale.ts` reads `locales` from the compiled runtime — nothing to edit there.
 - `apps/web/src/paraglide/` and `packages/i18n/src/paraglide/` are generated (gitignored); never edit by hand.
 - Do not commit: the user commits themselves.
 

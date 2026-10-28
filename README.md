@@ -1,6 +1,6 @@
-<p align="center"><img src="apps/web/public/logo.svg" alt="Farol Print" width="128" /></p>
+<p align="center"><img src="apps/web/public/logo.svg" alt="FarolPrint" width="128" /></p>
 
-# Farol Print
+# FarolPrint
 
 <p align="center">
   <a href="https://github.com/riccardoalv/farolprint/actions/workflows/docker-image.yml"><img src="https://img.shields.io/github/actions/workflow/status/riccardoalv/farolprint/docker-image.yml?label=docker%20image" alt="Docker image build" /></a>
@@ -9,17 +9,17 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/riccardoalv/farolprint" alt="License" /></a>
 </p>
 
-> **Community fork.** Farol Print started as Kobralink, created by [NatHacks](https://github.com/NatHacks/Kobralink).
+> **Community fork.** FarolPrint started as Kobralink, created by [NatHacks](https://github.com/NatHacks/Kobralink).
 > This fork continues its development for the community under its own name: bug fixes, Kobra 4 support, external
 > spool tracking and the single-printer workflow. Issues and pull requests are welcome here. Existing installs keep
 > working: the old `KOBRALINK_*` variables are still honoured and the database is renamed on first start.
 
-Farol Print turns an **Anycubic Kobra X** or **Kobra 4** into a **Moonraker-compatible printer** — no Klipper, no
-Raspberry Pi, no firmware change. Run it on a small server (Docker) or as a desktop app, add your
-printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker client
+FarolPrint turns an **Anycubic Kobra X** or **Kobra 4** into a **Moonraker-compatible printer** — no Klipper, no
+Raspberry Pi, no firmware change. Run it on a small server with Docker, open the web dashboard, add your printer
+by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker client
 (Mainsail, Obico, Home Assistant…).
 
-<p align="center"><img src="docs/interface.png" alt="Farol Print dashboard" width="900" /></p>
+<p align="center"><img src="docs/interface.png" alt="FarolPrint dashboard" width="900" /></p>
 
 ## What you get
 
@@ -93,23 +93,17 @@ every port listens on all interfaces).
 | `FAROLPRINT_TRUSTED_PROXIES` | —                         | Proxy IPs/CIDRs (real client IP for auth rate limiting) |
 | `FAROLPRINT_IP_HEADERS`    | —                           | Header set by the proxy with the client IP (`x-real-ip`, `cf-connecting-ip`) |
 
-## Desktop app (macOS / Windows / Linux)
-
-This fork does not publish desktop builds yet. The installers of the original project are on its
-[GitHub releases](https://github.com/riccardoalv/farolprint/releases)
-(dmg, exe, AppImage / deb). The app runs the bridge locally and updates itself.
-
 ## Connect a printer
 
 1. On the printer: Settings → **Enable LAN mode**.
 2. Dashboard → **Add a printer** → enter the IP. A Moonraker port is assigned (`7125`, `7126`, …).
 3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`
    (or open **Connect OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
-   Click *Test*, then confirm: the **Device** tab now shows the printer and *Print* sends the G-code to Farol Print.
+   Click *Test*, then confirm: the **Device** tab now shows the printer and *Print* sends the G-code to FarolPrint.
 
 The OrcaSlicer **Device** tab only targets the printer: send a job, follow progress, pause / cancel, sync the ACE
 filaments. Everything else — print queue, file library, macros, filament profiles per slot, camera, failure
-detection, statistics, notifications, API keys — lives in the Farol Print dashboard on `:7100`.
+detection, statistics, notifications, API keys — lives in the FarolPrint dashboard on `:7100`.
 
 By default the Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard
 on `:7100` is protected by email + password.
@@ -126,7 +120,7 @@ API key field and will not connect while the option is on.
 ```
 OrcaSlicer ──HTTP/WS──► :7125  (Moonraker, printer 1) ─┐
 Mainsail / Obico ─────► :7126  (Moonraker, printer 2) ─┤   apps/api (single process)
-Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘         │ MQTT mTLS :9883
+Web UI ───────────────► :7100  (UI + /api/v1 API + auth)  ─┘         │ MQTT mTLS :9883
                                                                   ▼
                                                            Kobra X / Kobra 4 (LAN mode)
 ```
@@ -135,7 +129,6 @@ Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘    
 | ------------------------- | ----------------------------------------------------------------------------------------- |
 | `apps/api`                | NestJS 11 · Prisma 7 + SQLite (libsql) · Better Auth (+ API keys) · MQTT bridge · Moonraker emulation |
 | `apps/web`                | React 19 · Vite · TanStack Router + Query · Tailwind v4 · shadcn/ui                       |
-| `apps/desktop`            | Electron — spawns the API locally, auto-update via GitHub releases                         |
 | `packages/kobra-protocol` | Kobra LAN protocol: mTLS MQTT client, credential recovery, GCode upload / parsing           |
 | `packages/shared`         | zod schemas + types shared between API and UI                                             |
 | `packages/i18n`           | Paraglide (inlang) messages: `fr`, `en`, `de`, `es`, `it`, `zh-cn`, `pt-br`               |
@@ -156,14 +149,13 @@ model and anonymized MQTT messages.
 ```bash
 bun install
 bun run db:migrate   # creates data/farolprint.db
-bun run dev          # API :7100 + Vite :5173 + Electron
-bun run dev:web      # API + Vite only → http://localhost:5173
+bun run dev          # API :7100 + Vite :5173 → http://localhost:5173
+bun run dev:web      # same, with the Turborepo TUI
 
-bun run build        # packages → api → web → desktop
+bun run build        # packages → api → web
 bun run check-types
 bun run test
 bun run lint
-bun run --filter @farolprint/desktop dist   # Electron installer for the current OS
 ```
 
 API environment variables (`apps/api`):
@@ -182,22 +174,10 @@ API environment variables (`apps/api`):
 | `FAROLPRINT_VERSION`       | `package.json` version                | Version reported by `/api/v1/system`              |
 | `FAROLPRINT_UPDATE_REPO`   | `riccardoalv/farolprint`               | GitHub repo polled for update checks          |
 
-Desktop: `FAROLPRINT_URL` forces the bridge URL without spawning the API;
-`FAROLPRINT_SHOT=/x.png [FAROLPRINT_SHOT_LOGIN="mail|password|/path"]` captures the window then quits.
-
 ### Releases
 
 Releases of this fork are made by release-please (see [Development](docs/development.md#commits-and-releases)): the
 release PR bumps every version and the changelog, and merging it publishes the versioned image to GHCR.
-
-The upstream workflow is still there: pushing a `v*` tag by hand runs `.github/workflows/release.yml`: multi-arch Docker image on Docker Hub
-(`<version>`, `<major>.<minor>`, `latest`) and a GitHub release with the desktop builds for macOS
-(Apple Silicon + Intel), Windows and Linux. Required secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
-
-Without an Apple certificate the macOS app is ad-hoc signed (`apps/desktop/scripts/after-sign.cjs`); Gatekeeper
-shows "unidentified developer" — right-click → Open, or `xattr -dr com.apple.quarantine "/Applications/Farol Print.app"`.
-To sign and notarize, add the secrets `CSC_LINK` (base64 `.p12`), `CSC_KEY_PASSWORD`, `APPLE_ID`,
-`APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`.
 
 ## License
 

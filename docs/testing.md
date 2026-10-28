@@ -1,6 +1,6 @@
-# Testing Farol Print
+# Testing FarolPrint
 
-Farol Print is young and has run on few printers so far. Thank you for trying it with yours. This page explains how to
+FarolPrint is young and has run on few printers so far. Thank you for trying it with yours. This page explains how to
 try it safely, what to look at, and how to tell us what went wrong.
 
 ## What we need most
@@ -13,22 +13,22 @@ People with printers or setups we have not seen much yet:
 
 ## Is it safe?
 
-- Farol Print **never changes the printer's firmware**. It talks to the printer through its own LAN mode, like the
+- FarolPrint **never changes the printer's firmware**. It talks to the printer through its own LAN mode, like the
   Anycubic slicer does.
 - LAN mode turns off the Anycubic cloud on the printer while it is on (app and cloud printing).
-- A printer accepts **a single MQTT session**: while Farol Print is connected, no other LAN tool can connect.
+- A printer accepts **a single MQTT session**: while FarolPrint is connected, no other LAN tool can connect.
 - Commands (pause, cancel, temperatures, starting a print) are only sent when you ask for them.
 
 ## Setting up
 
 1. On the printer: **Settings → LAN mode** on.
-2. Start Farol Print as in the [README](../README.md#install-in-production-docker-compose).
+2. Start FarolPrint as in the [README](../README.md#install-in-production-docker-compose).
 3. Open `http://<host>:7100`, create the first account and add the printer by its IP.
 4. Optional: connect OrcaSlicer (Moonraker host `http://<host>:7125`) and Spoolman (Settings → Integrations).
 
 ## What to look at
 
-- **Connection:** does the printer show as online? Does it reconnect after a restart of the printer or of Farol Print?
+- **Connection:** does the printer show as online? Does it reconnect after a restart of the printer or of FarolPrint?
 - **States:** idle, printing, paused (also filament runout), finished, cancelled from the printer screen. Is each one
   shown right?
 - **Printing from OrcaSlicer:** does *Print* upload and start the job? Are progress and time remaining right?
@@ -39,7 +39,7 @@ People with printers or setups we have not seen much yet:
 
 ## Capturing MQTT messages
 
-Printer support work needs the messages the printer sends. A printer accepts one MQTT session, so stop Farol Print
+Printer support work needs the messages the printer sends. A printer accepts one MQTT session, so stop FarolPrint
 first, capture for a minute or two (during a print is best), then start it again. The `info/report`, `print/report` and
 `multiColorBox/report` payloads matter most.
 

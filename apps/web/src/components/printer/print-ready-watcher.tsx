@@ -56,7 +56,7 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
                 }
                 onQueue={(r) =>
                     api.queue
-                        .add(printerId, { fileId: file.id, excludedObjects: r.excludedObjects })
+                        .add(printerId, { fileId: file.id, ...r })
                         .then((item) => {
                             toast.success(m.queue_added({ name: item.filename }));
                             void api.control.clearFileReady(printerId);

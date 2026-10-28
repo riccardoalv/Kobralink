@@ -1,7 +1,9 @@
 import {
     type PrinterLiveState,
     type QueueItemDto,
+    type QueuePrintOptions,
     type QueueStatusDto,
+    queuePrintOptionsSchema,
     TERMINAL_PRINT_STATES,
 } from '@farolprint/shared';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
@@ -140,7 +142,13 @@ export class QueueService {
         return row ? toDto(row) : null;
     }
 
-    async add(printerId: string, fileId: string, excludedObjects: string[], first = false): Promise<QueueItemDto> {
+    async add(
+        printerId: string,
+        fileId: string,
+        excludedObjects: string[],
+        first = false,
+        options: QueuePrintOptions = {},
+    ): Promise<QueueItemDto> {
         const file = await this.prisma.client.gcodeFile.findUnique({ where: { id: fileId } });
         if (!file) throw new NotFoundException(m.api_file_not_found());
         const edge = await this.prisma.client.queueItem.findFirst({
@@ -149,7 +157,13 @@ export class QueueService {
         });
         const position = first ? (edge?.position ?? 1) - 1 : (edge?.position ?? 0) + 1;
         const row = await this.prisma.client.queueItem.create({
-            data: { printerId, fileId, position, excludedObjects: JSON.stringify(excludedObjects) },
+            data: {
+                printerId,
+                fileId,
+                position,
+                excludedObjects: JSON.stringify(excludedObjects),
+                options: JSON.stringify(queuePrintOptionsSchema.parse(options)),
+            },
             include: { file: true },
         });
         return toDto(row);
@@ -188,6 +202,7 @@ export class QueueService {
         const s = bridge.snapshot();
         if (s.printState === 'printing' || s.printState === 'paused') throw new Error(m.api_queue_busy());
         await bridge.printStoredFile(next.fileId, {
+            ...next.options,
             serveBase: this.serveBase(bridge),
             excludedObjects: next.excludedObjects,
         });
@@ -223,6 +238,16 @@ function toDto(r: QueueItem & { file: GcodeFile }): QueueItemDto {
         estPrintTimeSec: r.file.estPrintTimeSec,
         position: r.position,
         excludedObjects: excluded,
+        options: parseQueueOptions(r.options),
         createdAt: r.createdAt.toISOString(),
     };
+}
+
+export function parseQueueOptions(raw: string): QueuePrintOptions {
+    try {
+        const v = queuePrintOptionsSchema.safeParse(JSON.parse(raw));
+        return v.success ? v.data : {};
+    } catch {
+        return {};
+    }
 }

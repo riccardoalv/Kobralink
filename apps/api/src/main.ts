@@ -11,14 +11,14 @@ import { applyPendingRestore } from './system/restore';
 
 async function bootstrap() {
     const env = loadEnv();
-    const log = new Logger('Farol Print');
+    const log = new Logger('FarolPrint');
     installI18n();
     applyPendingRestore(env.dataDir, (msg) => log.log(msg));
     await initPrisma();
     const { AppModule } = await import('./app.module.js');
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
         bodyParser: false,
-        logger: new BufferedLogger('Farol Print', {
+        logger: new BufferedLogger('FarolPrint', {
             logLevels: env.isDev ? ['error', 'warn', 'log', 'debug'] : ['error', 'warn', 'log'],
         }),
     });

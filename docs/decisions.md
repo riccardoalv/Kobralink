@@ -24,13 +24,14 @@ reasons behind them.
   change, docs that follow the code.
 - **Everything in English**: code, docs, commits, issues and PRs.
 
-- **The project is called Farol Print** (maintainer's decision, October 2026). The fork needed a name of its own, with
+- **The project is called FarolPrint** (maintainer's decision, October 2026). The fork needed a name of its own, with
   no reference to Anycubic or Kobra so it can grow into a connector for other printers. "Farol" (lighthouse) stands
-  for watching the printers from afar. Conventions: "Farol Print" in prose and UI, `farolprint` for the repository,
+  for watching the printers from afar. Conventions: "FarolPrint" in prose and UI, `farolprint` for the repository,
   the Docker image, the packages (`@farolprint/*`) and the data directory, `FAROLPRINT_*` for environment variables
   and `FarolPrint` in identifiers. The old `KOBRALINK_*` variables are still read when their new counterpart is unset
   and an existing `kobralink.db` is renamed on first start, so running installs upgrade without manual steps. The
-  credit to the upstream project keeps its original name, Kobralink.
+  credit to the upstream project keeps its original name, Kobralink. The name is written as one word, FarolPrint
+  (maintainer's decision, October 2026, replacing the earlier "Farol Print").
 - **Tests for everything, always** (maintainer's rule, October 2026). Every change, in every layer, ships with tests
   for every case it introduces; nothing is merged with "tests later". The expected coverage per layer is listed in
   [development.md](development.md#tests). After the single-printer workflow landed with partial coverage, the missing
@@ -39,11 +40,11 @@ reasons behind them.
 ## Printers
 
 - **No firmware change, ever.** Newer Anycubic printers (Kobra X, and likely the Kobra 4) verify signed firmware
-  updates, so custom firmware is not possible; Farol Print only uses LAN mode.
+  updates, so custom firmware is not possible; FarolPrint only uses LAN mode.
 - **The printer's real model is shown** (Home Assistant, Moonraker system info), taken from `info/report` and, as a
   fallback, from the stored printer. UI texts do not name a specific model.
-- **A printer allows a single MQTT session.** Farol Print owns it while connected; tools that capture messages must stop
-  Farol Print first.
+- **A printer allows a single MQTT session.** FarolPrint owns it while connected; tools that capture messages must stop
+  FarolPrint first.
 - **A file is uploaded to the printer once.** With the "Dialog after upload" setting, an OrcaSlicer upload pushes the
   file to the printer and opens the dialog in the dashboard; confirming the dialog reuses that upload (same name, MD5
   and size as the last one) instead of sending the file again, so the print starts right away. The upload is forgotten
@@ -79,6 +80,11 @@ later and build on these.
 - **Scheduled starts reuse the print dialog.** A scheduled print stores the same options as an immediate one
   (excluded objects, slot mapping, leveling, timelapse, detection). If the printer is busy or offline at the time, the
   file goes to the front of the queue instead of being lost, and a notification says so.
+- **Queued files keep the print dialog options** (October 2026). "Add to queue" stores the same options as an
+  immediate print (vibration compensation, leveling, slot mapping, timelapse, detection) and the queue starts the file
+  with them; before, only the excluded objects were kept and the printer defaults were used. Items queued without
+  options (Moonraker, an older version) still use the printer settings. Every `print/start` logs the `task_settings`
+  sent to the printer, so a setting the printer seems to ignore can be checked in the logs.
 - **Maintenance is per printer and fully user-defined.** A task has up to three intervals (print hours, number of
   prints, days) and is due when any is reached; suggestions are offered but nothing is created by default. Usage is
   computed from the print history since the last completion, so it needs no new counters. A due task notifies once
@@ -112,11 +118,12 @@ later and build on these.
 - **Images on GHCR** (`ghcr.io/riccardoalv/farolprint`), built by GitHub Actions with the repository token: `latest`
   and `sha-<commit>` on every push to `main`, `X.Y.Z` and `X.Y` on releases. No registry secrets are needed.
 - **release-please computes versions and the changelog** from Conventional Commits, starting after upstream 0.3.6.
-- **Desktop installers are not published by the fork yet.** The upstream `release.yml` stays untouched for now.
+- **Docker and the web dashboard only** (maintainer's decision, October 2026). The Electron desktop app inherited
+  from upstream was removed, with the API bundle it embedded and the upstream `release.yml` (desktop installers and a
+  Docker Hub image that needed secrets the fork does not have). FarolPrint runs as a Docker container, or from source
+  for development, and is used from the browser; the image is published to GHCR only.
 
 ## Open questions
 
-- Whether the fork publishes Electron installers, and how (the upstream `release.yml` also pushes to Docker Hub with
-  secrets the fork does not have).
 - A Kobra MQTT simulator that replays captured messages, so the whole bridge can be tested in CI without a printer.
 

@@ -108,7 +108,7 @@ export class NotificationService extends EventEmitter<{
             id: randomUUID(),
             type: 'print_finished',
             printerId: '',
-            printerName: 'Farol Print',
+            printerName: 'FarolPrint',
             title: runWithLocale(locale, () => m.notify_test_title()),
             body: runWithLocale(locale, () => m.notify_test_body()),
             ts: Date.now(),
@@ -168,7 +168,7 @@ export class NotificationService extends EventEmitter<{
     private sendDiscord(url: string, event: FarolPrintEvent): Promise<void> {
         const color = event.type.startsWith('alert') ? 0xef4444 : event.type === 'print_finished' ? 0x10b981 : 0x3b82f6;
         return this.post(url, {
-            username: 'Farol Print',
+            username: 'FarolPrint',
             embeds: [
                 {
                     title: event.title,

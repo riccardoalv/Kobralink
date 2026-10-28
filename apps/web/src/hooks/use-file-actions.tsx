@@ -1,4 +1,4 @@
-import type { GcodeFileDto, SchedulePrintInput, StartPrintInput } from '@farolprint/shared';
+import type { AddQueueItemInput, GcodeFileDto, SchedulePrintInput, StartPrintInput } from '@farolprint/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -28,7 +28,7 @@ export function useFileActions(printerId: string) {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'history'] });
     };
     const enqueue = useMutation({
-        mutationFn: (input: { fileId: string; excludedObjects?: string[] }) => api.queue.add(printerId, input),
+        mutationFn: (input: AddQueueItemInput) => api.queue.add(printerId, input),
         onSuccess: (item) => {
             toast.success(m.queue_added({ name: item.filename }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
@@ -75,11 +75,7 @@ export function useFileActions(printerId: string) {
                         if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
                         return print.mutateAsync({ fileId: f.id, ...r });
                     }}
-                    onQueue={
-                        withQueue
-                            ? (r) => enqueue.mutate({ fileId: f.id, excludedObjects: r.excludedObjects })
-                            : undefined
-                    }
+                    onQueue={withQueue ? (r) => enqueue.mutate({ fileId: f.id, ...r }) : undefined}
                     onSchedule={async (r, startAt) => {
                         if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
                         return schedule.mutateAsync({ fileId: f.id, startAt, ...r });

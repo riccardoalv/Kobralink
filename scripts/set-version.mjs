@@ -7,7 +7,6 @@ const manifestPaths = [
     join(repoRoot, 'package.json'),
     join(repoRoot, 'apps', 'api', 'package.json'),
     join(repoRoot, 'apps', 'web', 'package.json'),
-    join(repoRoot, 'apps', 'desktop', 'package.json'),
     join(repoRoot, 'packages', 'shared', 'package.json'),
     join(repoRoot, 'packages', 'kobra-protocol', 'package.json'),
     join(repoRoot, 'packages', 'i18n', 'package.json'),

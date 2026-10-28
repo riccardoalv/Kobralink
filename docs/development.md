@@ -1,6 +1,6 @@
 # Development
 
-How to work on Farol Print: setup, commands, tests, CI, commits and releases. The conventions are in
+How to work on FarolPrint: setup, commands, tests, CI, commits and releases. The conventions are in
 [CONTRIBUTING.md](../CONTRIBUTING.md) and [CLAUDE.md](../CLAUDE.md).
 
 ## Requirements
@@ -17,7 +17,7 @@ How to work on Farol Print: setup, commands, tests, CI, commits and releases. Th
 | Command | What it does |
 |---|---|
 | `bun run dev:web` | API on `:7100` + web UI with hot reload |
-| `bun run dev` | Everything, desktop app included |
+| `bun run dev` | Same, through Turborepo's default output |
 | `bun run build` | Build every package and app |
 | `bun run lint` | Biome check |
 | `bun run format` | Biome formatter |
@@ -33,8 +33,8 @@ Scripts of one workspace run with `bun run --filter <package> <script>`, for exa
 `bun run dev:web` starts the API and the web UI. Open the URL Vite prints, create the first account and add a printer
 by IP. Data goes to `FAROLPRINT_DATA_DIR` (default `data/`).
 
-A printer accepts **a single MQTT session**: stop any other Farol Print connected to it (a server, the desktop app)
-before connecting a development build to the same printer.
+A printer accepts **a single MQTT session**: stop any other FarolPrint connected to it (another server or Docker
+container) before connecting a development build to the same printer.
 
 ## Tests
 
@@ -110,6 +110,3 @@ Releases are made by [release-please](https://github.com/googleapis/release-plea
 3. Merging it tags the release (`vX.Y.Z`) and creates the GitHub release.
 4. The same workflow builds the Docker image for amd64 and arm64 and pushes it to `ghcr.io/riccardoalv/farolprint`
    with the tags `X.Y.Z`, `X.Y` and `latest`.
-
-The upstream `release.yml` (Docker Hub image and Electron installers) only runs on `v*` tags pushed by hand and needs
-Docker Hub secrets this fork does not have; see [Decisions](decisions.md#releases).

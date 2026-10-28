@@ -24,7 +24,8 @@ export class QueueController {
 
     @Post()
     add(@Param('id') id: string, @Body(new ZodPipe(addQueueItemSchema)) body: AddQueueItemInput) {
-        return this.queue.add(id, body.fileId, body.excludedObjects ?? []);
+        const { fileId, excludedObjects, ...options } = body;
+        return this.queue.add(id, fileId, excludedObjects ?? [], false, options);
     }
 
     @Post('reorder')

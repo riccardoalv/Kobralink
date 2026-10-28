@@ -42,7 +42,22 @@ describe('QueueController', () => {
 
     it('defaults the excluded objects when adding', async () => {
         await ctrl.add('p1', { fileId: 'f1' });
-        expect(queue.add).toHaveBeenCalledWith('p1', 'f1', []);
+        expect(queue.add).toHaveBeenCalledWith('p1', 'f1', [], false, {});
+    });
+
+    it('passes the print options of the dialog to the queue', async () => {
+        await ctrl.add('p1', {
+            fileId: 'f1',
+            excludedObjects: ['cube'],
+            autoLeveling: false,
+            vibrationCompensation: false,
+            timelapse: true,
+        });
+        expect(queue.add).toHaveBeenLastCalledWith('p1', 'f1', ['cube'], false, {
+            autoLeveling: false,
+            vibrationCompensation: false,
+            timelapse: true,
+        });
     });
 });
 

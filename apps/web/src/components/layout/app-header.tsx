@@ -6,10 +6,6 @@ import { usePrinters } from '@/hooks/use-printers';
 import { greeting } from '@/lib/format';
 import { m } from '@/lib/i18n';
 
-const isDesktop =
-    typeof window !== 'undefined' &&
-    (window as unknown as { farolprintDesktop?: { platform?: string } }).farolprintDesktop?.platform === 'darwin';
-
 interface AppHeaderProps {
     user: {
         name?: string | null;
@@ -41,7 +37,7 @@ export function AppHeader({ user }: AppHeaderProps) {
             : m.header_online({ online, total: printers.length });
 
     return (
-        <header className={`flex flex-wrap items-center gap-4 px-2 pt-2 ${isDesktop ? 'app-drag' : ''}`}>
+        <header className="flex flex-wrap items-center gap-4 px-2 pt-2">
             <div>
                 <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
                     {m.header_greeting({ greeting: greeting(), name: firstName })}

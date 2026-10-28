@@ -54,6 +54,29 @@ describe('migrations', () => {
         }
     });
 
+    it('give queue items print options that default to none', async () => {
+        const db = await testDb();
+        try {
+            expect(await columns(db.file, 'queue_item')).toContain('options');
+            await db.client.printer.create({
+                data: {
+                    id: 'p1',
+                    name: 'Kobra',
+                    ip: '127.0.0.1',
+                    username: 'u',
+                    password: 'p',
+                    deviceId: 'd',
+                    httpPort: 17998,
+                },
+            });
+            await db.client.gcodeFile.create({ data: { id: 'f1', filename: 'a.gcode', sizeBytes: 1, md5: 'f1' } });
+            const item = await db.client.queueItem.create({ data: { printerId: 'p1', fileId: 'f1', position: 1 } });
+            expect(item.options).toBe('{}');
+        } finally {
+            await db.close();
+        }
+    });
+
     it('are idempotent and recorded once each', async () => {
         const db = await testDb();
         try {
@@ -66,6 +89,7 @@ describe('migrations', () => {
             const names = rows.map((r) => r.migration_name);
             expect(new Set(names).size).toBe(names.length);
             expect(names).toContain('20261028000000_single_printer_features');
+            expect(names).toContain('20261029000000_queue_print_options');
         } finally {
             await db.close();
         }

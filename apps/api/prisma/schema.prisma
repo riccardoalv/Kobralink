@@ -249,6 +249,7 @@ model QueueItem {
   file            GcodeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
   position        Int
   excludedObjects String    @default("[]")
+  options         String    @default("{}")
   createdAt       DateTime  @default(now())
 
   @@index([printerId, position])

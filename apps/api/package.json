@@ -12,8 +12,7 @@
         "db:generate": "bunx prisma generate",
         "db:migrate": "bunx prisma migrate dev",
         "db:studio": "bunx prisma studio",
-        "test": "bun test",
-        "bundle": "bunx prisma generate && bunx nest build && bun scripts/bundle.ts"
+        "test": "bun test"
     },
     "dependencies": {
         "@better-auth/api-key": "^1.7.5",
@@ -50,7 +49,6 @@
         "@types/multer": "^2.0.0",
         "@types/node": "catalog:",
         "@types/ws": "^8.18.1",
-        "esbuild": "^0.25.12",
         "prisma": "7.10.0",
         "typescript": "catalog:nest"
     }

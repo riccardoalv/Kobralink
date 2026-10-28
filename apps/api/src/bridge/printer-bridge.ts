@@ -645,7 +645,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.jobSync = this.gcode
             .closeOpenJobs(this.config.id, status)
             .then((n) => {
-                if (n) this.log.warn(`${n} job(s) left open while Farol Print was offline closed as ${status}`);
+                if (n) this.log.warn(`${n} job(s) left open while FarolPrint was offline closed as ${status}`);
             })
             .catch((e) => this.log.warn(`Job reconcile: ${(e as Error).message}`))
             .finally(() => {
@@ -1469,7 +1469,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         };
         this.s.slicerTimeSec = 0;
         this.s.thumbnail = this.printerThumbs.get(filename) ?? '';
-        this.log.log(`print/start (printer file) → ${filename}  ams=${mapping.length} slots`);
+        this.log.log(
+            `print/start (printer file) → ${filename}  ams=${mapping.length} slots  task_settings=${JSON.stringify(payload.task_settings)}`,
+        );
         const result = await this.client.startPrint(payload);
         if (!result) throw new BridgeRequestError(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
@@ -1545,7 +1547,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.s.thumbnail = file.thumbnail ?? '';
         this.layerHeight = file.layerHeight;
         this.firstLayerHeight = file.firstLayerHeight || file.layerHeight;
-        this.log.log(`print/start → ${file.filename}  ams=${mapping.length} slots  mode=${this.filamentMode}`);
+        this.log.log(
+            `print/start → ${file.filename}  ams=${mapping.length} slots  mode=${this.filamentMode}  task_settings=${JSON.stringify(payload.task_settings)}`,
+        );
         const result = await this.client.startPrint(payload);
         if (!result) throw new BridgeRequestError(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
