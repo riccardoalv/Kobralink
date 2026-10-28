@@ -1,4 +1,4 @@
-export type KobralinkEventType =
+export type FarolPrintEventType =
     | 'print_started'
     | 'print_finished'
     | 'print_cancelled'
@@ -15,9 +15,9 @@ export type KobralinkEventType =
     | 'scheduled_print'
     | 'maintenance_due';
 
-export interface KobralinkEvent {
+export interface FarolPrintEvent {
     id: string;
-    type: KobralinkEventType;
+    type: FarolPrintEventType;
     printerId: string;
     printerName: string;
     title: string;

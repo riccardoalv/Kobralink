@@ -1,4 +1,4 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import type { GcodeFileDto } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';

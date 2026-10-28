@@ -1,4 +1,4 @@
-import { type AppSettings, appSettingsSchema, printerSettingsSchema } from '@kobralink/shared';
+import { type AppSettings, appSettingsSchema, printerSettingsSchema } from '@farolprint/shared';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';

@@ -2,12 +2,12 @@
     "$schema": "https://turborepo.dev/schema.json",
     "globalEnv": [
         "NODE_ENV",
-        "KOBRALINK_DATA_DIR",
-        "KOBRALINK_PORT",
+        "FAROLPRINT_DATA_DIR",
+        "FAROLPRINT_PORT",
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
         "DATABASE_URL",
-        "KOBRALINK_URL"
+        "FAROLPRINT_URL"
     ],
     "tasks": {
         "build": {

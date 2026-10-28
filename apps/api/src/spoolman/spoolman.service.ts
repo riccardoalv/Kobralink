@@ -1,4 +1,4 @@
-import type { SpoolmanSpool, SpoolmanStatus } from '@kobralink/shared';
+import type { SpoolmanSpool, SpoolmanStatus } from '@farolprint/shared';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import type { FilamentUsageSink } from '../bridge/printer-bridge';
 import { m } from '../i18n/locale';

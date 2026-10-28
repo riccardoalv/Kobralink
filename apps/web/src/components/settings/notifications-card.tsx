@@ -1,4 +1,9 @@
-import { type AppSettings, notificationEventsSchema, notificationSettingsSchema, optionalUrl } from '@kobralink/shared';
+import {
+    type AppSettings,
+    notificationEventsSchema,
+    notificationSettingsSchema,
+    optionalUrl,
+} from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { BellRing } from 'lucide-react';
@@ -130,7 +135,7 @@ export function NotificationsCard({ settings }: { settings: AppSettings }) {
             </form.Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {text('discordUrl', 'Discord', 'https://discord.com/api/webhooks/…', m.notif_discord_hint())}
-                {text('ntfyUrl', 'ntfy', 'https://ntfy.sh/kobralink', m.notif_ntfy_hint())}
+                {text('ntfyUrl', 'ntfy', 'https://ntfy.sh/farolprint', m.notif_ntfy_hint())}
                 {text('telegramToken', m.notif_telegram_token(), '123456:ABC-DEF…')}
                 {text('telegramChatId', m.notif_telegram_chat(), '-1001234567890')}
             </div>

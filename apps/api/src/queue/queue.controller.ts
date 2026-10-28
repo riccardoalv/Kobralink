@@ -3,7 +3,7 @@ import {
     addQueueItemSchema,
     type ReorderQueueInput,
     reorderQueueSchema,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { BadGatewayException, Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ZodPipe } from '../common/zod.pipe';
 import { QueueService } from './queue.service';

@@ -1,4 +1,4 @@
-import type { StatsBucket, StatsDto } from '@kobralink/shared';
+import type { StatsBucket, StatsDto } from '@farolprint/shared';
 import { screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { formatMoney } from '@/lib/format';

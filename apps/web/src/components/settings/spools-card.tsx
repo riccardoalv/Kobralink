@@ -1,4 +1,4 @@
-import { AMS_MATERIALS, DEFAULT_DENSITY, type LocalSpoolDto, localSpoolSchema } from '@kobralink/shared';
+import { AMS_MATERIALS, DEFAULT_DENSITY, type LocalSpoolDto, localSpoolSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, ArchiveRestore, Pencil, Plus, Trash2 } from 'lucide-react';

@@ -1,4 +1,4 @@
-import type { KobralinkEvent, PrinterLiveState, SseChannel, SseParams } from '@kobralink/shared';
+import type { FarolPrintEvent, PrinterLiveState, SseChannel, SseParams } from '@farolprint/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -39,7 +39,7 @@ export function useSseStatus(): SseStatus {
 }
 
 const desktop = (): { setTrayStatus?: (p: unknown[]) => void } | undefined =>
-    (window as unknown as { kobralinkDesktop?: { setTrayStatus?: (p: unknown[]) => void } }).kobralinkDesktop;
+    (window as unknown as { farolprintDesktop?: { setTrayStatus?: (p: unknown[]) => void } }).farolprintDesktop;
 
 interface RefusedPayload {
     printerId: string;
@@ -74,8 +74,8 @@ function GlobalSubscriptions() {
             .finally(() => discovering.current.delete(printerId));
     });
 
-    useSse<KobralinkEvent>('printers', 'notification', (event) => {
-        qc.setQueryData<KobralinkEvent[]>(['notifications'], (old) => [...(old ?? []), event].slice(-200));
+    useSse<FarolPrintEvent>('printers', 'notification', (event) => {
+        qc.setQueryData<FarolPrintEvent[]>(['notifications'], (old) => [...(old ?? []), event].slice(-200));
         if (
             event.type === 'queue_next' ||
             event.type === 'print_finished' ||

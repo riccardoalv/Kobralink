@@ -1,4 +1,4 @@
-import type { KobralinkEvent } from '@kobralink/shared';
+import type { FarolPrintEvent } from '@farolprint/shared';
 import { Controller, Get, Post } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 
@@ -7,7 +7,7 @@ export class NotificationController {
     constructor(private readonly notifications: NotificationService) {}
 
     @Get('notifications')
-    recent(): KobralinkEvent[] {
+    recent(): FarolPrintEvent[] {
         return this.notifications.recent();
     }
 

@@ -1,4 +1,4 @@
-import { type AppSettings, optionalUrl } from '@kobralink/shared';
+import { type AppSettings, optionalUrl } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';

@@ -1,71 +1,71 @@
 # Changelog
 
-## [0.8.2](https://github.com/riccardoalv/Kobralink/compare/v0.8.1...v0.8.2) (2026-10-25)
+## [0.8.2](https://github.com/riccardoalv/farolprint/compare/v0.8.1...v0.8.2) (2026-10-25)
 
 
 ### Bug Fixes
 
-* **bridge:** reuse the OrcaSlicer upload when confirming the print dialog ([#20](https://github.com/riccardoalv/Kobralink/issues/20)) ([8d7d04c](https://github.com/riccardoalv/Kobralink/commit/8d7d04c1aa397b6657f529f0ddd600dd3ee04401))
+* **bridge:** reuse the OrcaSlicer upload when confirming the print dialog ([#20](https://github.com/riccardoalv/farolprint/issues/20)) ([8d7d04c](https://github.com/riccardoalv/farolprint/commit/8d7d04c1aa397b6657f529f0ddd600dd3ee04401))
 
-## [0.8.1](https://github.com/riccardoalv/Kobralink/compare/v0.8.0...v0.8.1) (2026-10-25)
-
-
-### Bug Fixes
-
-* partial updates no longer reset other settings to defaults ([#18](https://github.com/riccardoalv/Kobralink/issues/18)) ([c8cf0c6](https://github.com/riccardoalv/Kobralink/commit/c8cf0c64e84b9b83630a05db01d77ded282e3732))
-
-## [0.8.0](https://github.com/riccardoalv/Kobralink/compare/v0.7.1...v0.8.0) (2026-10-25)
-
-
-### Features
-
-* 3D preview and per-print options in the print dialog ([#16](https://github.com/riccardoalv/Kobralink/issues/16)) ([30fb48b](https://github.com/riccardoalv/Kobralink/commit/30fb48bf6203b58221e2417ecf53cfc78d6c7653))
-
-## [0.7.1](https://github.com/riccardoalv/Kobralink/compare/v0.7.0...v0.7.1) (2026-10-25)
+## [0.8.1](https://github.com/riccardoalv/farolprint/compare/v0.8.0...v0.8.1) (2026-10-25)
 
 
 ### Bug Fixes
 
-* compact filament tiles, file material in stats, no camera restart ([#14](https://github.com/riccardoalv/Kobralink/issues/14)) ([58bae82](https://github.com/riccardoalv/Kobralink/commit/58bae82e19c5ac5b0fd40ce2ae1c9bd83105db98))
+* partial updates no longer reset other settings to defaults ([#18](https://github.com/riccardoalv/farolprint/issues/18)) ([c8cf0c6](https://github.com/riccardoalv/farolprint/commit/c8cf0c64e84b9b83630a05db01d77ded282e3732))
 
-## [0.7.0](https://github.com/riccardoalv/Kobralink/compare/v0.6.0...v0.7.0) (2026-10-24)
-
-
-### Features
-
-* keep the printer camera on by default ([#12](https://github.com/riccardoalv/Kobralink/issues/12)) ([f443796](https://github.com/riccardoalv/Kobralink/commit/f44379699fe4689708d5114dbc7a5704a48686d8))
-
-## [0.6.0](https://github.com/riccardoalv/Kobralink/compare/v0.5.0...v0.6.0) (2026-10-24)
+## [0.8.0](https://github.com/riccardoalv/farolprint/compare/v0.7.1...v0.8.0) (2026-10-25)
 
 
 ### Features
 
-* **web:** flat spool disc with a progress bar ([#10](https://github.com/riccardoalv/Kobralink/issues/10)) ([496205c](https://github.com/riccardoalv/Kobralink/commit/496205c353a99b55e3cf2623b6aa59ba0e09c7e2))
+* 3D preview and per-print options in the print dialog ([#16](https://github.com/riccardoalv/farolprint/issues/16)) ([30fb48b](https://github.com/riccardoalv/farolprint/commit/30fb48bf6203b58221e2417ecf53cfc78d6c7653))
 
-## [0.5.0](https://github.com/riccardoalv/Kobralink/compare/v0.4.0...v0.5.0) (2026-10-24)
-
-
-### Features
-
-* **web:** draw filament slots as spools ([#6](https://github.com/riccardoalv/Kobralink/issues/6)) ([88c7822](https://github.com/riccardoalv/Kobralink/commit/88c782262eefe4d5b01159e93daab9adb8d659aa))
-* **web:** side view of the spool with one filament layer per 10 percent ([#9](https://github.com/riccardoalv/Kobralink/issues/9)) ([ec3c45b](https://github.com/riccardoalv/Kobralink/commit/ec3c45b6cb018016e946cb60bf7d75c263f1b541))
-* **web:** spool illustration that shows colour and how much is left ([#8](https://github.com/riccardoalv/Kobralink/issues/8)) ([abb8562](https://github.com/riccardoalv/Kobralink/commit/abb8562ee8347ca1e5d3c88a04fcf2cc4919c21d))
-
-## [0.4.0](https://github.com/riccardoalv/Kobralink/compare/v0.3.6...v0.4.0) (2026-10-24)
-
-
-### Features
-
-* external spool slot for printers without an ACE ([90dba93](https://github.com/riccardoalv/Kobralink/commit/90dba931cd8c01ff35c2d55fa0bd676468ae22c7))
-* report the printer's real model instead of a hardcoded Kobra X ([6f39b48](https://github.com/riccardoalv/Kobralink/commit/6f39b485093fe08ceb810846cc3ef09d80ef35f9))
-* **web:** large previews and readable names for print files ([#3](https://github.com/riccardoalv/Kobralink/issues/3)) ([6bbd0af](https://github.com/riccardoalv/Kobralink/commit/6bbd0af0ecb8259b4a360d5916aa5015825fce0a))
-* **web:** printer cards with camera, job progress, temperatures and filament ([#4](https://github.com/riccardoalv/Kobralink/issues/4)) ([0915444](https://github.com/riccardoalv/Kobralink/commit/091544422e50efbdf15b68bb940890124a240f32))
+## [0.7.1](https://github.com/riccardoalv/farolprint/compare/v0.7.0...v0.7.1) (2026-10-25)
 
 
 ### Bug Fixes
 
-* keep unsaved settings when a single settings card is saved ([87b4cc3](https://github.com/riccardoalv/Kobralink/commit/87b4cc3d06618fe0c1682aa44f00efa924df7e83)), closes [#2](https://github.com/riccardoalv/Kobralink/issues/2)
-* **spoolman:** track filament usage on printers without an ACE ([60365ba](https://github.com/riccardoalv/Kobralink/commit/60365ba948cdf4af4c8bc9c07d6aa70ed458b481))
+* compact filament tiles, file material in stats, no camera restart ([#14](https://github.com/riccardoalv/farolprint/issues/14)) ([58bae82](https://github.com/riccardoalv/farolprint/commit/58bae82e19c5ac5b0fd40ce2ae1c9bd83105db98))
+
+## [0.7.0](https://github.com/riccardoalv/farolprint/compare/v0.6.0...v0.7.0) (2026-10-24)
+
+
+### Features
+
+* keep the printer camera on by default ([#12](https://github.com/riccardoalv/farolprint/issues/12)) ([f443796](https://github.com/riccardoalv/farolprint/commit/f44379699fe4689708d5114dbc7a5704a48686d8))
+
+## [0.6.0](https://github.com/riccardoalv/farolprint/compare/v0.5.0...v0.6.0) (2026-10-24)
+
+
+### Features
+
+* **web:** flat spool disc with a progress bar ([#10](https://github.com/riccardoalv/farolprint/issues/10)) ([496205c](https://github.com/riccardoalv/farolprint/commit/496205c353a99b55e3cf2623b6aa59ba0e09c7e2))
+
+## [0.5.0](https://github.com/riccardoalv/farolprint/compare/v0.4.0...v0.5.0) (2026-10-24)
+
+
+### Features
+
+* **web:** draw filament slots as spools ([#6](https://github.com/riccardoalv/farolprint/issues/6)) ([88c7822](https://github.com/riccardoalv/farolprint/commit/88c782262eefe4d5b01159e93daab9adb8d659aa))
+* **web:** side view of the spool with one filament layer per 10 percent ([#9](https://github.com/riccardoalv/farolprint/issues/9)) ([ec3c45b](https://github.com/riccardoalv/farolprint/commit/ec3c45b6cb018016e946cb60bf7d75c263f1b541))
+* **web:** spool illustration that shows colour and how much is left ([#8](https://github.com/riccardoalv/farolprint/issues/8)) ([abb8562](https://github.com/riccardoalv/farolprint/commit/abb8562ee8347ca1e5d3c88a04fcf2cc4919c21d))
+
+## [0.4.0](https://github.com/riccardoalv/farolprint/compare/v0.3.6...v0.4.0) (2026-10-24)
+
+
+### Features
+
+* external spool slot for printers without an ACE ([90dba93](https://github.com/riccardoalv/farolprint/commit/90dba931cd8c01ff35c2d55fa0bd676468ae22c7))
+* report the printer's real model instead of a hardcoded Kobra X ([6f39b48](https://github.com/riccardoalv/farolprint/commit/6f39b485093fe08ceb810846cc3ef09d80ef35f9))
+* **web:** large previews and readable names for print files ([#3](https://github.com/riccardoalv/farolprint/issues/3)) ([6bbd0af](https://github.com/riccardoalv/farolprint/commit/6bbd0af0ecb8259b4a360d5916aa5015825fce0a))
+* **web:** printer cards with camera, job progress, temperatures and filament ([#4](https://github.com/riccardoalv/farolprint/issues/4)) ([0915444](https://github.com/riccardoalv/farolprint/commit/091544422e50efbdf15b68bb940890124a240f32))
+
+
+### Bug Fixes
+
+* keep unsaved settings when a single settings card is saved ([87b4cc3](https://github.com/riccardoalv/farolprint/commit/87b4cc3d06618fe0c1682aa44f00efa924df7e83)), closes [#2](https://github.com/riccardoalv/farolprint/issues/2)
+* **spoolman:** track filament usage on printers without an ACE ([60365ba](https://github.com/riccardoalv/farolprint/commit/60365ba948cdf4af4c8bc9c07d6aa70ed458b481))
 
 ## Changelog
 

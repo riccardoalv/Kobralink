@@ -1,4 +1,4 @@
-import { type CreateUserInput, createUserSchema, type UpdateUserInput, updateUserSchema } from '@kobralink/shared';
+import { type CreateUserInput, createUserSchema, type UpdateUserInput, updateUserSchema } from '@farolprint/shared';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 import { Roles, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { ZodPipe } from '../common/zod.pipe';

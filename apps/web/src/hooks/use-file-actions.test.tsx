@@ -1,4 +1,4 @@
-import type { GcodeFileDto, PrinterLiveState } from '@kobralink/shared';
+import type { GcodeFileDto, PrinterLiveState } from '@farolprint/shared';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { isValidElement, type ReactElement } from 'react';

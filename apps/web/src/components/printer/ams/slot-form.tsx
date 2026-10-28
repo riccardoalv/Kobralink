@@ -5,7 +5,7 @@ import {
     amsSlotFormSchema,
     materialFamily,
     type SlotFilamentInfo,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine } from 'lucide-react';

@@ -1,4 +1,4 @@
-import { type AppSettings, haMqttSettingsSchema } from '@kobralink/shared';
+import { type AppSettings, haMqttSettingsSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Input } from '@/components/ui/input';
@@ -57,7 +57,7 @@ export function HaMqttCard({ settings }: { settings: AppSettings }) {
                 {text('username', m.ha_username(), '')}
                 {text('password', m.ha_password(), '', 'password')}
                 {text('discoveryPrefix', m.ha_discovery_prefix(), 'homeassistant')}
-                {text('topicPrefix', m.ha_topic_prefix(), 'kobralink')}
+                {text('topicPrefix', m.ha_topic_prefix(), 'farolprint')}
             </div>
         </SettingsCard>
     );

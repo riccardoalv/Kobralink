@@ -24,6 +24,13 @@ reasons behind them.
   change, docs that follow the code.
 - **Everything in English**: code, docs, commits, issues and PRs.
 
+- **The project is called Farol Print** (maintainer's decision, October 2026). The fork needed a name of its own, with
+  no reference to Anycubic or Kobra so it can grow into a connector for other printers. "Farol" (lighthouse) stands
+  for watching the printers from afar. Conventions: "Farol Print" in prose and UI, `farolprint` for the repository,
+  the Docker image, the packages (`@farolprint/*`) and the data directory, `FAROLPRINT_*` for environment variables
+  and `FarolPrint` in identifiers. The old `KOBRALINK_*` variables are still read when their new counterpart is unset
+  and an existing `kobralink.db` is renamed on first start, so running installs upgrade without manual steps. The
+  credit to the upstream project keeps its original name, Kobralink.
 - **Tests for everything, always** (maintainer's rule, October 2026). Every change, in every layer, ships with tests
   for every case it introduces; nothing is merged with "tests later". The expected coverage per layer is listed in
   [development.md](development.md#tests). After the single-printer workflow landed with partial coverage, the missing
@@ -32,11 +39,11 @@ reasons behind them.
 ## Printers
 
 - **No firmware change, ever.** Newer Anycubic printers (Kobra X, and likely the Kobra 4) verify signed firmware
-  updates, so custom firmware is not possible; Kobralink only uses LAN mode.
+  updates, so custom firmware is not possible; Farol Print only uses LAN mode.
 - **The printer's real model is shown** (Home Assistant, Moonraker system info), taken from `info/report` and, as a
   fallback, from the stored printer. UI texts do not name a specific model.
-- **A printer allows a single MQTT session.** Kobralink owns it while connected; tools that capture messages must stop
-  Kobralink first.
+- **A printer allows a single MQTT session.** Farol Print owns it while connected; tools that capture messages must stop
+  Farol Print first.
 - **A file is uploaded to the printer once.** With the "Dialog after upload" setting, an OrcaSlicer upload pushes the
   file to the printer and opens the dialog in the dashboard; confirming the dialog reuses that upload (same name, MD5
   and size as the last one) instead of sending the file again, so the print starts right away. The upload is forgotten
@@ -88,7 +95,7 @@ later and build on these.
 
 ## Releases
 
-- **Images on GHCR** (`ghcr.io/riccardoalv/kobralink`), built by GitHub Actions with the repository token: `latest`
+- **Images on GHCR** (`ghcr.io/riccardoalv/farolprint`), built by GitHub Actions with the repository token: `latest`
   and `sha-<commit>` on every push to `main`, `X.Y.Z` and `X.Y` on releases. No registry secrets are needed.
 - **release-please computes versions and the changelog** from Conventional Commits, starting after upstream 0.3.6.
 - **Desktop installers are not published by the fork yet.** The upstream `release.yml` stays untouched for now.

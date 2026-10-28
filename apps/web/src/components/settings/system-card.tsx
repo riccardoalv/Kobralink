@@ -12,7 +12,7 @@ import { backupInfoQuery, systemInfoQuery } from '@/lib/queries';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { SettingsCard, SwitchRow } from './settings-form-card';
 
-const GITHUB_URL = 'https://github.com/NatHacks/Kobralink';
+const GITHUB_URL = 'https://github.com/riccardoalv/farolprint';
 
 export function SystemCard() {
     const qc = useQueryClient();
@@ -51,7 +51,7 @@ export function SystemCard() {
             <SettingsCard title={m.system_title()}>
                 {d && (
                     <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-                        <Row k={m.system_version()} v={`Kobralink ${d.version}`} />
+                        <Row k={m.system_version()} v={`Farol Print ${d.version}`} />
                         <Row k={m.system_runtime()} v={`${d.runtime} · ${d.platform}`} />
                         <Row k={m.system_mode()} v={d.packaged} />
                         <Row k={m.system_uptime()} v={formatDuration(d.uptimeSec, { zero: true })} />

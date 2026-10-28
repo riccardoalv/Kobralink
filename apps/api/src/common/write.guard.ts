@@ -1,12 +1,12 @@
-import { canOperate, type UserRole } from '@kobralink/shared';
+import { canOperate, type UserRole } from '@farolprint/shared';
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthService } from '@thallesp/nestjs-better-auth';
 import type { Request } from 'express';
-import type { KobralinkAuth } from '../auth/auth';
+import type { FarolPrintAuth } from '../auth/auth';
 import { m } from '../i18n/locale';
 
-export const ALLOW_VIEWER_WRITE = 'kobralink:allowViewerWrite';
+export const ALLOW_VIEWER_WRITE = 'farolprint:allowViewerWrite';
 
 type AuthedRequest = Request & { user?: { role?: string } | null };
 
@@ -14,7 +14,7 @@ type AuthedRequest = Request & { user?: { role?: string } | null };
 export class WriteGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
-        private readonly auth: AuthService<KobralinkAuth>,
+        private readonly auth: AuthService<FarolPrintAuth>,
     ) {}
 
     async canActivate(ctx: ExecutionContext): Promise<boolean> {

@@ -1,4 +1,4 @@
-import { type AceUnit, aceDryFormSchema } from '@kobralink/shared';
+import { type AceUnit, aceDryFormSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Droplets, Thermometer, X } from 'lucide-react';

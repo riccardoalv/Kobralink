@@ -1,4 +1,4 @@
-import { type SseChannel, type SseEnvelope, type SseParams, sseChannelKey } from '@kobralink/shared';
+import { type SseChannel, type SseEnvelope, type SseParams, sseChannelKey } from '@farolprint/shared';
 
 export type SseHandler<T = unknown> = (data: T) => void;
 export type SseStatus = 'idle' | 'connecting' | 'open' | 'error';

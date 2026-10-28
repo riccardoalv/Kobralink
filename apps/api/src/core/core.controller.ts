@@ -28,7 +28,7 @@ import {
     startPrintSchema,
     type UpdatePrintJobInput,
     updatePrintJobSchema,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import {
     BadGatewayException,
     BadRequestException,

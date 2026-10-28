@@ -1,4 +1,4 @@
-import { type AppSettings, aceDryPresetSchema, DEFAULT_DRY_PRESETS } from '@kobralink/shared';
+import { type AppSettings, aceDryPresetSchema, DEFAULT_DRY_PRESETS } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { Plus, X } from 'lucide-react';
 import { z } from 'zod';

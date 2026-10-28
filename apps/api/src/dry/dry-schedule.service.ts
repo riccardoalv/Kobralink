@@ -1,4 +1,4 @@
-import type { ScheduleDryInput, ScheduledDryDto } from '@kobralink/shared';
+import type { ScheduleDryInput, ScheduledDryDto } from '@farolprint/shared';
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import type { ScheduledDry } from '../generated/prisma/client';

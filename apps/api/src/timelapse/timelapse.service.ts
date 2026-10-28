@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { TimelapseDto } from '@kobralink/shared';
+import type { TimelapseDto } from '@farolprint/shared';
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { resolveFfmpeg } from '../bridge/camera';
 import type { PrinterBridge } from '../bridge/printer-bridge';

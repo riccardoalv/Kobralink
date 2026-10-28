@@ -1,4 +1,4 @@
-import type { HaMqttSettings, PrinterLiveState } from '@kobralink/shared';
+import type { HaMqttSettings, PrinterLiveState } from '@farolprint/shared';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import mqtt, { type MqttClient } from 'mqtt';
 import type { PrinterBridge } from '../bridge/printer-bridge';
@@ -50,7 +50,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             const client = mqtt.connect(cfg.url, {
                 username: cfg.username || undefined,
                 password: cfg.password || undefined,
-                clientId: `kobralink-${Math.random().toString(16).slice(2, 8)}`,
+                clientId: `farolprint-${Math.random().toString(16).slice(2, 8)}`,
                 reconnectPeriod: 10_000,
                 connectTimeout: 10_000,
                 will: { topic: `${cfg.topicPrefix}/status`, payload: 'offline', retain: true, qos: 0 },
@@ -112,7 +112,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
     }
 
     private topic(printerId: string, suffix: string): string {
-        return `${this.cfg?.topicPrefix ?? 'kobralink'}/${printerId}/${suffix}`;
+        return `${this.cfg?.topicPrefix ?? 'farolprint'}/${printerId}/${suffix}`;
     }
 
     private announce(bridge: PrinterBridge): void {
@@ -123,7 +123,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         entry.announced = true;
         const id = bridge.id;
         const device = {
-            identifiers: [`kobralink_${id}`],
+            identifiers: [`farolprint_${id}`],
             name: bridge.config.name,
             manufacturer: 'Anycubic',
             model: bridge.modelName,
@@ -132,7 +132,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         const availability = [{ topic: `${cfg.topicPrefix}/status` }, { topic: this.topic(id, 'availability') }];
         const state = this.topic(id, 'state');
         const base = (key: string, extra: Record<string, unknown>) => ({
-            unique_id: `kobralink_${id}_${key}`,
+            unique_id: `farolprint_${id}_${key}`,
             object_id: `${slug(bridge.config.name)}_${key}`,
             device,
             availability,
@@ -274,7 +274,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             if (component === 'button' || component === 'camera')
                 delete (payload as { state_topic?: string }).state_topic;
             client.publish(
-                `${cfg.discoveryPrefix}/${component}/kobralink_${id}/${key}/config`,
+                `${cfg.discoveryPrefix}/${component}/farolprint_${id}/${key}/config`,
                 JSON.stringify(payload),
                 {
                     retain: true,
@@ -315,7 +315,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
     }
 
     private onCommand(topic: string, payload: string): void {
-        const prefix = this.cfg?.topicPrefix ?? 'kobralink';
+        const prefix = this.cfg?.topicPrefix ?? 'farolprint';
         const mtch = new RegExp(`^${escapeRe(prefix)}/([^/]+)/cmd/(.+)$`).exec(topic);
         if (!mtch) return;
         const entry = this.attached.get(mtch[1]);

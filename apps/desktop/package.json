@@ -1,9 +1,9 @@
 {
-    "name": "@kobralink/desktop",
-    "productName": "Kobralink",
+    "name": "@farolprint/desktop",
+    "productName": "Farol Print",
     "version": "0.8.2",
     "private": true,
-    "description": "Kobralink desktop (macOS) — embeds the local bridge API.",
+    "description": "Farol Print desktop (macOS) — embeds the local bridge API.",
     "main": "./out/main/index.js",
     "scripts": {
         "dev": "bunx electron-vite dev",
@@ -11,11 +11,11 @@
         "start": "bunx electron-vite preview",
         "check-types": "bunx tsc --noEmit -p tsconfig.json",
         "dist:mac": "bun run dist -- --mac",
-        "dist:win": "node scripts/fetch-vc-redist.cjs && KOBRALINK_BUNDLE_OS=win32 KOBRALINK_BUNDLE_ARCHS=x64 bun run dist -- --win --x64",
-        "dist": "bun run --filter @kobralink/api bundle && bun run --filter @kobralink/web build && bunx electron-vite build && bunx electron-builder --publish never"
+        "dist:win": "node scripts/fetch-vc-redist.cjs && FAROLPRINT_BUNDLE_OS=win32 FAROLPRINT_BUNDLE_ARCHS=x64 bun run dist -- --win --x64",
+        "dist": "bun run --filter @farolprint/api bundle && bun run --filter @farolprint/web build && bunx electron-vite build && bunx electron-builder --publish never"
     },
     "dependencies": {
-        "@kobralink/i18n": "workspace:*",
+        "@farolprint/i18n": "workspace:*",
         "electron-updater": "^6.8.9"
     },
     "devDependencies": {
@@ -26,6 +26,6 @@
         "typescript": "catalog:",
         "vite": "catalog:"
     },
-    "homepage": "https://github.com/nathacks/Kobralink",
+    "homepage": "https://github.com/riccardoalv/farolprint",
     "author": "NatHacks"
 }

@@ -3,7 +3,7 @@ import {
     type QueueItemDto,
     type QueueStatusDto,
     TERMINAL_PRINT_STATES,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { localIpFor } from '../common/net';

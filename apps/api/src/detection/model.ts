@@ -1,4 +1,4 @@
-import type { DetectionBox } from '@kobralink/shared';
+import type { DetectionBox } from '@farolprint/shared';
 import { decode } from 'jpeg-js';
 
 const INPUT_SIZE = 416;

@@ -1,8 +1,14 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseGcodeMetadata } from '@kobralink/kobra-protocol';
-import type { GcodeFilament, GcodeFileDto, PrintJobDto, SpoolUsageEntry, UpdatePrintJobInput } from '@kobralink/shared';
+import { parseGcodeMetadata } from '@farolprint/kobra-protocol';
+import type {
+    GcodeFilament,
+    GcodeFileDto,
+    PrintJobDto,
+    SpoolUsageEntry,
+    UpdatePrintJobInput,
+} from '@farolprint/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import { loadEnv } from '../config/env';
 import type { GcodeFile, PrintJob } from '../generated/prisma/client';

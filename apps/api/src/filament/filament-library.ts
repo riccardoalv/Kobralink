@@ -1,4 +1,4 @@
-import { type FilamentProfile, materialFamily, normalizeMaterial, type SlotProfileRef } from '@kobralink/shared';
+import { type FilamentProfile, materialFamily, normalizeMaterial, type SlotProfileRef } from '@farolprint/shared';
 
 export const GATE_TEMP: Record<string, number> = {
     PLA: 210,

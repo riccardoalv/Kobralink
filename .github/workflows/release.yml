@@ -22,7 +22,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/kobralink
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/farolprint
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -93,7 +93,7 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - name: Build workspace packages
-        run: bunx turbo run build --filter=@kobralink/shared --filter=@kobralink/kobra-protocol --filter=@kobralink/i18n
+        run: bunx turbo run build --filter=@farolprint/shared --filter=@farolprint/kobra-protocol --filter=@farolprint/i18n
 
       - name: Fetch VC++ redistributable
         if: matrix.os == 'windows-latest'
@@ -107,10 +107,10 @@ jobs:
             if [ -z "$value" ]; then unset "$name"; fi
           done
           if [ -n "${CSC_LINK:-}" ]; then export CSC_IDENTITY_AUTO_DISCOVERY=true; fi
-          bun run --filter @kobralink/desktop dist -- ${{ matrix.args }}
+          bun run --filter @farolprint/desktop dist -- ${{ matrix.args }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          KOBRALINK_BUNDLE_ARCHS: ${{ matrix.bundle_archs }}
+          FAROLPRINT_BUNDLE_ARCHS: ${{ matrix.bundle_archs }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -154,7 +154,7 @@ jobs:
       - name: Write release body
         env:
           VERSION: ${{ github.ref_name }}
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kobralink
+          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/farolprint
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           V="${VERSION#v}"
@@ -172,16 +172,16 @@ jobs:
 
           | Platform | File |
           |---|---|
-          | macOS Apple Silicon | \`Kobralink-${V}-mac-arm64.dmg\` |
-          | macOS Intel | \`Kobralink-${V}-mac-x64.dmg\` |
-          | Windows | \`Kobralink-${V}-Installer-win-x64.exe\` |
-          | Linux | \`Kobralink-${V}-linux-x86_64.AppImage\` / \`Kobralink-${V}-linux-amd64.deb\` |
+          | macOS Apple Silicon | \`farolprint-${V}-mac-arm64.dmg\` |
+          | macOS Intel | \`farolprint-${V}-mac-x64.dmg\` |
+          | Windows | \`farolprint-${V}-Installer-win-x64.exe\` |
+          | Linux | \`farolprint-${V}-linux-x86_64.AppImage\` / \`farolprint-${V}-linux-amd64.deb\` |
 
-          macOS: the app is not notarized — right-click → Open on first launch, or \`xattr -dr com.apple.quarantine /Applications/Kobralink.app\`.
+          macOS: the app is not notarized — right-click → Open on first launch, or \`xattr -dr com.apple.quarantine "/Applications/Farol Print.app"\`.
 
           ## Web server (no desktop app)
 
-          Kobralink also runs headless as a Docker container: the same dashboard is served at \`http://<host>:7100\` and the Moonraker endpoints on \`7125+\`.
+          Farol Print also runs headless as a Docker container: the same dashboard is served at \`http://<host>:7100\` and the Moonraker endpoints on \`7125+\`.
 
           \`\`\`bash
           docker pull ${IMAGE}:${V}
@@ -190,10 +190,10 @@ jobs:
           With docker compose (no clone needed, \`infra/docker-compose.prod.yml\` uses the Docker Hub image):
 
           \`\`\`bash
-          mkdir kobralink && cd kobralink
+          mkdir farolprint && cd farolprint
           curl -fsSLO https://raw.githubusercontent.com/${{ github.repository }}/${VERSION}/infra/docker-compose.prod.yml
           curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${VERSION}/infra/.env.example -o .env
-          # set BETTER_AUTH_URL to the URL your browser uses, and KOBRALINK_IMAGE=${IMAGE}:${V} to pin this version
+          # set BETTER_AUTH_URL to the URL your browser uses, and FAROLPRINT_IMAGE=${IMAGE}:${V} to pin this version
           docker compose -f docker-compose.prod.yml up -d
           \`\`\`
 
@@ -203,7 +203,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: Kobralink ${{ github.ref_name }}
+          name: Farol Print ${{ github.ref_name }}
           body_path: body.md
           generate_release_notes: true
           fail_on_unmatched_files: true

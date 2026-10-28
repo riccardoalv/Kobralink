@@ -1,4 +1,4 @@
-import { type AppSettings, type FailureDetectionAction, failureDetectionSettingsSchema } from '@kobralink/shared';
+import { type AppSettings, type FailureDetectionAction, failureDetectionSettingsSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, ScanEye, Trash2, X } from 'lucide-react';

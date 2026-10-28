@@ -1,24 +1,25 @@
-<p align="center"><img src="apps/web/public/logo.svg" alt="Kobralink" width="128" /></p>
+<p align="center"><img src="apps/web/public/logo.svg" alt="Farol Print" width="128" /></p>
 
-# Kobralink
+# Farol Print
 
 <p align="center">
-  <a href="https://github.com/riccardoalv/Kobralink/actions/workflows/docker-image.yml"><img src="https://img.shields.io/github/actions/workflow/status/riccardoalv/Kobralink/docker-image.yml?label=docker%20image" alt="Docker image build" /></a>
-  <a href="https://github.com/riccardoalv/Kobralink/pkgs/container/kobralink"><img src="https://img.shields.io/badge/ghcr.io-riccardoalv%2Fkobralink-blue" alt="GHCR image" /></a>
-  <a href="https://github.com/riccardoalv/Kobralink/stargazers"><img src="https://img.shields.io/github/stars/riccardoalv/Kobralink?style=flat" alt="GitHub stars" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/riccardoalv/Kobralink" alt="License" /></a>
+  <a href="https://github.com/riccardoalv/farolprint/actions/workflows/docker-image.yml"><img src="https://img.shields.io/github/actions/workflow/status/riccardoalv/farolprint/docker-image.yml?label=docker%20image" alt="Docker image build" /></a>
+  <a href="https://github.com/riccardoalv/farolprint/pkgs/container/farolprint"><img src="https://img.shields.io/badge/ghcr.io-riccardoalv%2Ffarolprint-blue" alt="GHCR image" /></a>
+  <a href="https://github.com/riccardoalv/farolprint/stargazers"><img src="https://img.shields.io/github/stars/riccardoalv/farolprint?style=flat" alt="GitHub stars" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/riccardoalv/farolprint" alt="License" /></a>
 </p>
 
-> **Community fork.** Kobralink was created by [NatHacks](https://github.com/NatHacks/Kobralink). This fork continues
-> its development for the community: bug fixes, Kobra 4 support and external spool tracking. Issues and pull requests
-> are welcome here.
+> **Community fork.** Farol Print started as Kobralink, created by [NatHacks](https://github.com/NatHacks/Kobralink).
+> This fork continues its development for the community under its own name: bug fixes, Kobra 4 support, external
+> spool tracking and the single-printer workflow. Issues and pull requests are welcome here. Existing installs keep
+> working: the old `KOBRALINK_*` variables are still honoured and the database is renamed on first start.
 
-Kobralink turns an **Anycubic Kobra X** or **Kobra 4** into a **Moonraker-compatible printer** — no Klipper, no
+Farol Print turns an **Anycubic Kobra X** or **Kobra 4** into a **Moonraker-compatible printer** — no Klipper, no
 Raspberry Pi, no firmware change. Run it on a small server (Docker) or as a desktop app, add your
 printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker client
 (Mainsail, Obico, Home Assistant…).
 
-<p align="center"><img src="docs/interface.png" alt="Kobralink dashboard" width="900" /></p>
+<p align="center"><img src="docs/interface.png" alt="Farol Print dashboard" width="900" /></p>
 
 ## What you get
 
@@ -43,12 +44,12 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 
 Requirements: Docker + Docker Compose, a machine on the same LAN as the printer. No clone needed:
 `infra/docker-compose.prod.yml` runs the published image
-[`ghcr.io/riccardoalv/kobralink`](https://github.com/riccardoalv/Kobralink/pkgs/container/kobralink) (linux/amd64 + linux/arm64).
+[`ghcr.io/riccardoalv/farolprint`](https://github.com/riccardoalv/farolprint/pkgs/container/farolprint) (linux/amd64 + linux/arm64).
 
 ```bash
-mkdir kobralink && cd kobralink
-curl -fsSLO https://raw.githubusercontent.com/riccardoalv/Kobralink/main/infra/docker-compose.prod.yml
-curl -fsSL https://raw.githubusercontent.com/riccardoalv/Kobralink/main/infra/.env.example -o .env
+mkdir farolprint && cd farolprint
+curl -fsSLO https://raw.githubusercontent.com/riccardoalv/farolprint/main/infra/docker-compose.prod.yml
+curl -fsSL https://raw.githubusercontent.com/riccardoalv/farolprint/main/infra/.env.example -o .env
 ```
 
 Edit `.env` and set `BETTER_AUTH_URL` to the URL you will type in the browser. Then:
@@ -59,7 +60,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 - Dashboard: `http://<host>:7100` — the first account created becomes the owner
 - Moonraker: one port per printer, starting at `7125` (range `7125-7140` exposed, i.e. 16 printers)
-- Data (SQLite, GCodes, timelapses, session secret) is kept in the `kobralink-data` volume
+- Data (SQLite, GCodes, timelapses, session secret) is kept in the `farolprint-data` volume
 
 Update:
 
@@ -67,35 +68,35 @@ Update:
 docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 ```
 
-To pin a version, set `KOBRALINK_IMAGE=ghcr.io/riccardoalv/kobralink:<version>` in `.env`.
+To pin a version, set `FAROLPRINT_IMAGE=ghcr.io/riccardoalv/farolprint:<version>` in `.env`.
 
-Behind a reverse proxy (HTTPS): set `KOBRALINK_BIND=127.0.0.1` and
-`BETTER_AUTH_URL=https://kobralink.example.com`. Moonraker ports stay direct (OrcaSlicer needs HTTP + WebSocket).
+Behind a reverse proxy (HTTPS): set `FAROLPRINT_BIND=127.0.0.1` and
+`BETTER_AUTH_URL=https://farolprint.example.com`. Moonraker ports stay direct (OrcaSlicer needs HTTP + WebSocket).
 More details (backup, healthcheck, local build from source): [`infra/README.md`](infra/README.md).
 
 More than 16 printers: the app assigns ports without limit (`7125`, `7126`, … up to `65535`), but the compose
 file only publishes `7125-7140`. Printer 17+ would listen inside the container without being reachable from the host.
-Widen the range in `docker-compose.prod.yml` (e.g. `"${KOBRALINK_BIND:-0.0.0.0}:7125-7224:7125-7224"` for 100 printers),
-or use `network_mode: host` on Linux and drop the `ports:` block entirely (then `KOBRALINK_BIND` no longer applies and
+Widen the range in `docker-compose.prod.yml` (e.g. `"${FAROLPRINT_BIND:-0.0.0.0}:7125-7224:7125-7224"` for 100 printers),
+or use `network_mode: host` on Linux and drop the `ports:` block entirely (then `FAROLPRINT_BIND` no longer applies and
 every port listens on all interfaces).
 
 ### `.env` reference
 
 | Variable                  | Default                     | Role                                                    |
 | ------------------------- | --------------------------- | ------------------------------------------------------- |
-| `KOBRALINK_IMAGE`         | `ghcr.io/riccardoalv/kobralink:latest` | Image to run (pin a version or a commit: `ghcr.io/riccardoalv/kobralink:sha-<commit>`) |
-| `KOBRALINK_BIND`          | `0.0.0.0`                   | Host interface (`127.0.0.1` behind a reverse proxy)     |
-| `KOBRALINK_PORT`          | `7100`                      | Dashboard port on the host                              |
+| `FAROLPRINT_IMAGE`         | `ghcr.io/riccardoalv/farolprint:latest` | Image to run (pin a version or a commit: `ghcr.io/riccardoalv/farolprint:sha-<commit>`) |
+| `FAROLPRINT_BIND`          | `0.0.0.0`                   | Host interface (`127.0.0.1` behind a reverse proxy)     |
+| `FAROLPRINT_PORT`          | `7100`                      | Dashboard port on the host                              |
 | `BETTER_AUTH_URL`         | —                           | **Required**: URL used by the browser                   |
 | `BETTER_AUTH_SECRET`      | generated in `/data`        | Session secret (`openssl rand -base64 32`)              |
-| `KOBRALINK_EXTRA_ORIGINS` | —                           | Extra allowed origins, comma-separated                  |
-| `KOBRALINK_TRUSTED_PROXIES` | —                         | Proxy IPs/CIDRs (real client IP for auth rate limiting) |
-| `KOBRALINK_IP_HEADERS`    | —                           | Header set by the proxy with the client IP (`x-real-ip`, `cf-connecting-ip`) |
+| `FAROLPRINT_EXTRA_ORIGINS` | —                           | Extra allowed origins, comma-separated                  |
+| `FAROLPRINT_TRUSTED_PROXIES` | —                         | Proxy IPs/CIDRs (real client IP for auth rate limiting) |
+| `FAROLPRINT_IP_HEADERS`    | —                           | Header set by the proxy with the client IP (`x-real-ip`, `cf-connecting-ip`) |
 
 ## Desktop app (macOS / Windows / Linux)
 
 This fork does not publish desktop builds yet. The installers of the original project are on its
-[GitHub releases](https://github.com/NatHacks/Kobralink/releases)
+[GitHub releases](https://github.com/riccardoalv/farolprint/releases)
 (dmg, exe, AppImage / deb). The app runs the bridge locally and updates itself.
 
 ## Connect a printer
@@ -104,11 +105,11 @@ This fork does not publish desktop builds yet. The installers of the original pr
 2. Dashboard → **Add a printer** → enter the IP. A Moonraker port is assigned (`7125`, `7126`, …).
 3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`
    (or open **Connect OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
-   Click *Test*, then confirm: the **Device** tab now shows the printer and *Print* sends the G-code to Kobralink.
+   Click *Test*, then confirm: the **Device** tab now shows the printer and *Print* sends the G-code to Farol Print.
 
 The OrcaSlicer **Device** tab only targets the printer: send a job, follow progress, pause / cancel, sync the ACE
 filaments. Everything else — print queue, file library, macros, filament profiles per slot, camera, failure
-detection, statistics, notifications, API keys — lives in the Kobralink dashboard on `:7100`.
+detection, statistics, notifications, API keys — lives in the Farol Print dashboard on `:7100`.
 
 By default the Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard
 on `:7100` is protected by email + password.
@@ -147,14 +148,14 @@ Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘    
 - [Changelog](CHANGELOG.md)
 
 Printer support is the most valuable contribution: open a
-[printer support](https://github.com/riccardoalv/Kobralink/issues/new?template=printer_support.yml) issue with your
+[printer support](https://github.com/riccardoalv/farolprint/issues/new?template=printer_support.yml) issue with your
 model and anonymized MQTT messages.
 
 ## Development
 
 ```bash
 bun install
-bun run db:migrate   # creates data/kobralink.db
+bun run db:migrate   # creates data/farolprint.db
 bun run dev          # API :7100 + Vite :5173 + Electron
 bun run dev:web      # API + Vite only → http://localhost:5173
 
@@ -162,27 +163,27 @@ bun run build        # packages → api → web → desktop
 bun run check-types
 bun run test
 bun run lint
-bun run --filter @kobralink/desktop dist   # Electron installer for the current OS
+bun run --filter @farolprint/desktop dist   # Electron installer for the current OS
 ```
 
 API environment variables (`apps/api`):
 
 | Variable                  | Default                               | Role                                          |
 | ------------------------- | ------------------------------------- | --------------------------------------------- |
-| `KOBRALINK_DATA_DIR`      | `<repo>/data`                         | SQLite, `gcodes/`, timelapses, `.auth-secret` |
-| `DATABASE_URL`            | `file:<data>/kobralink.db`            | libsql connection string                      |
-| `KOBRALINK_PORT`          | `7100`                                | UI + API                                      |
+| `FAROLPRINT_DATA_DIR`      | `<repo>/data`                         | SQLite, `gcodes/`, timelapses, `.auth-secret` |
+| `DATABASE_URL`            | `file:<data>/farolprint.db`            | libsql connection string                      |
+| `FAROLPRINT_PORT`          | `7100`                                | UI + API                                      |
 | `BETTER_AUTH_URL`         | `http://localhost:7100`               | Trusted origin / cookies                      |
 | `BETTER_AUTH_SECRET`      | generated in `<data>/.auth-secret`    | Session secret                                |
-| `KOBRALINK_WEB_DIR`       | `apps/web/dist`                       | SPA build to serve                            |
-| `KOBRALINK_CERTS_DIR`     | `apps/api/certs`                      | `anycubic_slicer.crt` / `.key`                |
-| `KOBRALINK_EXTRA_ORIGINS` | `http://localhost:5173,…`             | Extra origins (CORS + Better Auth)            |
-| `KOBRALINK_FFMPEG`        | `@ffmpeg-installer/ffmpeg`, else PATH | ffmpeg binary for camera + timelapse          |
-| `KOBRALINK_VERSION`       | `package.json` version                | Version reported by `/api/v1/system`              |
-| `KOBRALINK_UPDATE_REPO`   | `riccardoalv/Kobralink`               | GitHub repo polled for update checks          |
+| `FAROLPRINT_WEB_DIR`       | `apps/web/dist`                       | SPA build to serve                            |
+| `FAROLPRINT_CERTS_DIR`     | `apps/api/certs`                      | `anycubic_slicer.crt` / `.key`                |
+| `FAROLPRINT_EXTRA_ORIGINS` | `http://localhost:5173,…`             | Extra origins (CORS + Better Auth)            |
+| `FAROLPRINT_FFMPEG`        | `@ffmpeg-installer/ffmpeg`, else PATH | ffmpeg binary for camera + timelapse          |
+| `FAROLPRINT_VERSION`       | `package.json` version                | Version reported by `/api/v1/system`              |
+| `FAROLPRINT_UPDATE_REPO`   | `riccardoalv/farolprint`               | GitHub repo polled for update checks          |
 
-Desktop: `KOBRALINK_URL` forces the bridge URL without spawning the API;
-`KOBRALINK_SHOT=/x.png [KOBRALINK_SHOT_LOGIN="mail|password|/path"]` captures the window then quits.
+Desktop: `FAROLPRINT_URL` forces the bridge URL without spawning the API;
+`FAROLPRINT_SHOT=/x.png [FAROLPRINT_SHOT_LOGIN="mail|password|/path"]` captures the window then quits.
 
 ### Releases
 
@@ -194,7 +195,7 @@ The upstream workflow is still there: pushing a `v*` tag by hand runs `.github/w
 (Apple Silicon + Intel), Windows and Linux. Required secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
 
 Without an Apple certificate the macOS app is ad-hoc signed (`apps/desktop/scripts/after-sign.cjs`); Gatekeeper
-shows "unidentified developer" — right-click → Open, or `xattr -dr com.apple.quarantine /Applications/Kobralink.app`.
+shows "unidentified developer" — right-click → Open, or `xattr -dr com.apple.quarantine "/Applications/Farol Print.app"`.
 To sign and notarize, add the secrets `CSC_LINK` (base64 `.p12`), `CSC_KEY_PASSWORD`, `APPLE_ID`,
 `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`.
 

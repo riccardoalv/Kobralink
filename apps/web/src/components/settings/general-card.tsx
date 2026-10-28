@@ -1,4 +1,4 @@
-import { APP_LOCALES, type AppLocale, type AppSettings } from '@kobralink/shared';
+import { APP_LOCALES, type AppLocale, type AppSettings } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

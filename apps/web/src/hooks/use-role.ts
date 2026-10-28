@@ -1,4 +1,4 @@
-import { canOperate, isAdmin, type UserRole } from '@kobralink/shared';
+import { canOperate, isAdmin, type UserRole } from '@farolprint/shared';
 import { useQuery } from '@tanstack/react-query';
 import { sessionQuery } from '@/lib/session';
 

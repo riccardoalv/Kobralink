@@ -21,7 +21,7 @@
  *      Options:
  *        --out <dir>   write somewhere else than apps/api/certs (default)
  *        --force       overwrite an existing, different certificate
- *   4. Restart Kobralink (or the Docker container / desktop app) so the bridge reloads the certs.
+ *   4. Restart Farol Print (or the Docker container / desktop app) so the bridge reloads the certs.
  *
  * Exit codes: 0 done or already up to date, 1 nothing usable found, 2 existing certificate
  * differs and --force was not given.

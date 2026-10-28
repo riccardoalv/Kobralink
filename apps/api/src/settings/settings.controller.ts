@@ -1,4 +1,4 @@
-import { type UpdateAppSettingsInput, updateAppSettingsSchema } from '@kobralink/shared';
+import { type UpdateAppSettingsInput, updateAppSettingsSchema } from '@farolprint/shared';
 import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { ZodPipe } from '../common/zod.pipe';
 import { SettingsService } from './settings.service';

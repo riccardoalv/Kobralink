@@ -1,4 +1,4 @@
-import type { GcodeFileDto, SchedulePrintInput, StartPrintInput } from '@kobralink/shared';
+import type { GcodeFileDto, SchedulePrintInput, StartPrintInput } from '@farolprint/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';

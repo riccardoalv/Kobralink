@@ -5,7 +5,7 @@ import {
     type StatsDto,
     type StatsFileEntry,
     type StatsPrinterEntry,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Injectable } from '@nestjs/common';
 import { toJobDto } from '../gcode/gcode.service';
 import type { PrintJob } from '../generated/prisma/client';

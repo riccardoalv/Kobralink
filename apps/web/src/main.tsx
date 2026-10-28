@@ -11,7 +11,7 @@ import { routeTree } from './routeTree.gen';
 import 'react-grid-layout/css/styles.css';
 import './styles.css';
 
-const desktop = (window as unknown as { kobralinkDesktop?: { platform?: string } }).kobralinkDesktop;
+const desktop = (window as unknown as { farolprintDesktop?: { platform?: string } }).farolprintDesktop;
 if (desktop) document.documentElement.classList.add('desktop');
 if (desktop?.platform === 'darwin') document.documentElement.classList.add('desktop-mac');
 installI18n();
@@ -20,14 +20,14 @@ const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: 1, staleTime: 5_000 } },
     mutationCache: new MutationCache({
         onError: (error, _vars, _ctx, mutation) => {
-            console.error('[kobralink] mutation failed', error);
+            console.error('[farolprint] mutation failed', error);
             if (mutation.options.onError || mutation.meta?.silent) return;
             toast.error(error.message);
         },
     }),
     queryCache: new QueryCache({
         onError: (error, query) => {
-            console.error('[kobralink] query failed', query.queryKey, error);
+            console.error('[farolprint] query failed', query.queryKey, error);
             if (query.meta?.silent) return;
             toast.error(error.message, { id: `query:${query.queryHash}` });
         },

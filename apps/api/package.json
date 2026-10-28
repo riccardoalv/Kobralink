@@ -1,5 +1,5 @@
 {
-    "name": "@kobralink/api",
+    "name": "@farolprint/api",
     "version": "0.8.2",
     "private": true,
     "license": "GPL-3.0-only",
@@ -18,9 +18,9 @@
     "dependencies": {
         "@better-auth/api-key": "^1.7.5",
         "@ffmpeg-installer/ffmpeg": "^1.1.0",
-        "@kobralink/i18n": "workspace:*",
-        "@kobralink/kobra-protocol": "workspace:*",
-        "@kobralink/shared": "workspace:*",
+        "@farolprint/i18n": "workspace:*",
+        "@farolprint/kobra-protocol": "workspace:*",
+        "@farolprint/shared": "workspace:*",
         "@libsql/client": "^0.17.0",
         "@nestjs/common": "^11.1.6",
         "@nestjs/core": "^11.1.6",

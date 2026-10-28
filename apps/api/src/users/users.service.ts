@@ -1,8 +1,14 @@
-import { type CreateUserInput, type UpdateUserInput, USER_ROLES, type UserDto, type UserRole } from '@kobralink/shared';
+import {
+    type CreateUserInput,
+    type UpdateUserInput,
+    USER_ROLES,
+    type UserDto,
+    type UserRole,
+} from '@farolprint/shared';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuthService } from '@thallesp/nestjs-better-auth';
 import { hashPassword } from 'better-auth/crypto';
-import { internalSignup, type KobralinkAuth } from '../auth/auth';
+import { type FarolPrintAuth, internalSignup } from '../auth/auth';
 import type { User } from '../generated/prisma/client';
 import { m } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,7 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly auth: AuthService<KobralinkAuth>,
+        private readonly auth: AuthService<FarolPrintAuth>,
     ) {}
 
     async list(): Promise<UserDto[]> {

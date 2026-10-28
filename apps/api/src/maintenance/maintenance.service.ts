@@ -5,7 +5,7 @@ import {
     type MaintenanceTaskInput,
     type MaintenanceUsage,
     maintenanceProgress,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import type { MaintenanceLog, MaintenanceTask } from '../generated/prisma/client';

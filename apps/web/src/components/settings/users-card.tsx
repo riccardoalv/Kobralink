@@ -1,4 +1,4 @@
-import { createUserSchema, USER_ROLES, type UserDto, type UserRole } from '@kobralink/shared';
+import { createUserSchema, USER_ROLES, type UserDto, type UserRole } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Plus, Trash2 } from 'lucide-react';

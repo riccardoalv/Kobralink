@@ -1,4 +1,4 @@
-import type { PrinterLiveState, PrinterSample } from '@kobralink/shared';
+import type { PrinterLiveState, PrinterSample } from '@farolprint/shared';
 import { createStore } from '@tanstack/react-store';
 import { api, type PrinterWithLive } from '@/lib/api';
 

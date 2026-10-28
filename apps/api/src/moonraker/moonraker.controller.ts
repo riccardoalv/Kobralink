@@ -93,7 +93,7 @@ export class MoonrakerController {
 
     @Get('access/api_key')
     apiKey() {
-        return { result: this.authz.required ? 'managed-by-kobralink' : 'kobralink-no-auth' };
+        return { result: this.authz.required ? 'managed-by-farolprint' : 'farolprint-no-auth' };
     }
 
     @Get('access/info')
@@ -139,7 +139,7 @@ export class MoonrakerController {
 
     @Get('api/version')
     octoprintVersion() {
-        return { server: '1.5.0', api: '0.1', text: 'OctoPrint 1.5.0 (Kobralink)' };
+        return { server: '1.5.0', api: '0.1', text: 'OctoPrint 1.5.0 (Farol Print)' };
     }
 
     @Get('server/database/list')

@@ -1,4 +1,4 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import type { GcodeFileDto } from '@farolprint/shared';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';

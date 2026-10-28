@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-export interface KobralinkDesktopApi {
+export interface FarolPrintDesktopApi {
     platform: NodeJS.Platform;
     retry(): Promise<void>;
     showLog(): Promise<void>;
@@ -8,7 +8,7 @@ export interface KobralinkDesktopApi {
     setTrayStatus(printers: unknown[]): void;
 }
 
-const api: KobralinkDesktopApi = {
+const api: FarolPrintDesktopApi = {
     platform: process.platform,
     retry: () => ipcRenderer.invoke('app:retry'),
     showLog: () => ipcRenderer.invoke('app:show-log'),
@@ -16,4 +16,4 @@ const api: KobralinkDesktopApi = {
     setTrayStatus: (printers) => ipcRenderer.send('tray:status', printers),
 };
 
-contextBridge.exposeInMainWorld('kobralinkDesktop', api);
+contextBridge.exposeInMainWorld('farolprintDesktop', api);

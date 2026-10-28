@@ -1,4 +1,4 @@
-import { FAILURE_REASONS } from '@kobralink/shared';
+import { FAILURE_REASONS } from '@farolprint/shared';
 import { describe, expect, it } from 'vitest';
 import { m } from './i18n';
 import { failureReasonLabel } from './labels';

@@ -1,10 +1,10 @@
-import { m } from '@kobralink/i18n';
-import type { KobralinkDesktopApi } from '../preload';
+import { m } from '@farolprint/i18n';
+import type { FarolPrintDesktopApi } from '../preload';
 import { installLocale } from '../shared/locale';
 
 declare global {
     interface Window {
-        kobralinkDesktop: KobralinkDesktopApi;
+        farolprintDesktop: FarolPrintDesktopApi;
     }
 }
 
@@ -37,8 +37,8 @@ document.getElementById('retry')?.addEventListener('click', () => {
     errorActions.hidden = true;
     errorHelp.hidden = true;
     spinner.hidden = false;
-    void window.kobralinkDesktop.retry();
+    void window.farolprintDesktop.retry();
 });
 
-document.getElementById('show-log')?.addEventListener('click', () => void window.kobralinkDesktop.showLog());
-document.getElementById('report-issue')?.addEventListener('click', () => void window.kobralinkDesktop.reportIssue());
+document.getElementById('show-log')?.addEventListener('click', () => void window.farolprintDesktop.showLog());
+document.getElementById('report-issue')?.addEventListener('click', () => void window.farolprintDesktop.reportIssue());

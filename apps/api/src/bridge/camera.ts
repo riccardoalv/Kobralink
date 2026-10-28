@@ -9,12 +9,12 @@ const EOI = Buffer.from([0xff, 0xd9]);
 const IDLE_STOP_MS = 60_000;
 const FIRST_FRAME_TIMEOUT_MS = 8_000;
 const MAX_BACKOFF_MS = 300_000;
-const BOUNDARY = 'kobralinkframe';
+const BOUNDARY = 'farolprintframe';
 
 type FfmpegProc = ChildProcessByStdio<null, Readable, Readable> & { stdio: (Readable | null)[] };
 
 export function resolveFfmpeg(): string {
-    if (process.env.KOBRALINK_FFMPEG) return process.env.KOBRALINK_FFMPEG;
+    if (process.env.FAROLPRINT_FFMPEG) return process.env.FAROLPRINT_FFMPEG;
     try {
         const installer = require('@ffmpeg-installer/ffmpeg') as { path?: string };
         if (installer.path) return installer.path;

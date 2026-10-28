@@ -1,4 +1,4 @@
-import type { DetectionBox } from '@kobralink/shared';
+import type { DetectionBox } from '@farolprint/shared';
 
 export const DETECTION_THRESH = 0.08;
 const EWM_SPAN = 12;

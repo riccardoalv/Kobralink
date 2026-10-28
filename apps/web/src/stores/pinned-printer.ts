@@ -1,6 +1,6 @@
 import { createStore } from '@tanstack/react-store';
 
-const KEY = 'kobralink:pinned-printer';
+const KEY = 'farolprint:pinned-printer';
 
 function read(): string | null {
     try {

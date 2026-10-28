@@ -1,4 +1,4 @@
-import { type SchedulePrintInput, schedulePrintSchema } from '@kobralink/shared';
+import { type SchedulePrintInput, schedulePrintSchema } from '@farolprint/shared';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ZodPipe } from '../common/zod.pipe';
 import { ScheduledPrintService } from './scheduled-print.service';
