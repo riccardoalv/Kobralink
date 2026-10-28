@@ -118,6 +118,19 @@ export const statsQuery = (printerId: string | undefined, days: number) =>
 export const queueQuery = (id: string) =>
     queryOptions({ queryKey: ['printers', id, 'queue'], queryFn: () => api.queue.list(id) });
 
+export const queueStatusQuery = (id: string) =>
+    queryOptions({
+        queryKey: ['printers', id, 'queue-status'],
+        queryFn: () => api.queue.status(id),
+        refetchInterval: 15_000,
+    });
+
+export const scheduleQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'schedule'], queryFn: () => api.schedule.list(id) });
+
+export const maintenanceQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'maintenance'], queryFn: () => api.maintenance.list(id) });
+
 export const macrosQuery = queryOptions({ queryKey: ['macros'], queryFn: api.macros.list });
 
 export const dryScheduleQuery = (id: string) =>

@@ -50,6 +50,24 @@ export function jobStatusLabel(status: string): string {
     return JOB_STATUS_LABEL[status]?.() ?? status;
 }
 
+export const FAILURE_REASON_LABEL: Record<string, () => string> = {
+    '': m.failure_reason_none,
+    unlabeled: m.failure_reason_none,
+    error: m.failure_reason_error,
+    spaghetti: m.failure_reason_spaghetti,
+    adhesion: m.failure_reason_adhesion,
+    clog: m.failure_reason_clog,
+    filament_runout: m.failure_reason_filament_runout,
+    layer_shift: m.failure_reason_layer_shift,
+    power_loss: m.failure_reason_power_loss,
+    user_cancel: m.failure_reason_user_cancel,
+    other: m.failure_reason_other,
+};
+
+export function failureReasonLabel(reason: string): string {
+    return FAILURE_REASON_LABEL[reason]?.() ?? reason;
+}
+
 export function connectionErrorText(error: ConnectionError | null | undefined): string {
     if (!error) return '';
     switch (error.code) {

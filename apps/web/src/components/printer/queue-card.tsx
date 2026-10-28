@@ -1,15 +1,15 @@
-import type { QueueItemDto } from '@kobralink/shared';
+import type { QueueItemDto, ScheduledPrintDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, ListOrdered, Play, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, CalendarClock, Check, ListOrdered, Play, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
-import { formatDuration } from '@/lib/format';
+import { formatDate, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { queueQuery } from '@/lib/queries';
+import { queueQuery, queueStatusQuery, scheduleQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
@@ -18,13 +18,31 @@ export function QueueCard({ printerId }: { printerId: string }) {
     const printer = usePrinter(printerId);
     const qc = useQueryClient();
     const queue = useQuery(queueQuery(printerId));
+    const status = useQuery(queueStatusQuery(printerId));
+    const schedule = useQuery(scheduleQuery(printerId));
     const items = queue.data ?? [];
+    const scheduled = schedule.data ?? [];
     const idle = state.connected && state.printState !== 'printing' && state.printState !== 'paused';
     const invalidate = () => {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
+        void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue-status'] });
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'files'] });
     };
     const onError = (e: Error) => toast.error(e.message);
+    const bedClear = useMutation({
+        mutationFn: () => api.queue.bedClear(printerId),
+        onSuccess: (item) => {
+            toast.success(m.files_print_started({ name: item.filename }));
+            invalidate();
+        },
+        onError,
+    });
+    const removeScheduled = useMutation({
+        mutationFn: (id: string) => api.schedule.remove(printerId, id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] }),
+        onError,
+    });
+    const awaitingBedClear = Boolean(status.data?.awaitingBedClear && items.length > 0 && idle);
     const start = useMutation({
         mutationFn: () => api.queue.start(printerId),
         onSuccess: (item) => {
@@ -82,6 +100,34 @@ export function QueueCard({ printerId }: { printerId: string }) {
                 </CardAction>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+                {awaitingBedClear && (
+                    <div
+                        role="status"
+                        className="flex flex-wrap items-center gap-3 rounded-2xl bg-primary/15 px-4 py-3 text-sm"
+                    >
+                        <div className="min-w-0 flex-1">
+                            <div className="font-medium">{m.queue_bed_clear_title()}</div>
+                            <div className="text-xs text-muted-foreground">
+                                {m.queue_bed_clear_hint({ filename: items[0]?.filename ?? '' })}
+                            </div>
+                        </div>
+                        <Button
+                            size="sm"
+                            className="rounded-full"
+                            disabled={bedClear.isPending}
+                            onClick={() => bedClear.mutate()}
+                        >
+                            <Check className="size-3.5" /> {m.queue_bed_clear_confirm()}
+                        </Button>
+                    </div>
+                )}
+                {scheduled.length > 0 && (
+                    <ul className="space-y-1">
+                        {scheduled.map((s) => (
+                            <ScheduledRow key={s.id} item={s} onRemove={() => removeScheduled.mutate(s.id)} />
+                        ))}
+                    </ul>
+                )}
                 {items.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center text-sm text-muted-foreground">
                         <ListOrdered className="size-6" />
@@ -105,7 +151,13 @@ export function QueueCard({ printerId }: { printerId: string }) {
                             </ul>
                         </ScrollArea>
                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                            <span>{printer?.settings.queueAutoStart ? m.queue_auto_on() : m.queue_auto_off()}</span>
+                            <span>
+                                {printer?.settings.queueAutoStart
+                                    ? printer.settings.queueBedClearConfirm
+                                        ? m.queue_auto_confirm()
+                                        : m.queue_auto_on()
+                                    : m.queue_auto_off()}
+                            </span>
                             <Button
                                 size="sm"
                                 className="rounded-full"
@@ -166,6 +218,25 @@ function QueueRow({
                     <X />
                 </Small>
             </div>
+        </li>
+    );
+}
+
+function ScheduledRow({ item, onRemove }: { item: ScheduledPrintDto; onRemove: () => void }) {
+    return (
+        <li className="flex items-center gap-2 rounded-full bg-background/60 px-3 py-1.5 text-xs">
+            <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate" title={item.filename}>
+                {m.schedule_item({ date: formatDate(item.startAt), name: item.filename })}
+            </span>
+            <button
+                type="button"
+                onClick={onRemove}
+                className="rounded-full p-0.5 hover:bg-background"
+                aria-label={m.common_delete()}
+            >
+                <X className="size-3.5" />
+            </button>
         </li>
     );
 }

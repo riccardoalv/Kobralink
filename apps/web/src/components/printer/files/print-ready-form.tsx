@@ -12,6 +12,7 @@ import {
     ArrowLeft,
     ArrowRight,
     AudioWaveform,
+    CalendarClock,
     ChevronDown,
     Clock,
     Film,
@@ -29,6 +30,7 @@ import { PrintPreview3D } from '@/components/printer/files/print-preview-3d';
 import { ObjectPicker } from '@/components/printer/skip/object-picker';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -115,11 +117,13 @@ export function PrintReadyForm({
     file,
     onPrint,
     onQueue,
+    onSchedule,
 }: {
     printerId: string;
     file: GcodeFileDto;
     onPrint: (result: PrintReadyResult) => Promise<unknown>;
     onQueue?: (result: PrintReadyResult) => void;
+    onSchedule?: (result: PrintReadyResult, startAt: string) => Promise<unknown>;
 }) {
     const state = useLiveState(printerId);
     const printer = usePrinter(printerId);
@@ -157,6 +161,8 @@ export function PrintReadyForm({
     const [failureDetection, setFailureDetection] = useState(printer?.settings.failureDetection ?? true);
     const [pending, setPending] = useState(false);
     const [editing, setEditing] = useState<AmsSlot | null>(null);
+    const [scheduling, setScheduling] = useState(false);
+    const [startAt, setStartAt] = useState('');
 
     useEffect(() => {
         setAssignments((cur) => {
@@ -438,7 +444,40 @@ export function PrintReadyForm({
                 <Button type="button" variant="ghost" className="rounded-full" onClick={close}>
                     {m.upload_ready_later()}
                 </Button>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    {onSchedule && scheduling && (
+                        <Input
+                            type="datetime-local"
+                            aria-label={m.schedule_start_at()}
+                            className="w-52 rounded-full"
+                            value={startAt}
+                            onChange={(e) => setStartAt(e.target.value)}
+                        />
+                    )}
+                    {onSchedule && (
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            className={cn('rounded-full', scheduling && 'bg-primary/15')}
+                            disabled={pending || blocked || (names.length > 0 && remaining <= 0)}
+                            onClick={async () => {
+                                if (!scheduling) {
+                                    setScheduling(true);
+                                    return;
+                                }
+                                if (!startAt) return;
+                                setPending(true);
+                                try {
+                                    await onSchedule(build(), new Date(startAt).toISOString());
+                                    close();
+                                } finally {
+                                    setPending(false);
+                                }
+                            }}
+                        >
+                            <CalendarClock /> {scheduling ? m.schedule_confirm() : m.schedule_button()}
+                        </Button>
+                    )}
                     {onQueue && (
                         <Button
                             type="button"

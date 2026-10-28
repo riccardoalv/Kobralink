@@ -16,7 +16,7 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   before saying something is done.
 - **Never commit or push** unless the maintainer asks.
 - **Docs follow the code**: a change that users or contributors notice updates the guide in `docs/` it touches.
-- **Everything is in English**: code, docs, commits, issues and PRs. UI strings go through i18n (six locales).
+- **Everything is in English**: code, docs, commits, issues and PRs. UI strings go through i18n (seven locales).
 - **Commits and PR titles follow Conventional Commits** ([CONTRIBUTING.md](CONTRIBUTING.md)); PRs are squash-merged.
 
 ## Principles
@@ -51,7 +51,7 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   `sse.ts`…). Every `/api/v1` body has its schema here, validated in the API by `ZodPipe` and typed in the web in
   `src/lib/api.ts`.
 - `packages/kobra-protocol`: Kobra MQTT client (`mqtt-client.ts`), payload types, G-code parsing, upload.
-- `packages/i18n`: inlang/Paraglide project, `messages/{fr,en,de,es,it,zh-cn}.json` (base `fr`). The locale list is
+- `packages/i18n`: inlang/Paraglide project, `messages/{fr,en,de,es,it,zh-cn,pt-br}.json` (base `fr`). The locale list is
   duplicated in `APP_LOCALES` (`packages/shared/src/settings.ts`); adding a language = the `/add-locale` skill. The
   package compiles its own runtime and messages for the API; the web recompiles the same messages in
   `apps/web/src/paraglide`.
@@ -74,9 +74,19 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   Kobralink macro name); everything else returns `ok` with no effect.
 - The main API (:7100): `/api/auth/*` (Better Auth), `/api/v1/*` (protected), serves `apps/web/dist`. One Nest module
   per domain (`printers`, `core` = control, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
-  `detection`, `notifications`, `ha` = Home Assistant MQTT discovery, `stats`, `system`, `users`, `settings`).
+  `detection`, `notifications`, `ha` = Home Assistant MQTT discovery, `stats`, `system`, `users`, `settings`,
+  `schedule` = scheduled prints, `maintenance` = preventive maintenance tasks).
 - Live UI state: SSE `/api/v1/printers/:id/events` → `usePrinterEvents` writes into the Query cache; `patchLiveState`
   does the local optimistic update before the MQTT confirmation.
+- Print queue (`queue/queue.service.ts`): with `queueAutoStart`, the next file starts 15 s after a print finishes
+  unless `queueBedClearConfirm` (default on) holds it until `POST queue/bed-clear`; `GET queue/status` exposes the
+  hold. Scheduled prints (`schedule/`) fire a stored file at `startAt` and fall back to the front of the queue when
+  the printer is busy. Maintenance tasks (`maintenance/`) are due by print hours, jobs or days since the last
+  completion and notify once (`maintenance_due`).
+- Costs: `stats/job-cost.ts` prices a job from the spool (or default) filament price plus `settings.costs` (energy
+  per kWh × printer power, hourly machine rate). `GET /api/v1/stats/export.csv` exports one row per job. A cancelled
+  or errored job keeps the printer error code, the last camera frame (`dataDir/failures/<jobId>.jpg`) and a user
+  label (`failureReason`, `note`) editable with `PATCH history/:jobId`.
 - Macros are lists of JSON actions (`macroActionSchema` in `packages/shared/src/macros.ts`), not G-code; run by
   `macro.service.ts` through the `PrinterBridge` methods.
 - Camera: `bridge/camera.ts` (`CameraCache`) = one ffmpeg per printer (FLV → MJPEG 15 fps/640px), fanned out to
@@ -91,7 +101,7 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
 - Filament without an ACE: when `multiColorBox` reports no box, `LiveState.externalSpoolOnly` is set, usage from
   `print/report` (`supplies_usage`) is attributed to slot 0, and the filament card shows an external spool slot.
   Changing the mapped spool reports pending usage to the previous spool first.
-- i18n: UI in fr, en, de, es, it, zh-cn. Every visible string goes through `m.xxx()` (Paraglide). Web:
+- i18n: UI in fr, en, de, es, it, zh-cn, pt-br. Every visible string goes through `m.xxx()` (Paraglide). Web:
   `import { m } from '@/lib/i18n'` (locale kept in localStorage, dayjs in sync); API: `import { m } from
   '../i18n/locale'` (locale per request through `AsyncLocalStorage`, read from `Accept-Language`, fallback `en`).
   Adding a key = adding it to **every** `messages/*.json`.

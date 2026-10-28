@@ -10,7 +10,8 @@ export type WidgetId =
     | 'axes'
     | 'temperature'
     | 'queue'
-    | 'macros';
+    | 'macros'
+    | 'maintenance';
 
 export const WIDGETS: WidgetId[] = [
     'activity',
@@ -23,6 +24,7 @@ export const WIDGETS: WidgetId[] = [
     'temperature',
     'queue',
     'macros',
+    'maintenance',
 ];
 
 export const COLS = 12;
@@ -38,7 +40,8 @@ export const DEFAULT_LAYOUT: Layout = [
     { i: 'axes', x: 8, y: 24, w: 4, h: 9, minW: 3, minH: 9 },
     { i: 'macros', x: 0, y: 33, w: 4, h: 7, minW: 3, minH: 5 },
     { i: 'queue', x: 4, y: 33, w: 8, h: 7, minW: 4, minH: 6 },
-    { i: 'files', x: 0, y: 40, w: 12, h: 16, minW: 4, minH: 12 },
+    { i: 'maintenance', x: 0, y: 40, w: 12, h: 7, minW: 4, minH: 5 },
+    { i: 'files', x: 0, y: 47, w: 12, h: 16, minW: 4, minH: 12 },
 ];
 
 export interface LayoutPreset {

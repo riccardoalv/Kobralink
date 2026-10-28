@@ -95,6 +95,8 @@ model Printer {
   timelapses            Timelapse[]
   queueItems            QueueItem[]
   scheduledDries        ScheduledDry[]
+  scheduledPrints       ScheduledPrint[]
+  maintenanceTasks      MaintenanceTask[]
 
   @@map("printer")
 }
@@ -191,6 +193,7 @@ model GcodeFile {
   createdAt        DateTime    @default(now())
   jobs             PrintJob[]
   queueItems       QueueItem[]
+  scheduledPrints  ScheduledPrint[]
 
   @@index([filename])
   @@map("gcode_file")
@@ -210,6 +213,11 @@ model PrintJob {
   estimatedSec Int         @default(0)
   filamentMm   Float       @default(0)
   spoolUsage   String      @default("[]")
+  errorCode    Int         @default(0)
+  errorMsg     String      @default("")
+  failureReason String     @default("")
+  note         String      @default("")
+  snapshot     String?
   timelapses   Timelapse[]
 
   @@index([printerId, startedAt])
@@ -300,4 +308,49 @@ model ScheduledDry {
 
   @@index([printerId, startAt])
   @@map("scheduled_dry")
+}
+
+model ScheduledPrint {
+  id        String    @id @default(cuid())
+  printerId String
+  printer   Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  fileId    String
+  file      GcodeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  startAt   DateTime
+  options   String    @default("{}")
+  createdAt DateTime  @default(now())
+
+  @@index([printerId, startAt])
+  @@map("scheduled_print")
+}
+
+model MaintenanceTask {
+  id            String           @id @default(cuid())
+  printerId     String
+  printer       Printer          @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  name          String
+  note          String           @default("")
+  intervalHours Float            @default(0)
+  intervalJobs  Int              @default(0)
+  intervalDays  Int              @default(0)
+  lastDoneAt    DateTime?
+  dueNotifiedAt DateTime?
+  createdAt     DateTime         @default(now())
+  logs          MaintenanceLog[]
+
+  @@index([printerId])
+  @@map("maintenance_task")
+}
+
+model MaintenanceLog {
+  id     String          @id @default(cuid())
+  taskId String
+  task   MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  doneAt DateTime        @default(now())
+  note   String          @default("")
+  hours  Float           @default(0)
+  jobs   Int             @default(0)
+
+  @@index([taskId, doneAt])
+  @@map("maintenance_log")
 }

@@ -1,20 +1,22 @@
 import {
-    DEFAULT_DENSITY,
-    filamentWeightG,
-    type SpoolUsageEntry,
+    type PrintJobDto,
+    round2,
     type StatsBucket,
     type StatsDto,
     type StatsFileEntry,
     type StatsPrinterEntry,
 } from '@kobralink/shared';
 import { Injectable } from '@nestjs/common';
+import { toJobDto } from '../gcode/gcode.service';
+import type { PrintJob } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
-import { jobMaterial } from './job-material';
+import { hasAnyPricing, type PricedSpool, type PricingContext, priceJob } from './job-cost';
+import { jobsToCsv } from './stats-csv';
 
 const DAILY_MAX_DAYS = 90;
 
-type Spool = { diameterMm: number; densityGcm3: number; material: string; price: number; initialWeightG: number };
+type JobRow = PrintJob & { file: { thumbnail: string | null; id: string; filaments: string } | null };
 
 @Injectable()
 export class StatsService {
@@ -23,29 +25,77 @@ export class StatsService {
         private readonly settings: SettingsService,
     ) {}
 
+    async pricing(): Promise<PricingContext> {
+        const spoolRows = await this.prisma.client.localSpool.findMany({
+            select: {
+                id: true,
+                diameterMm: true,
+                densityGcm3: true,
+                material: true,
+                price: true,
+                initialWeightG: true,
+            },
+        });
+        const { filamentPricePerKg, costs } = this.settings.get();
+        return {
+            spools: new Map<string, PricedSpool>(spoolRows.map((s) => [s.id, s])),
+            filamentPricePerKg,
+            costs,
+        };
+    }
+
+    async history(printerId: string | undefined, limit = 50, offset = 0): Promise<PrintJobDto[]> {
+        const [rows, ctx] = await Promise.all([
+            this.prisma.client.printJob.findMany({
+                where: printerId ? { printerId } : undefined,
+                orderBy: { startedAt: 'desc' },
+                take: limit,
+                skip: offset,
+                include: { file: { select: { thumbnail: true, id: true, filaments: true } } },
+            }),
+            this.pricing(),
+        ]);
+        return rows.map((r) => this.withCost(r, ctx));
+    }
+
+    private withCost(r: JobRow, ctx: PricingContext): PrintJobDto {
+        const dto = toJobDto(r, r.file?.thumbnail ?? null);
+        if (r.status === 'printing' || !hasAnyPricing(ctx)) return dto;
+        return { ...dto, cost: priceJob(r, ctx).cost };
+    }
+
+    async exportCsv(printerId?: string, days = 0): Promise<string> {
+        const since = sinceDate(days);
+        const [rows, ctx, printers] = await Promise.all([
+            this.prisma.client.printJob.findMany({
+                where: { ...(printerId ? { printerId } : {}), ...(since ? { startedAt: { gte: since } } : {}) },
+                include: { file: { select: { thumbnail: true, id: true, filaments: true } } },
+                orderBy: { startedAt: 'asc' },
+            }),
+            this.pricing(),
+            this.prisma.client.printer.findMany({ select: { id: true, name: true } }),
+        ]);
+        const names = new Map(printers.map((p) => [p.id, p.name]));
+        return jobsToCsv(
+            rows.map((r) => this.withCost(r, ctx)),
+            names,
+            this.settings.get().currency,
+        );
+    }
+
     async compute(printerId?: string, days = 0): Promise<StatsDto> {
-        const since = days > 0 ? startOfDay(new Date(Date.now() - (days - 1) * 86_400_000)) : undefined;
-        const [jobs, printerRows, spoolRows] = await Promise.all([
+        const since = sinceDate(days);
+        const [jobs, printerRows, ctx] = await Promise.all([
             this.prisma.client.printJob.findMany({
                 where: { ...(printerId ? { printerId } : {}), ...(since ? { startedAt: { gte: since } } : {}) },
                 include: { file: { select: { thumbnail: true, id: true, filaments: true } } },
                 orderBy: { startedAt: 'asc' },
             }),
             this.prisma.client.printer.findMany({ select: { id: true, name: true } }),
-            this.prisma.client.localSpool.findMany({
-                select: {
-                    id: true,
-                    diameterMm: true,
-                    densityGcm3: true,
-                    material: true,
-                    price: true,
-                    initialWeightG: true,
-                },
-            }),
+            this.pricing(),
         ]);
-        const { currency, filamentPricePerKg } = this.settings.get();
+        const { currency } = this.settings.get();
         const printerNames = new Map(printerRows.map((p) => [p.id, p.name]));
-        const spools = new Map<string, Spool>(spoolRows.map((s) => [s.id, s]));
         const finished = jobs.filter((j) => j.status !== 'printing');
         const completed = finished.filter((j) => j.status === 'completed');
         const cancelled = finished.filter((j) => j.status === 'cancelled');
@@ -73,38 +123,19 @@ export class StatsService {
         const printers = new Map<string, StatsPrinterEntry>();
         const files = new Map<string, StatsFileEntry>();
         const materials = new Map<string, { filamentMm: number; weightG: number; cost: number; jobs: number }>();
+        const failures = new Map<string, number>();
         let totalFilamentG = 0;
-        let totalCost = 0;
+        let filamentCost = 0;
+        let energyCost = 0;
+        let machineCost = 0;
         let unpricedG = 0;
 
         for (const j of finished) {
             const d = j.startedAt;
             const ok = j.status === 'completed';
             const dur = j.durationSec ?? 0;
-            const usage = parseUsage(j.spoolUsage);
-            const entries = usage.length
-                ? usage
-                : j.filamentMm > 0
-                  ? [{ slotIndex: 0, mm: j.filamentMm, material: '', spoolId: null }]
-                  : [];
-            const fileMaterial = jobMaterial(j.file?.filaments, j.filename);
-            const priced = entries.map((u) => {
-                const spool = u.spoolId ? spools.get(u.spoolId) : undefined;
-                const mat = (u.material || spool?.material || fileMaterial).toUpperCase();
-                const weightG = filamentWeightG(
-                    u.mm,
-                    spool?.diameterMm ?? 1.75,
-                    spool?.densityGcm3 ?? DEFAULT_DENSITY[mat.split('-')[0]] ?? 1.24,
-                );
-                const perG =
-                    spool && spool.price > 0 && spool.initialWeightG > 0
-                        ? spool.price / spool.initialWeightG
-                        : filamentPricePerKg > 0
-                          ? filamentPricePerKg / 1000
-                          : null;
-                return { mm: u.mm, mat, weightG, cost: perG === null ? null : weightG * perG };
-            });
-            const jobCost = sum(priced, (u) => u.cost ?? 0);
+            const priced = priceJob(j, ctx);
+            const jobCost = priced.cost.total;
             const dk = dayKey(d);
             const db = daily.get(dk);
             if (db) bump(db, ok, dur, j.filamentMm, jobCost);
@@ -116,6 +147,10 @@ export class StatsService {
             if (wd) bump(wd, ok, dur, j.filamentMm, jobCost);
             const hb = hours.get(String(d.getHours()));
             if (hb) bump(hb, ok, dur, j.filamentMm, jobCost);
+            if (!ok) {
+                const reason = j.failureReason || (j.status === 'error' ? 'error' : 'unlabeled');
+                failures.set(reason, (failures.get(reason) ?? 0) + 1);
+            }
 
             const pe = printers.get(j.printerId) ?? {
                 printerId: j.printerId,
@@ -131,6 +166,7 @@ export class StatsService {
             if (ok) pe.completed += 1;
             pe.durationSec += dur;
             pe.filamentMm += j.filamentMm;
+            pe.weightG += priced.weightG;
             pe.cost += jobCost;
             printers.set(j.printerId, pe);
 
@@ -155,21 +191,22 @@ export class StatsService {
             files.set(fk, fe);
 
             const seen = new Set<string>();
-            for (const u of priced) {
-                const me = materials.get(u.mat) ?? { filamentMm: 0, weightG: 0, cost: 0, jobs: 0 };
+            for (const u of priced.usage) {
+                const me = materials.get(u.material) ?? { filamentMm: 0, weightG: 0, cost: 0, jobs: 0 };
                 me.filamentMm += u.mm;
                 me.weightG += u.weightG;
                 me.cost += u.cost ?? 0;
-                if (!seen.has(u.mat)) {
+                if (!seen.has(u.material)) {
                     me.jobs += 1;
-                    seen.add(u.mat);
+                    seen.add(u.material);
                 }
-                materials.set(u.mat, me);
-                pe.weightG += u.weightG;
-                totalFilamentG += u.weightG;
-                if (u.cost === null) unpricedG += u.weightG;
-                else totalCost += u.cost;
+                materials.set(u.material, me);
             }
+            totalFilamentG += priced.weightG;
+            unpricedG += priced.unpricedG;
+            filamentCost += priced.cost.filament;
+            energyCost += priced.cost.energy;
+            machineCost += priced.cost.machine;
         }
 
         const first = finished[0]?.startedAt ?? null;
@@ -189,7 +226,10 @@ export class StatsService {
             estimateRatio: estimatedSec > 0 ? estimatedActualSec / estimatedSec : null,
             totalFilamentMm: Math.round(totalFilament),
             totalFilamentG: Math.round(totalFilamentG),
-            totalCost: money(totalCost),
+            totalCost: round2(filamentCost + energyCost + machineCost),
+            filamentCost: round2(filamentCost),
+            energyCost: round2(energyCost),
+            machineCost: round2(machineCost),
             unpricedG: Math.round(unpricedG),
             currency,
             firstJobAt: first?.toISOString() ?? null,
@@ -206,11 +246,11 @@ export class StatsService {
                     ...p,
                     filamentMm: Math.round(p.filamentMm),
                     weightG: Math.round(p.weightG),
-                    cost: money(p.cost),
+                    cost: round2(p.cost),
                 }))
                 .sort((a, b) => b.durationSec - a.durationSec),
             topFiles: [...files.values()]
-                .map((f) => ({ ...f, filamentMm: Math.round(f.filamentMm), cost: money(f.cost) }))
+                .map((f) => ({ ...f, filamentMm: Math.round(f.filamentMm), cost: round2(f.cost) }))
                 .sort((a, b) => b.jobs - a.jobs || b.durationSec - a.durationSec)
                 .slice(0, 8),
             materials: [...materials.entries()]
@@ -218,12 +258,19 @@ export class StatsService {
                     material,
                     filamentMm: Math.round(v.filamentMm),
                     weightG: Math.round(v.weightG),
-                    cost: money(v.cost),
+                    cost: round2(v.cost),
                     jobs: v.jobs,
                 }))
                 .sort((a, b) => b.filamentMm - a.filamentMm),
+            failures: [...failures.entries()]
+                .map(([reason, count]) => ({ reason, count }))
+                .sort((a, b) => b.count - a.count),
         };
     }
+}
+
+function sinceDate(days: number): Date | undefined {
+    return days > 0 ? startOfDay(new Date(Date.now() - (days - 1) * 86_400_000)) : undefined;
 }
 
 function sum<T>(rows: T[], pick: (row: T) => number): number {
@@ -243,11 +290,7 @@ function emptyBucket(key: string): StatsBucket {
 }
 
 function roundBucket(b: StatsBucket): StatsBucket {
-    return { ...b, cost: money(b.cost) };
-}
-
-function money(v: number): number {
-    return Math.round(v * 100) / 100;
+    return { ...b, cost: round2(b.cost) };
 }
 
 function bump(b: StatsBucket, ok: boolean, durationSec: number, filamentMm: number, cost: number): void {
@@ -256,13 +299,4 @@ function bump(b: StatsBucket, ok: boolean, durationSec: number, filamentMm: numb
     b.durationSec += durationSec;
     b.filamentMm += filamentMm;
     b.cost += cost;
-}
-
-function parseUsage(raw: string): SpoolUsageEntry[] {
-    try {
-        const v = JSON.parse(raw);
-        return Array.isArray(v) ? v : [];
-    } catch {
-        return [];
-    }
 }

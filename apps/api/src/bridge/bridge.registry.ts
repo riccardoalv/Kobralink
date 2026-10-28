@@ -7,6 +7,7 @@ import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
 import { HaMqttService } from '../ha/ha-mqtt.service';
 import { m } from '../i18n/locale';
+import { MaintenanceService } from '../maintenance/maintenance.service';
 import { MoonrakerHost } from '../moonraker/moonraker.host';
 import { NotificationService } from '../notifications/notification.service';
 import { PrintersService } from '../printers/printers.service';
@@ -34,6 +35,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         private readonly detection: DetectionService,
         private readonly queue: QueueService,
         private readonly ha: HaMqttService,
+        private readonly maintenance: MaintenanceService,
     ) {}
 
     private loadCerts(): { cert: Buffer; key: Buffer } {
@@ -89,6 +91,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         this.detection.attach(bridge);
         this.queue.attach(bridge);
         this.ha.attach(bridge);
+        this.maintenance.attach(bridge);
         bridge.start();
         await this.moonraker.startFor(bridge);
         this.log.log(`Bridge started: ${config.name} (${config.ip}) → Moonraker :${config.httpPort}`);
@@ -104,6 +107,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         this.detection.detach(id);
         this.queue.detach(id);
         this.ha.detach(id);
+        this.maintenance.detach(id);
         await this.moonraker.stopFor(id);
         await bridge.stop();
         this.filaments.forgetPrinter(id);

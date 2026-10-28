@@ -14,9 +14,11 @@ import { FilamentModule } from './filament/filament.module';
 import { GcodeModule } from './gcode/gcode.module';
 import { HaMqttModule } from './ha/ha-mqtt.module';
 import { MacroModule } from './macros/macro.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
+import { ScheduledPrintModule } from './schedule/scheduled-print.module';
 import { SettingsModule } from './settings/settings.module';
 import { SpoolmanModule } from './spoolman/spoolman.module';
 import { LocalSpoolModule } from './spools/local-spool.module';
@@ -39,6 +41,7 @@ const env = loadEnv();
         TimelapseModule,
         DetectionModule,
         QueueModule,
+        MaintenanceModule,
         MacroModule,
         HaMqttModule,
         FilamentModule,
@@ -46,6 +49,7 @@ const env = loadEnv();
         CoreModule,
         StatsModule,
         DryScheduleModule,
+        ScheduledPrintModule,
         UsersModule,
         SystemModule,
         ...(env.webDir

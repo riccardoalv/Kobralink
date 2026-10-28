@@ -49,7 +49,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
     const webCount = files.data?.filter((f) => f.webUnverified).length ?? 0;
 
     const renderContent = () => {
-        if (tab === 'history') return <HistoryList jobs={jobs.data ?? []} />;
+        if (tab === 'history') return <HistoryList printerId={printerId} jobs={jobs.data ?? []} />;
         if (tab === 'timelapses') return <TimelapseList printerId={printerId} />;
         if (tab === 'printer') {
             return (

@@ -1,4 +1,5 @@
 export * from './control';
+export * from './cost';
 export * from './detection';
 export * from './dry';
 export * from './events';
@@ -6,9 +7,11 @@ export * from './filament';
 export * from './files';
 export * from './forms';
 export * from './macros';
+export * from './maintenance';
 export * from './patch';
 export * from './printer';
 export * from './queue';
+export * from './schedule';
 export * from './settings';
 export * from './spools';
 export * from './sse';

@@ -76,10 +76,21 @@ function GlobalSubscriptions() {
 
     useSse<KobralinkEvent>('printers', 'notification', (event) => {
         qc.setQueryData<KobralinkEvent[]>(['notifications'], (old) => [...(old ?? []), event].slice(-200));
-        if (event.type === 'queue_next' || event.type === 'print_finished') {
+        if (
+            event.type === 'queue_next' ||
+            event.type === 'print_finished' ||
+            event.type === 'print_cancelled' ||
+            event.type === 'scheduled_print'
+        ) {
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'queue'] });
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'queue-status'] });
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'schedule'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'history'] });
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'maintenance'] });
             void qc.invalidateQueries({ queryKey: ['timelapses'] });
+        }
+        if (event.type === 'maintenance_due') {
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'maintenance'] });
         }
         const alert = event.type.startsWith('alert') || event.type === 'print_paused';
         (alert ? toast.warning : toast.info)(event.title, { description: event.body, duration: 8000 });

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { FilamentProfilesCard } from '@/components/printer/filament-profiles-card';
+import { CostsCard } from '@/components/settings/costs-card';
 import { DetectionCard } from '@/components/settings/detection-card';
 import { DryPresetsCard } from '@/components/settings/dry-presets-card';
 import { GeneralCard } from '@/components/settings/general-card';
@@ -84,7 +85,12 @@ function SettingsPage() {
             )}
             <fieldset disabled={!canOperate} className="contents">
                 <div key={`${tab}-${JSON.stringify(s)}`} className="space-y-4">
-                    {tab === 'general' && <GeneralCard settings={s} />}
+                    {tab === 'general' && (
+                        <>
+                            <GeneralCard settings={s} />
+                            <CostsCard settings={s} />
+                        </>
+                    )}
                     {tab === 'notifications' && <NotificationsCard settings={s} />}
                     {tab === 'detection' && <DetectionCard settings={s} />}
                     {tab === 'integrations' && (

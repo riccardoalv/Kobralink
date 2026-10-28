@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseGcodeMetadata } from '@kobralink/kobra-protocol';
-import type { GcodeFilament, GcodeFileDto, PrintJobDto, SpoolUsageEntry } from '@kobralink/shared';
+import type { GcodeFilament, GcodeFileDto, PrintJobDto, SpoolUsageEntry, UpdatePrintJobInput } from '@kobralink/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import { loadEnv } from '../config/env';
 import type { GcodeFile, PrintJob } from '../generated/prisma/client';
@@ -18,6 +18,7 @@ const ALLOWED_EXT = ['.gcode', '.bgcode'];
 export class GcodeService {
     private readonly log = new Logger(GcodeService.name);
     private readonly dir = loadEnv().gcodeDir;
+    private readonly failuresDir = path.join(loadEnv().dataDir, 'failures');
 
     constructor(private readonly prisma: PrismaService) {}
 
@@ -184,12 +185,14 @@ export class GcodeService {
         filamentMm = 0,
         spoolUsage: SpoolUsageEntry[] = [],
         printDurationSec = 0,
+        failure: { errorCode?: number; errorMsg?: string; snapshot?: Buffer | null } = {},
     ): Promise<void> {
         const job = await this.prisma.client.printJob.findUnique({ where: { id: jobId } });
         if (!job) return;
         const now = new Date();
         const wallSec = Math.max(0, Math.round((now.getTime() - job.startedAt.getTime()) / 1000));
         const durationSec = printDurationSec > 0 ? Math.round(printDurationSec) : wallSec;
+        const snapshot = status === 'completed' ? null : await this.saveSnapshot(jobId, failure.snapshot ?? null);
         await this.prisma.client.printJob.update({
             where: { id: jobId },
             data: {
@@ -198,8 +201,45 @@ export class GcodeService {
                 durationSec,
                 filamentMm: Math.max(0, Math.round(filamentMm)),
                 spoolUsage: JSON.stringify(spoolUsage),
+                errorCode: status === 'completed' ? 0 : Math.max(0, Math.round(failure.errorCode ?? 0)),
+                errorMsg: status === 'completed' ? '' : (failure.errorMsg ?? '').slice(0, 500),
+                ...(snapshot ? { snapshot } : {}),
             },
         });
+    }
+
+    private async saveSnapshot(jobId: string, data: Buffer | null): Promise<string | null> {
+        if (!data?.length) return null;
+        try {
+            await fs.promises.mkdir(this.failuresDir, { recursive: true });
+            const name = `${jobId}.jpg`;
+            await fs.promises.writeFile(path.join(this.failuresDir, name), data);
+            return name;
+        } catch (e) {
+            this.log.warn(`Failure snapshot not saved: ${(e as Error).message}`);
+            return null;
+        }
+    }
+
+    async snapshotPath(printerId: string, jobId: string): Promise<string | null> {
+        const job = await this.prisma.client.printJob.findFirst({ where: { id: jobId, printerId } });
+        if (!job?.snapshot) return null;
+        const file = path.join(this.failuresDir, path.basename(job.snapshot));
+        return fs.existsSync(file) ? file : null;
+    }
+
+    async updateJob(printerId: string, jobId: string, patch: UpdatePrintJobInput): Promise<PrintJobDto | null> {
+        const job = await this.prisma.client.printJob.findFirst({ where: { id: jobId, printerId } });
+        if (!job) return null;
+        const row = await this.prisma.client.printJob.update({
+            where: { id: jobId },
+            data: {
+                ...(patch.failureReason !== undefined ? { failureReason: patch.failureReason } : {}),
+                ...(patch.note !== undefined ? { note: patch.note } : {}),
+            },
+            include: { file: { select: { thumbnail: true } } },
+        });
+        return toJobDto(row, row.file?.thumbnail ?? null);
     }
 
     async closeOpenJobs(printerId: string, status: 'completed' | 'cancelled' | 'error'): Promise<number> {
@@ -284,6 +324,12 @@ export function toJobDto(j: PrintJob, thumbnail: string | null = null): PrintJob
         filamentMm: j.filamentMm,
         spoolUsage,
         thumbnail,
+        errorCode: j.errorCode,
+        errorMsg: j.errorMsg,
+        failureReason: j.failureReason as PrintJobDto['failureReason'],
+        note: j.note,
+        hasSnapshot: Boolean(j.snapshot),
+        cost: null,
     };
 }
 
