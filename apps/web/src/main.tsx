@@ -8,7 +8,6 @@ import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Toaster } from '@/components/ui/sonner';
 import { installI18n, useLocale } from '@/lib/i18n';
 import { routeTree } from './routeTree.gen';
-import 'react-grid-layout/css/styles.css';
 import './styles.css';
 
 const desktop = (window as unknown as { farolprintDesktop?: { platform?: string } }).farolprintDesktop;

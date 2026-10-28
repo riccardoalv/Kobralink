@@ -9,12 +9,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, History, Pencil, Plus, Trash2, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
+import { EmptyState, IconButton, Panel } from '@/components/printer/panel';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -35,7 +34,7 @@ export function presetLabel(p: MaintenancePreset): string {
     return PRESET_LABEL[p.key]?.() ?? p.key;
 }
 
-export function MaintenanceCard({ printerId }: { printerId: string }) {
+export function MaintenanceCard({ printerId, className }: { printerId: string; className?: string }) {
     const qc = useQueryClient();
     const tasks = useQuery(maintenanceQuery(printerId));
     const invalidate = () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'maintenance'] });
@@ -63,36 +62,51 @@ export function MaintenanceCard({ printerId }: { printerId: string }) {
         });
     const list = tasks.data ?? [];
     const dueCount = list.filter((t) => t.due).length;
+    const names = new Set(list.map((t) => t.name.trim().toLowerCase()));
+    const suggested = tasks.isSuccess
+        ? MAINTENANCE_PRESETS.filter((p) => !names.has(presetLabel(p).toLowerCase()))
+        : [];
+    const enable = useMutation({
+        mutationFn: (presets: MaintenancePreset[]) =>
+            Promise.all(
+                presets.map((p) =>
+                    api.maintenance.create(printerId, {
+                        name: presetLabel(p),
+                        intervalHours: p.intervalHours,
+                        intervalJobs: p.intervalJobs,
+                        intervalDays: p.intervalDays,
+                    }),
+                ),
+            ),
+        onSuccess: () => {
+            toast.success(m.maintenance_saved());
+            void invalidate();
+        },
+        onError,
+    });
 
     return (
-        <Card className="rounded-3xl border-0 shadow-none">
-            <CardHeader>
-                <CardTitle className="text-lg font-medium">{m.maintenance_title()}</CardTitle>
-                <CardAction className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Panel
+            className={className}
+            title={m.maintenance_title()}
+            action={
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {dueCount > 0 && (
                         <span className="rounded-full bg-destructive/15 px-2 py-0.5 font-medium text-destructive">
                             {m.maintenance_due_count({ n: dueCount })}
                         </span>
                     )}
-                    <button
-                        type="button"
-                        title={m.maintenance_add()}
-                        aria-label={m.maintenance_add()}
-                        className="flex size-8 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-3.5"
-                        onClick={() => openForm()}
-                    >
+                    <IconButton title={m.maintenance_add()} onClick={() => openForm()}>
                         <Plus />
-                    </button>
-                </CardAction>
-            </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+                    </IconButton>
+                </div>
+            }
+        >
+            <div className="flex flex-col gap-3">
                 {list.length === 0 ? (
-                    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center text-sm text-muted-foreground">
-                        <Wrench className="size-6" />
-                        {m.maintenance_empty()}
-                    </div>
+                    <EmptyState icon={<Wrench />}>{m.maintenance_empty()}</EmptyState>
                 ) : (
-                    <ScrollArea className="min-h-0 flex-1">
+                    <div className="max-h-96 overflow-y-auto">
                         <ul className="space-y-2">
                             {list.map((t) => (
                                 <TaskRow
@@ -112,14 +126,49 @@ export function MaintenanceCard({ printerId }: { printerId: string }) {
                                 />
                             ))}
                         </ul>
-                    </ScrollArea>
+                    </div>
                 )}
-            </CardContent>
-        </Card>
+                {suggested.length > 0 && (
+                    <section aria-label={m.maintenance_recommended()} className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-sm font-medium text-muted-foreground">{m.maintenance_recommended()}</h3>
+                            {suggested.length > 1 && (
+                                <Button
+                                    variant="secondary"
+                                    className="h-8 rounded-full px-3 text-xs"
+                                    disabled={enable.isPending}
+                                    onClick={() => enable.mutate(suggested)}
+                                >
+                                    <Plus /> {m.maintenance_enable_all()}
+                                </Button>
+                            )}
+                        </div>
+                        <ul className="divide-y divide-border rounded-2xl border border-dashed border-border">
+                            {suggested.map((p) => (
+                                <li key={p.key} className="flex items-center gap-3 px-3 py-2">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-sm">{presetLabel(p)}</div>
+                                        <div className="text-xs text-muted-foreground">{intervalText(p)}</div>
+                                    </div>
+                                    <Button
+                                        className="h-8 rounded-full px-3 text-xs"
+                                        aria-label={`${m.maintenance_enable()} · ${presetLabel(p)}`}
+                                        disabled={enable.isPending}
+                                        onClick={() => enable.mutate([p])}
+                                    >
+                                        {m.maintenance_enable()}
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+            </div>
+        </Panel>
     );
 }
 
-function intervalText(t: MaintenanceTaskDto): string {
+function intervalText(t: Pick<MaintenanceTaskDto, 'intervalHours' | 'intervalJobs' | 'intervalDays'>): string {
     const parts: string[] = [];
     if (t.intervalHours > 0) parts.push(m.maintenance_every_hours({ n: t.intervalHours }));
     if (t.intervalJobs > 0) parts.push(m.maintenance_every_jobs({ n: t.intervalJobs }));

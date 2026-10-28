@@ -2,9 +2,8 @@ import type { QueueItemDto, ScheduledPrintDto } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, CalendarClock, Check, ListOrdered, Play, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmptyState, IconButton, Panel } from '@/components/printer/panel';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatDate, formatDuration } from '@/lib/format';
@@ -13,7 +12,7 @@ import { queueQuery, queueStatusQuery, scheduleQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
-export function QueueCard({ printerId }: { printerId: string }) {
+export function QueueCard({ printerId, className }: { printerId: string; className?: string }) {
     const state = useLiveState(printerId);
     const printer = usePrinter(printerId);
     const qc = useQueryClient();
@@ -72,19 +71,17 @@ export function QueueCard({ printerId }: { printerId: string }) {
     const total = items.reduce((a, i) => a + i.estPrintTimeSec, 0);
 
     return (
-        <Card className="rounded-3xl border-0 shadow-none">
-            <CardHeader>
-                <CardTitle className="text-lg font-medium">{m.queue_title()}</CardTitle>
-                <CardAction className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Panel
+            className={className}
+            title={m.queue_title()}
+            action={
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {items.length > 0 && (
                         <span>{m.queue_total({ n: items.length, duration: formatDuration(total) })}</span>
                     )}
                     {items.length > 0 && (
-                        <button
-                            type="button"
+                        <IconButton
                             title={m.queue_clear()}
-                            aria-label={m.queue_clear()}
-                            className="flex size-8 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-3.5"
                             onClick={() =>
                                 alertConfirmationDialogStore.actions.openAlertDialog({
                                     title: m.queue_clear_title(),
@@ -95,11 +92,12 @@ export function QueueCard({ printerId }: { printerId: string }) {
                             }
                         >
                             <Trash2 />
-                        </button>
+                        </IconButton>
                     )}
-                </CardAction>
-            </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+                </div>
+            }
+        >
+            <div className="flex flex-col gap-3">
                 {awaitingBedClear && (
                     <div
                         role="status"
@@ -129,13 +127,10 @@ export function QueueCard({ printerId }: { printerId: string }) {
                     </ul>
                 )}
                 {items.length === 0 ? (
-                    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center text-sm text-muted-foreground">
-                        <ListOrdered className="size-6" />
-                        {m.queue_empty()}
-                    </div>
+                    <EmptyState icon={<ListOrdered />}>{m.queue_empty()}</EmptyState>
                 ) : (
                     <>
-                        <ScrollArea className="min-h-0 flex-1">
+                        <div className="max-h-80 overflow-y-auto">
                             <ul className="space-y-2">
                                 {items.map((item, i) => (
                                     <QueueRow
@@ -149,7 +144,7 @@ export function QueueCard({ printerId }: { printerId: string }) {
                                     />
                                 ))}
                             </ul>
-                        </ScrollArea>
+                        </div>
                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                             <span>
                                 {printer?.settings.queueAutoStart
@@ -169,8 +164,8 @@ export function QueueCard({ printerId }: { printerId: string }) {
                         </div>
                     </>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </Panel>
     );
 }
 

@@ -1,14 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Fan, Feather, Gauge, Lightbulb, LightbulbOff, Plug, PlugZap, Sun, Zap } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
+    ArrowUp,
+    Fan,
+    Feather,
+    Gauge,
+    Home,
+    Lightbulb,
+    LightbulbOff,
+    Move,
+    Plug,
+    PlugZap,
+    Power,
+    SlidersHorizontal,
+    Zap,
+} from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { powerStatusQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { printersStore } from '@/stores/printers';
+import { Panel, Segmented } from './panel';
 
 const SPEED_MODES = [
     { value: 1, label: m.controls_speed_quiet, icon: <Feather /> },
@@ -16,7 +36,103 @@ const SPEED_MODES = [
     { value: 3, label: m.controls_speed_fast, icon: <Zap /> },
 ];
 
-export function ControlsCard({ printerId }: { printerId: string }) {
+const AXIS = { X: 1, Y: 2, Z: 3, ALL: 4 } as const;
+const DISTANCES = [1, 10, 50];
+
+type Tab = 'controls' | 'axes';
+
+export function ControlsCard({ printerId, className }: { printerId: string; className?: string }) {
+    const [tab, setTab] = useState<Tab>('controls');
+    return (
+        <Panel
+            className={cn('gap-4 p-4 sm:p-5', className)}
+            title={m.controls_title()}
+            action={
+                <Segmented<Tab>
+                    label={m.controls_title()}
+                    options={[
+                        { value: 'controls', title: m.controls_title(), label: <SlidersHorizontal /> },
+                        { value: 'axes', title: m.axes_title(), label: <Move /> },
+                    ]}
+                    value={tab}
+                    onSelect={setTab}
+                />
+            }
+        >
+            {tab === 'controls' ? <Toggles printerId={printerId} /> : <AxesPad printerId={printerId} />}
+        </Panel>
+    );
+}
+
+function AxesPad({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId);
+    const locked = !state.connected || state.printState === 'printing';
+    const [distance, setDistance] = useState(10);
+    const onError = (e: Error) => toast.error(e.message);
+    const axisMut = useMutation({
+        mutationFn: (input: { axis: number; moveType: number; distance: number }) => api.control.axis(printerId, input),
+        onError,
+    });
+    const offMut = useMutation({ mutationFn: () => api.control.axisOff(printerId), onError });
+    const jog = (axis: number, moveType: number) => axisMut.mutate({ axis, moveType, distance });
+
+    return (
+        <div className="flex flex-col items-center gap-4">
+            <p className="w-full text-center text-xs text-muted-foreground">
+                X/Z · {m.axes_nozzle()} — Y · {m.axes_bed()}
+            </p>
+            <div className="flex items-center gap-5">
+                <div className="grid grid-cols-3 gap-2">
+                    <span />
+                    <Jog onClick={() => jog(AXIS.Y, 0)} disabled={locked} title={`Y- · ${m.axes_bed()}`}>
+                        <ArrowUp />
+                    </Jog>
+                    <span />
+                    <Jog onClick={() => jog(AXIS.X, 0)} disabled={locked} title={`X- · ${m.axes_nozzle()}`}>
+                        <ArrowLeft />
+                    </Jog>
+                    <Jog onClick={() => jog(AXIS.ALL, 2)} disabled={locked} title={m.axes_home()} primary>
+                        <Home />
+                    </Jog>
+                    <Jog onClick={() => jog(AXIS.X, 1)} disabled={locked} title={`X+ · ${m.axes_nozzle()}`}>
+                        <ArrowRight />
+                    </Jog>
+                    <span />
+                    <Jog onClick={() => jog(AXIS.Y, 1)} disabled={locked} title={`Y+ · ${m.axes_bed()}`}>
+                        <ArrowDown />
+                    </Jog>
+                    <span />
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                    <Jog onClick={() => jog(AXIS.Z, 1)} disabled={locked} title="Z+">
+                        <ArrowUp />
+                    </Jog>
+                    <span className="flex h-11 items-center text-sm font-medium text-muted-foreground">Z</span>
+                    <Jog onClick={() => jog(AXIS.Z, 0)} disabled={locked} title="Z-">
+                        <ArrowDown />
+                    </Jog>
+                </div>
+            </div>
+            <Segmented
+                className="w-full"
+                label={m.axes_title()}
+                options={DISTANCES.map((d) => ({ value: d, label: `${d} mm` }))}
+                value={distance}
+                onSelect={setDistance}
+            />
+            <Button
+                variant="secondary"
+                className="h-9 w-full rounded-full"
+                disabled={locked}
+                onClick={() => offMut.mutate()}
+            >
+                <Power /> {m.axes_motors_off()}
+            </Button>
+        </div>
+    );
+}
+
+function Toggles({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
     const offline = !state.connected;
     const busy = state.printState === 'printing';
@@ -52,34 +168,25 @@ export function ControlsCard({ printerId }: { printerId: string }) {
             : m.controls_plug_off();
 
     return (
-        <Card className="rounded-3xl border-0 shadow-none">
-            <CardHeader>
-                <CardTitle className="text-lg font-medium">{m.controls_title()}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col justify-evenly gap-5">
-                <div className={cn('grid gap-3', powerConfigured ? 'grid-cols-2' : 'grid-cols-1')}>
-                    <Tile
-                        icon={state.lightOn ? <Lightbulb /> : <LightbulbOff />}
-                        label={m.controls_light()}
-                        status={state.lightOn ? `${m.controls_on()} · ${state.lightBrightness} %` : m.controls_off()}
-                        pressed={state.lightOn}
-                        disabled={offline || lightMut.isPending}
-                        onClick={() => lightMut.mutate({ on: !state.lightOn })}
-                    />
-                    {powerConfigured && (
-                        <Tile
-                            icon={powerOn ? <PlugZap /> : <Plug />}
-                            label={m.controls_power()}
-                            status={busy ? `${powerStatus} · ${m.controls_locked_printing()}` : powerStatus}
-                            pressed={powerOn}
-                            disabled={powerMut.isPending || busy}
-                            onClick={() => powerMut.mutate(powerOn ? 'off' : 'on')}
+        <div className="flex min-w-0 flex-col divide-y divide-border">
+            <>
+                <Row
+                    icon={state.lightOn ? <Lightbulb /> : <LightbulbOff />}
+                    label={m.controls_light()}
+                    status={state.lightOn ? `${m.controls_on()} · ${state.lightBrightness} %` : m.controls_off()}
+                    active={state.lightOn}
+                    control={
+                        <Switch
+                            aria-label={m.controls_light()}
+                            checked={state.lightOn}
+                            disabled={offline || lightMut.isPending}
+                            onCheckedChange={(on) => lightMut.mutate({ on })}
                         />
-                    )}
-                </div>
-                {state.lightOn && (
-                    <Section icon={<Sun />} label={m.controls_brightness()} value={`${state.lightBrightness} %`}>
+                    }
+                >
+                    {state.lightOn && (
                         <Slider
+                            aria-label={m.controls_brightness()}
                             value={[state.lightBrightness]}
                             min={5}
                             max={100}
@@ -88,113 +195,112 @@ export function ControlsCard({ printerId }: { printerId: string }) {
                             onValueChange={([v]) => patchLiveState(printerId, { lightBrightness: v })}
                             onValueCommit={([v]) => lightMut.mutate({ on: true, brightness: v })}
                         />
-                    </Section>
-                )}
-                <Section
-                    icon={
-                        <Fan
-                            className={cn(state.fanSpeed > 0 && 'animate-spin')}
-                            style={{ animationDuration: `${Math.max(0.6, 3 - state.fanSpeed / 40)}s` }}
-                        />
-                    }
-                    label={m.controls_part_fan()}
-                    value={`${state.fanSpeed} %`}
-                >
-                    <Slider
-                        value={[state.fanSpeed]}
-                        min={0}
-                        max={100}
-                        step={5}
-                        disabled={offline}
-                        onValueChange={([v]) => patchLiveState(printerId, { fanSpeed: v })}
-                        onValueCommit={([v]) => fanMut.mutate(v)}
+                    )}
+                </Row>
+                {powerConfigured && (
+                    <Row
+                        icon={powerOn ? <PlugZap /> : <Plug />}
+                        label={m.controls_power()}
+                        status={busy ? `${powerStatus} · ${m.controls_locked_printing()}` : powerStatus}
+                        active={powerOn}
+                        control={
+                            <Switch
+                                aria-label={m.controls_power()}
+                                checked={powerOn}
+                                disabled={powerMut.isPending || busy}
+                                onCheckedChange={(on) => powerMut.mutate(on ? 'on' : 'off')}
+                            />
+                        }
                     />
-                </Section>
-                <Section icon={<Gauge />} label={m.controls_speed()} value={busy ? '' : m.controls_speed_hint()}>
-                    <div className="flex gap-1 rounded-full bg-secondary p-1">
-                        {SPEED_MODES.map((mode) => (
-                            <button
-                                key={mode.value}
-                                type="button"
-                                aria-pressed={state.printSpeedMode === mode.value}
-                                disabled={offline || !busy}
-                                onClick={() => speedMut.mutate(mode.value)}
-                                className={cn(
-                                    'flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 [&_svg]:size-3.5',
-                                    state.printSpeedMode === mode.value
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'text-muted-foreground hover:text-foreground',
-                                )}
-                            >
-                                {mode.icon}
-                                {mode.label()}
-                            </button>
-                        ))}
-                    </div>
-                </Section>
-            </CardContent>
-        </Card>
+                )}
+            </>
+            <Row
+                icon={
+                    <Fan
+                        className={cn(state.fanSpeed > 0 && 'animate-spin')}
+                        style={{ animationDuration: `${Math.max(0.6, 3 - state.fanSpeed / 40)}s` }}
+                    />
+                }
+                label={m.controls_part_fan()}
+                status={`${state.fanSpeed} %`}
+                active={state.fanSpeed > 0}
+            >
+                <Slider
+                    aria-label={m.controls_part_fan()}
+                    value={[state.fanSpeed]}
+                    min={0}
+                    max={100}
+                    step={5}
+                    disabled={offline}
+                    onValueChange={([v]) => patchLiveState(printerId, { fanSpeed: v })}
+                    onValueCommit={([v]) => fanMut.mutate(v)}
+                />
+            </Row>
+            <Row icon={<Gauge />} label={m.controls_speed()} status={busy ? '' : m.controls_speed_hint()} active={busy}>
+                <Segmented
+                    label={m.controls_speed()}
+                    options={SPEED_MODES.map((s) => ({ value: s.value, label: s.label(), icon: s.icon }))}
+                    value={state.printSpeedMode}
+                    disabled={offline || !busy}
+                    onSelect={(mode) => speedMut.mutate(mode)}
+                />
+            </Row>
+        </div>
     );
 }
 
-function Tile({
+function Row({
     icon,
     label,
     status,
-    pressed,
-    ...props
-}: React.ComponentProps<'button'> & { icon: React.ReactNode; label: string; status: string; pressed: boolean }) {
-    return (
-        <button
-            type="button"
-            aria-pressed={pressed}
-            {...props}
-            className={cn(
-                'flex items-center gap-3 rounded-2xl p-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',
-                pressed ? 'bg-primary/10 hover:bg-primary/15' : 'bg-secondary hover:bg-accent',
-            )}
-        >
-            <span
-                className={cn(
-                    'flex size-10 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:size-5',
-                    pressed ? 'bg-primary text-primary-foreground' : 'bg-background/60 text-muted-foreground',
-                )}
-            >
-                {icon}
-            </span>
-            <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{label}</span>
-                <span className={cn('block truncate text-xs', pressed ? 'text-primary' : 'text-muted-foreground')}>
-                    {status}
-                </span>
-            </span>
-        </button>
-    );
-}
-
-function Section({
-    icon,
-    label,
-    value,
+    active,
+    control,
     children,
 }: {
     icon: React.ReactNode;
     label: string;
-    value: React.ReactNode;
-    children: React.ReactNode;
+    status: string;
+    active: boolean;
+    control?: React.ReactNode;
+    children?: React.ReactNode;
 }) {
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2.5 text-sm">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground [&_svg]:size-4">
-                        {icon}
-                    </span>
-                    {label}
+        <div className="flex flex-col gap-2.5 py-3 first:pt-0 last:pb-0">
+            <div className="flex items-center gap-3">
+                <span
+                    className={cn(
+                        'flex size-8 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:size-4',
+                        active ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground',
+                    )}
+                >
+                    {icon}
                 </span>
-                <span className="text-sm text-muted-foreground tabular-nums">{value}</span>
+                <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">{label}</span>
+                    {status && (
+                        <span className="block truncate text-xs text-muted-foreground tabular-nums">{status}</span>
+                    )}
+                </span>
+                {control}
             </div>
             {children}
         </div>
+    );
+}
+
+function Jog({ primary, className, ...props }: React.ComponentProps<'button'> & { primary?: boolean }) {
+    return (
+        <button
+            type="button"
+            aria-label={props.title}
+            {...props}
+            className={cn(
+                'flex size-11 items-center justify-center rounded-2xl transition-colors disabled:opacity-40 [&_svg]:size-5',
+                primary
+                    ? 'bg-primary text-primary-foreground enabled:hover:bg-primary/90'
+                    : 'bg-secondary text-foreground enabled:hover:bg-accent',
+                className,
+            )}
+        />
     );
 }

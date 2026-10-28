@@ -92,6 +92,71 @@ describe('MaintenanceCard', () => {
         expect(screen.queryByText(/due/)).toBeNull();
     });
 
+    it('suggests only the recommended tasks not added yet', async () => {
+        await renderWithProviders(<MaintenanceCard printerId="p1" />);
+        const section = await screen.findByRole('region', { name: m.maintenance_recommended() });
+        expect(section.textContent).toContain(m.maintenance_preset_check_belts());
+        expect(section.textContent).toContain(m.maintenance_preset_clean_bed());
+        expect(section.textContent).toContain('every 20 prints');
+        expect(section.textContent).toContain(m.maintenance_preset_clean_fans());
+        expect(section.textContent).toContain('every 90 days');
+        expect(section.textContent).not.toContain(m.maintenance_preset_clean_nozzle());
+        expect(section.textContent).not.toContain(m.maintenance_preset_lubricate_axes());
+    });
+
+    it('enables one recommended task with its default intervals', async () => {
+        await renderWithProviders(<MaintenanceCard printerId="p1" />);
+        await userEvent.click(
+            await screen.findByRole('button', {
+                name: `${m.maintenance_enable()} · ${m.maintenance_preset_check_belts()}`,
+            }),
+        );
+        await waitFor(() =>
+            expect(maintenance.create).toHaveBeenCalledWith('p1', {
+                name: m.maintenance_preset_check_belts(),
+                intervalHours: 200,
+                intervalJobs: 0,
+                intervalDays: 0,
+            }),
+        );
+        expect(maintenance.create).toHaveBeenCalledTimes(1);
+        await waitFor(() => expect(toast.success).toHaveBeenCalledWith(m.maintenance_saved()));
+        expect(maintenance.list.mock.calls.length).toBeGreaterThan(1);
+    });
+
+    it('enables every recommended task at once on an empty printer', async () => {
+        maintenance.list.mockResolvedValue([]);
+        await renderWithProviders(<MaintenanceCard printerId="p1" />);
+        expect(await screen.findByText(m.maintenance_empty())).toBeTruthy();
+        await userEvent.click(screen.getByRole('button', { name: m.maintenance_enable_all() }));
+        await waitFor(() => expect(maintenance.create).toHaveBeenCalledTimes(MAINTENANCE_PRESETS.length));
+        for (const p of MAINTENANCE_PRESETS) {
+            expect(maintenance.create).toHaveBeenCalledWith('p1', {
+                name: presetLabel(p),
+                intervalHours: p.intervalHours,
+                intervalJobs: p.intervalJobs,
+                intervalDays: p.intervalDays,
+            });
+        }
+    });
+
+    it('hides the suggestions once every recommended task exists', async () => {
+        maintenance.list.mockResolvedValue(
+            MAINTENANCE_PRESETS.map((p, i) => ({ ...tasks[1], id: `t${i}`, name: presetLabel(p).toUpperCase() })),
+        );
+        await renderWithProviders(<MaintenanceCard printerId="p1" />);
+        await screen.findAllByText(/LUBRICATE/);
+        expect(screen.queryByRole('region', { name: m.maintenance_recommended() })).toBeNull();
+        expect(screen.queryByRole('button', { name: m.maintenance_enable_all() })).toBeNull();
+    });
+
+    it('reports an error when enabling fails', async () => {
+        maintenance.create.mockRejectedValue(new Error('boom'));
+        await renderWithProviders(<MaintenanceCard printerId="p1" />);
+        await userEvent.click(await screen.findByRole('button', { name: m.maintenance_enable_all() }));
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('boom'));
+    });
+
     it('opens the add, done, log and edit dialogs', async () => {
         const open = vi.spyOn(confirmationDialogStore.actions, 'openDialog').mockImplementation(() => undefined);
         await renderWithProviders(<MaintenanceCard printerId="p1" />);

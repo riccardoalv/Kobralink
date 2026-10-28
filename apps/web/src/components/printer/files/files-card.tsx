@@ -8,6 +8,7 @@ import { useFileDrop } from '@/hooks/use-file-drop';
 import { parseFilename } from '@/lib/filename';
 import { m } from '@/lib/i18n';
 import { filesQuery, historyQuery } from '@/lib/queries';
+import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { FileTile } from './file-tile';
 import { HistoryList } from './history-list';
@@ -26,7 +27,7 @@ const TABS: { id: Tab; label: () => string }[] = [
     { id: 'timelapses', label: m.files_tab_timelapses },
 ];
 
-export function FilesCard({ printerId }: { printerId: string }) {
+export function FilesCard({ printerId, className }: { printerId: string; className?: string }) {
     const files = useQuery(filesQuery(printerId));
     const jobs = useQuery(historyQuery(printerId));
 
@@ -126,12 +127,15 @@ export function FilesCard({ printerId }: { printerId: string }) {
     return (
         <section
             ref={sectionRef}
-            className="relative flex flex-col overflow-hidden rounded-3xl bg-card p-6 px-0 text-card-foreground"
+            className={cn(
+                'relative flex min-w-0 flex-col overflow-hidden rounded-3xl bg-card py-5 text-card-foreground sm:py-6',
+                className,
+            )}
         >
             {dragging && <DropOverlay />}
             <div className={'mx-6'}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-lg font-medium">{m.files_title()}</h2>
+                    <h2 className="text-lg font-medium leading-tight">{m.files_title()}</h2>
                     <span className="text-sm text-muted-foreground">
                         {files.data ? m.files_stored({ count: files.data.length }) : ''}
                     </span>
@@ -179,7 +183,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
                     e.target.value = '';
                 }}
             />
-            <ScrollAreaWithShadow bottomShadow className="h-full" viewportClassName="pt-5">
+            <ScrollAreaWithShadow bottomShadow viewportClassName="max-h-[44rem] pt-5">
                 <div className={'px-6'}>{renderContent()}</div>
             </ScrollAreaWithShadow>
         </section>

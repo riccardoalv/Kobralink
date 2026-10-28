@@ -92,6 +92,20 @@ later and build on these.
   count failures by reason and the CSV export carries them.
 - **Brazilian Portuguese (`pt-br`) is the seventh locale.** French stays the base locale and the fallback when the
   browser language matches none.
+- **The printer page has a fixed layout** (maintainer's decision, October 2026), replacing the draggable
+  `react-grid-layout` grid and its saved layouts. Fixed row heights squashed cards or left them half empty, and every
+  card had to work at any size. The page has a main area and a narrow right column. The right column holds a compact
+  print card (a single line when idle), a small controls menu with two tabs (light, power, fan and speed; axes), the
+  filaments, the macros and the maintenance tasks. The main area holds the camera (three fifths of the width, at most
+  70 % of the screen height) beside a column with the temperatures and the queue, then the files. The temperatures
+  card has one chart with both heaters on a 0 °C based scale and dashed targets, replacing the separate activity
+  sparklines. On a phone the right column comes first.
+  The camera MJPEG is no longer scaled down to 640 px (maintainer's decision, October 2026): the Kobra camera sends
+  1280×720 and the bigger camera card showed a blurred upscale. The stream now keeps the native resolution at JPEG
+  quality 2, and the camera's own frame rate (`-vsync passthrough`) instead of `fps=15`: the Kobra 4 camera sends
+  about 8 fps, so the filter only duplicated frames. It costs more bandwidth per viewer and more ffmpeg CPU than the
+  640 px stream.
+  Cards share `Panel`, `Segmented` and `IconButton` (`components/printer/panel.tsx`) so buttons have the same sizes.
 
 ## Releases
 
