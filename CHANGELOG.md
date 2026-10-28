@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/riccardoalv/farolprint/compare/v0.9.0...v0.10.0) (2026-10-28)
+
+
+### Features
+
+* redesign the printer page and stream the camera at native quality ([#28](https://github.com/riccardoalv/farolprint/issues/28)) ([16ee875](https://github.com/riccardoalv/farolprint/commit/16ee87589dae31c2dea4afb7eea4e4656692ecd6))
+
 ## [0.9.0](https://github.com/riccardoalv/farolprint/compare/v0.8.2...v0.9.0) (2026-10-28)
 
 
