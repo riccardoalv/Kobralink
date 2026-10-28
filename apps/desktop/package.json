@@ -1,7 +1,7 @@
 {
     "name": "@farolprint/desktop",
     "productName": "Farol Print",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "private": true,
     "description": "Farol Print desktop (macOS) — embeds the local bridge API.",
     "main": "./out/main/index.js",
