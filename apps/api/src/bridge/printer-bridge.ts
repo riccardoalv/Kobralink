@@ -564,7 +564,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 if (changed)
                     this.emitEvent('print_paused', { code: this.s.errorCode, msg: p.msg, filename: this.s.filename });
             }
-        } else if (['resuming', 'resumed', 'printing', 'finished', 'stoped', 'canceled'].includes(kobraState)) {
+        } else if (['resuming', 'resumed', 'printing'].includes(kobraState)) {
             this.s.errorCode = 0;
             this.s.pauseMsg = '';
         }
@@ -573,6 +573,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.syncJob(kobraState, d.filename ?? this.s.filename);
 
         if (TERMINAL_PRINT_STATES.has(kobraState)) {
+            this.s.errorCode = 0;
+            this.s.pauseMsg = '';
             this.resetPrintFields();
         } else {
             this.s.filename = d.filename ?? this.s.filename;

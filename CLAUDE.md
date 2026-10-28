@@ -12,8 +12,11 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
 
 - **Decisions are made by consensus with the maintainer.** Raise questions and trade-offs instead of deciding alone;
   record what was agreed in [docs/decisions.md](docs/decisions.md) (and the README when users see it).
-- **Every change ships with tests** that run in CI; run `bun run lint`, `bun run check-types` and `bun run test`
-  before saying something is done.
+- **Tests are not optional, for anything.** Every change ships with tests that run in CI, and they cover every
+  case the change introduces, not just the happy path: each service method, each endpoint, each schema, each
+  component state and each migration. A feature without its tests is not done; write them in the same change, never
+  "later". When a layer has no test harness yet, build it (see [docs/development.md](docs/development.md)). Run
+  `bun run lint`, `bun run check-types` and `bun run test` before saying something is done.
 - **Never commit or push** unless the maintainer asks.
 - **Docs follow the code**: a change that users or contributors notice updates the guide in `docs/` it touches.
 - **Everything is in English**: code, docs, commits, issues and PRs. UI strings go through i18n (seven locales).
@@ -113,7 +116,9 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
 · `bun run db:generate` · `bun run db:studio` · `bun run version:set <x.y.z|major|minor|patch>` (bumps every
 package.json; releases do it through release-please).
 
-Tests use `bun test`: `packages/shared/test`, `packages/kobra-protocol/test` and `apps/api/test`. One file:
+Tests use `bun test`: `packages/shared/test`, `packages/kobra-protocol/test`, `packages/i18n/test` (locale parity) and
+`apps/api/test` (`test/helpers/db.ts` gives a real SQLite database with the migrations applied; `bunfig.toml` preloads a
+temporary data dir). One file:
 `cd apps/api && bun test test/spool-usage.test.ts` (or `bun test -t "test name"`). Husky hooks: pre-commit runs
 `biome check --write` on staged files (4 spaces, width 120), commit-msg checks Conventional Commits, pre-push runs lint
 and type-check.

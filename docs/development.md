@@ -38,15 +38,33 @@ before connecting a development build to the same printer.
 
 ## Tests
 
-Every change ships with tests that run in CI.
+Every change ships with tests that run in CI. This is a rule of the project, not a goal: a feature, a fix or a
+refactor without tests for every case it introduces is not finished, whatever the layer. What "every case" means:
+
+- **Shared schemas**: defaults, accepted and rejected inputs, every helper function.
+- **API services**: every public method, with the success path, the error path and the edge cases (offline printer,
+  printer busy, empty data, broken stored payloads). Prisma, the bridge and the network are replaced by small fakes.
+- **API controllers**: every route, through a Nest testing module or by calling the controller with fakes.
+- **Bridge**: every state transition and every event emitted, fed with anonymized MQTT payloads.
+- **Migrations**: applied to a fresh SQLite database, checking the tables and columns they add.
+- **i18n**: every locale has every key with the same placeholders as the base locale.
+- **Web components**: every visible state (loading, empty, data, error, disabled) and every user action, with the API
+  mocked. Route pages are tested through their components.
+
+Tests are written in the same change as the code, never in a follow-up.
 
 | Suite | Where | Run |
 |---|---|---|
 | Shared schemas | `packages/shared/test` | `cd packages/shared && bun test` |
 | Protocol | `packages/kobra-protocol/test` | `cd packages/kobra-protocol && bun test` |
+| Locale parity | `packages/i18n/test` | `cd packages/i18n && bun test` |
 | API and bridge | `apps/api/test` | `cd apps/api && bun test` |
 | Web UI | `apps/web/src/**/*.test.{ts,tsx}` (Vitest + Testing Library, happy-dom) | `cd apps/web && bun run test` |
 
+- API service tests run against a real SQLite database: `test/helpers/db.ts` creates a temporary file, applies every
+  migration with the same migrator as production and seeds printers, files and jobs. `apps/api/bunfig.toml` preloads
+  `test/helpers/preload.ts`, which points `KOBRALINK_DATA_DIR` at a temporary directory. Controllers are tested by
+  calling them with fake services; `installI18n()` must be called in tests that check translated texts.
 - Bridge tests build a `PrinterBridge` and feed it MQTT payloads (`info/report`, `print/report`,
   `multiColorBox/report`) shaped like the ones a real printer sends; the network, the database and Spoolman are replaced
   by small fakes. See `apps/api/test/spool-usage.test.ts`.

@@ -84,9 +84,11 @@ The `commit-msg` hook checks this locally; CI checks every commit and the PR tit
 2. Keep PRs focused: one feature or fix per PR.
 3. The **PR title** must follow Conventional Commits: PRs are **squash-merged**, so the title becomes the commit on
    `main`.
-4. Fill in the PR template; describe how you tested (real printer with model and firmware, captured messages, unit
+4. Every case the change introduces has an automated test (see [docs/development.md](docs/development.md#tests));
+   PRs without tests are not merged.
+5. Fill in the PR template; describe how you tested (real printer with model and firmware, captured messages, unit
    tests).
-5. CI must be green.
+6. CI must be green.
 
 ## Printer data and privacy
 

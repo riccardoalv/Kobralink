@@ -5,7 +5,9 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrinterSettingsForm } from '@/components/printer/settings-form';
 import type { PrinterWithLive } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { renderWithProviders } from '@/test/render';
+import { CostsCard } from './costs-card';
 import { DetectionCard } from './detection-card';
 import { DryPresetsCard } from './dry-presets-card';
 import { GeneralCard } from './general-card';
@@ -86,6 +88,7 @@ const stored: AppSettings = appSettingsSchema.parse({
     locale: 'en',
     currency: 'BRL',
     filamentPricePerKg: 89.41,
+    costs: { energyPricePerKwh: 0.3, printerPowerW: 150, hourlyRate: 0.8 },
     updateCheck: false,
     verboseHttpLog: true,
     spoolmanUrl: 'http://spoolman.test:7912',
@@ -97,7 +100,7 @@ const stored: AppSettings = appSettingsSchema.parse({
         webhookUrl: 'https://hooks.test/print',
         telegramToken: '123:abc',
         telegramChatId: '42',
-        events: { printStarted: false, printFinished: true, alerts: false },
+        events: { printStarted: false, printFinished: true, alerts: false, scheduledPrint: false },
     },
     haMqtt: {
         enabled: true,
@@ -140,6 +143,11 @@ describe('saving a settings card without edits keeps every stored value', () => 
         expectSection(payload, ['notifications']);
     });
 
+    it('costs', async () => {
+        const payload = await saveUnchanged(<CostsCard settings={stored} />, mocks.save);
+        expectSection(payload, ['costs']);
+    });
+
     it('Home Assistant', async () => {
         const payload = await saveUnchanged(<HaMqttCard settings={stored} />, mocks.save);
         expectSection(payload, ['haMqtt']);
@@ -168,6 +176,7 @@ describe('saving a settings card without edits keeps every stored value', () => 
             cameraOnPrint: true,
             cameraUrl: 'rtsp://camera.test/stream1',
             alerts: { spoolLowG: 100, offlineMinutes: 5 },
+            queueBedClearConfirm: true,
         });
         const printer = {
             id: 'p1',
@@ -188,5 +197,61 @@ describe('saving a settings card without edits keeps every stored value', () => 
         const [id, body] = mocks.printerUpdate.mock.calls[0];
         expect(id).toBe('p1');
         expect(body.settings).toEqual(settings);
+    });
+});
+
+function switchAfter(label: string): HTMLElement {
+    const el = screen.getByText(label).closest('div.flex')?.querySelector('[role="switch"]');
+    if (!el) throw new Error(`no switch for ${label}`);
+    return el as HTMLElement;
+}
+
+describe('editing the new settings', () => {
+    it('sends the edited cost values', async () => {
+        await renderWithProviders(<CostsCard settings={stored} />);
+        const energy = screen.getByLabelText(m.settings_energy_price());
+        await userEvent.clear(energy);
+        await userEvent.type(energy, '0.5');
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+        await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
+        expect(mocks.save.mock.calls[0][0]).toEqual({
+            costs: { energyPricePerKwh: 0.5, printerPowerW: 150, hourlyRate: 0.8 },
+        });
+    });
+
+    it('lists the scheduled print and maintenance events and saves their switches', async () => {
+        await renderWithProviders(<NotificationsCard settings={stored} />);
+        expect(switchAfter(m.notif_ev_scheduled_print()).getAttribute('aria-checked')).toBe('false');
+        expect(switchAfter(m.notif_ev_maintenance_due()).getAttribute('aria-checked')).toBe('true');
+        await userEvent.click(switchAfter(m.notif_ev_maintenance_due()));
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+        await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
+        const payload = mocks.save.mock.calls[0][0] as AppSettings;
+        expect(payload.notifications.events.maintenanceDue).toBe(false);
+        expect(payload.notifications.events.scheduledPrint).toBe(false);
+    });
+
+    it('turns the bed-clear confirmation off for a printer', async () => {
+        const settings = printerSettingsSchema.parse({ queueAutoStart: true, queueBedClearConfirm: true });
+        const printer = {
+            id: 'p1',
+            name: 'Kobra 4',
+            ip: '192.168.1.235',
+            httpPort: 7125,
+            deviceId: 'abcdef123456',
+            modeId: '20028',
+            username: 'user',
+            createdAt: '2026-10-20T00:00:00.000Z',
+            model: 'Anycubic Kobra 4',
+            settings,
+            live: null,
+        } as unknown as PrinterWithLive;
+        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        expect(switchAfter(m.settings_queue_bed_clear()).getAttribute('aria-checked')).toBe('true');
+        await userEvent.click(switchAfter(m.settings_queue_bed_clear()));
+        await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+        await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
+        expect(mocks.printerUpdate.mock.calls[0][1].settings.queueBedClearConfirm).toBe(false);
+        expect(mocks.printerUpdate.mock.calls[0][1].settings.queueAutoStart).toBe(true);
     });
 });
