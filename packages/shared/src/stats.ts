@@ -38,6 +38,11 @@ export interface StatsPrinterEntry {
     cost: number;
 }
 
+export interface StatsFailureEntry {
+    reason: string;
+    count: number;
+}
+
 export interface StatsDto {
     totalJobs: number;
     completed: number;
@@ -54,6 +59,9 @@ export interface StatsDto {
     totalFilamentMm: number;
     totalFilamentG: number;
     totalCost: number;
+    filamentCost: number;
+    energyCost: number;
+    machineCost: number;
     unpricedG: number;
     currency: string;
     firstJobAt: string | null;
@@ -65,4 +73,5 @@ export interface StatsDto {
     printers: StatsPrinterEntry[];
     topFiles: StatsFileEntry[];
     materials: StatsMaterialEntry[];
+    failures: StatsFailureEntry[];
 }

@@ -24,6 +24,8 @@ const EVENT_FLAG: Record<KobralinkEventType, keyof NotificationSettings['events'
     alert_spool_low: 'alerts',
     alert_print_failure: 'printFailure',
     queue_next: 'queueNext',
+    scheduled_print: 'scheduledPrint',
+    maintenance_due: 'maintenanceDue',
 };
 
 @Injectable()
@@ -248,6 +250,32 @@ function describe(type: KobralinkEventType, printer: string, d: EventData): { ti
                 title: m.notify_alert_spool_title({ printer }),
                 body: m.notify_alert_spool_body({ spool: String(d.spool ?? ''), grams: String(d.grams ?? '') }),
             };
+        case 'queue_next':
+            return {
+                title: m.notify_queue_next_title({ printer }),
+                body: d.bedClear
+                    ? m.notify_queue_next_body_bed_clear({ filename })
+                    : m.notify_queue_next_body({ filename }),
+            };
+        case 'scheduled_print': {
+            const result = String(d.result ?? 'started');
+            const body =
+                result === 'queued'
+                    ? m.notify_scheduled_print_queued({ filename })
+                    : result === 'failed'
+                      ? m.notify_scheduled_print_failed({ filename, error: String(d.error ?? '') })
+                      : m.notify_scheduled_print_started({ filename });
+            return { title: m.notify_scheduled_print_title({ printer }), body };
+        }
+        case 'maintenance_due':
+            return {
+                title: m.notify_maintenance_due_title({ printer }),
+                body: m.notify_maintenance_due_body({
+                    task: String(d.task ?? ''),
+                    hours: String(d.hours ?? 0),
+                    jobs: String(d.jobs ?? 0),
+                }),
+            };
         case 'alert_print_failure': {
             const action = String(d.action ?? 'notify');
             const body =
@@ -258,8 +286,6 @@ function describe(type: KobralinkEventType, printer: string, d: EventData): { ti
                       : m.notify_alert_failure_body({ score: String(d.score ?? ''), filename });
             return { title: m.notify_alert_failure_title({ printer }), body };
         }
-        case 'queue_next':
-            return { title: m.notify_queue_next_title({ printer }), body: m.notify_queue_next_body({ filename }) };
     }
 }
 

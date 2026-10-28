@@ -26,6 +26,8 @@ import {
     setTemperatureSchema,
     skipObjectsSchema,
     startPrintSchema,
+    type UpdatePrintJobInput,
+    updatePrintJobSchema,
 } from '@kobralink/shared';
 import {
     BadGatewayException,
@@ -38,6 +40,7 @@ import {
     Logger,
     NotFoundException,
     Param,
+    Patch,
     Post,
     Query,
     Res,
@@ -56,6 +59,7 @@ import { localIpFor } from '../common/net';
 import { ZodPipe } from '../common/zod.pipe';
 import { GcodeService } from '../gcode/gcode.service';
 import { m } from '../i18n/locale';
+import { StatsService } from '../stats/stats.service';
 
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
 
@@ -66,6 +70,7 @@ export class CoreController {
     constructor(
         private readonly registry: BridgeRegistry,
         private readonly gcode: GcodeService,
+        private readonly stats: StatsService,
     ) {}
 
     private bridge(id: string): PrinterBridge {
@@ -357,7 +362,25 @@ export class CoreController {
 
     @Get('history')
     history(@Param('id') id: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-        return this.gcode.listJobs(id, Math.min(Number(limit) || 50, 200), Number(offset) || 0);
+        return this.stats.history(id, Math.min(Number(limit) || 50, 200), Number(offset) || 0);
+    }
+
+    @Patch('history/:jobId')
+    async updateJob(
+        @Param('id') id: string,
+        @Param('jobId') jobId: string,
+        @Body(new ZodPipe(updatePrintJobSchema)) body: UpdatePrintJobInput,
+    ) {
+        const job = await this.gcode.updateJob(id, jobId, body);
+        if (!job) throw new NotFoundException();
+        return job;
+    }
+
+    @Get('history/:jobId/snapshot')
+    async jobSnapshot(@Param('id') id: string, @Param('jobId') jobId: string, @Res() res: Response) {
+        const file = await this.gcode.snapshotPath(id, jobId);
+        if (!file) throw new NotFoundException();
+        res.type('image/jpeg').sendFile(file);
     }
 
     private async serveBase(bridge: PrinterBridge): Promise<string> {

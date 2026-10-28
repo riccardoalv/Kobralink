@@ -7,6 +7,7 @@ import type {
     AmsSetSlotInput,
     AppSettings,
     BackupInfoDto,
+    CompleteMaintenanceInput,
     CreateUserInput,
     DetectionModelDto,
     FailureDetectionStatusDto,
@@ -19,6 +20,9 @@ import type {
     LocalSpoolInput,
     MacroDto,
     MacroInput,
+    MaintenanceLogDto,
+    MaintenanceTaskDto,
+    MaintenanceTaskInput,
     MoveAxisInput,
     PowerState,
     Printer,
@@ -29,8 +33,11 @@ import type {
     PrintJobDto,
     PrintPrinterFileInput,
     QueueItemDto,
+    QueueStatusDto,
     ScheduleDryInput,
     ScheduledDryDto,
+    ScheduledPrintDto,
+    SchedulePrintInput,
     SetFanInput,
     SetLightInput,
     SetSlotProfileInput,
@@ -48,6 +55,7 @@ import type {
     UpdateAppSettingsInput,
     UpdateLocalSpoolInput,
     UpdatePrinterInput,
+    UpdatePrintJobInput,
     UpdateUserInput,
     UserDto,
 } from '@kobralink/shared';
@@ -213,9 +221,14 @@ export const api = {
 
     stats: (printerId?: string, days = 0) =>
         request<StatsDto>(`/api/v1/stats?printerId=${encodeURIComponent(printerId ?? '')}&days=${days}`),
+    statsCsvUrl: (printerId?: string, days = 0) =>
+        `/api/v1/stats/export.csv?printerId=${encodeURIComponent(printerId ?? '')}&days=${days}`,
 
     queue: {
         list: (printerId: string) => request<QueueItemDto[]>(`/api/v1/printers/${printerId}/queue`),
+        status: (printerId: string) => request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/status`),
+        bedClear: (printerId: string) =>
+            request<QueueItemDto>(`/api/v1/printers/${printerId}/queue/bed-clear`, { method: 'POST' }),
         add: (printerId: string, input: AddQueueItemInput) =>
             request<QueueItemDto>(`/api/v1/printers/${printerId}/queue`, json(input)),
         reorder: (printerId: string, ids: string[]) =>
@@ -236,6 +249,31 @@ export const api = {
         reorder: (ids: string[]) => request<MacroDto[]>('/api/v1/macros/reorder', json({ ids })),
         run: (printerId: string, macroId: string) =>
             request<void>(`/api/v1/printers/${printerId}/macros/${macroId}/run`, { method: 'POST' }),
+    },
+
+    schedule: {
+        list: (printerId: string) => request<ScheduledPrintDto[]>(`/api/v1/printers/${printerId}/schedule`),
+        create: (printerId: string, input: SchedulePrintInput) =>
+            request<ScheduledPrintDto>(`/api/v1/printers/${printerId}/schedule`, json(input)),
+        remove: (printerId: string, id: string) =>
+            request<void>(`/api/v1/printers/${printerId}/schedule/${id}`, { method: 'DELETE' }),
+    },
+
+    maintenance: {
+        list: (printerId: string) => request<MaintenanceTaskDto[]>(`/api/v1/printers/${printerId}/maintenance`),
+        create: (printerId: string, input: MaintenanceTaskInput) =>
+            request<MaintenanceTaskDto>(`/api/v1/printers/${printerId}/maintenance`, json(input)),
+        update: (printerId: string, id: string, input: MaintenanceTaskInput) =>
+            request<MaintenanceTaskDto>(`/api/v1/printers/${printerId}/maintenance/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(input),
+            }),
+        complete: (printerId: string, id: string, input: CompleteMaintenanceInput) =>
+            request<MaintenanceTaskDto>(`/api/v1/printers/${printerId}/maintenance/${id}/done`, json(input)),
+        logs: (printerId: string, id: string) =>
+            request<MaintenanceLogDto[]>(`/api/v1/printers/${printerId}/maintenance/${id}/log`),
+        remove: (printerId: string, id: string) =>
+            request<void>(`/api/v1/printers/${printerId}/maintenance/${id}`, { method: 'DELETE' }),
     },
 
     drySchedule: {
@@ -324,5 +362,11 @@ export const api = {
             request<void>(`/api/v1/printers/${id}/files/${fileId}/verify`, { method: 'POST' }),
         downloadUrl: (id: string, fileId: string) => `/api/v1/printers/${id}/files/${fileId}/download`,
         history: (id: string, limit = 50) => request<PrintJobDto[]>(`/api/v1/printers/${id}/history?limit=${limit}`),
+        updateJob: (id: string, jobId: string, input: UpdatePrintJobInput) =>
+            request<PrintJobDto>(`/api/v1/printers/${id}/history/${jobId}`, {
+                method: 'PATCH',
+                body: JSON.stringify(input),
+            }),
+        snapshotUrl: (id: string, jobId: string) => `/api/v1/printers/${id}/history/${jobId}/snapshot`,
     },
 };

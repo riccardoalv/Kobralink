@@ -8,6 +8,7 @@ reasons behind them.
 - [Printers](#printers)
 - [Filament and Spoolman](#filament-and-spoolman)
 - [Settings](#settings)
+- [Single-printer workflow](#single-printer-workflow)
 - [Releases](#releases)
 - [Open questions](#open-questions)
 
@@ -53,6 +54,32 @@ reasons behind them.
 
 - **A settings save only writes the keys it sends.** Each settings card saves its own section; the update schema has
   no defaults, so saving one card no longer resets the others (upstream issue #2).
+
+## Single-printer workflow
+
+Features added for people running one printer first; the multi-printer versions (fleet queue, batch actions) come
+later and build on these.
+
+- **Bed-clear confirmation before the next queued job** (maintainer's rule). With auto-start on, the next file waits
+  until the user confirms the bed is empty (`queueBedClearConfirm`, on by default); the old 15 s auto-start stays
+  available by turning the confirmation off, for printers with an ejector. The hold is dropped as soon as the printer
+  starts printing by any other means.
+- **Scheduled starts reuse the print dialog.** A scheduled print stores the same options as an immediate one
+  (excluded objects, slot mapping, leveling, timelapse, detection). If the printer is busy or offline at the time, the
+  file goes to the front of the queue instead of being lost, and a notification says so.
+- **Maintenance is per printer and fully user-defined.** A task has up to three intervals (print hours, number of
+  prints, days) and is due when any is reached; suggestions are offered but nothing is created by default. Usage is
+  computed from the print history since the last completion, so it needs no new counters. A due task notifies once
+  until it is completed.
+- **Cost per print = filament + energy + machine time.** Filament comes from the spool price (or the default price
+  per kg), energy from a global price per kWh × the printer's average power, machine time from an hourly rate. All
+  three are global settings, zero by default; the cost is only shown once at least one source is set.
+- **Failures keep their evidence.** A cancelled or errored job records the printer error code and message, the last
+  camera frame if the stream was running (best effort, no ffmpeg start), and a user-chosen reason from a fixed list
+  (spaghetti, adhesion, clog, runout, layer shift, power loss, cancelled on purpose, other) plus a note. Statistics
+  count failures by reason and the CSV export carries them.
+- **Brazilian Portuguese (`pt-br`) is the seventh locale.** French stays the base locale and the fallback when the
+  browser language matches none.
 
 ## Releases
 

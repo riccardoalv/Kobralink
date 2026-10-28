@@ -12,6 +12,8 @@ export const notificationEventsSchema = z.object({
     alerts: z.boolean().default(true),
     queueNext: z.boolean().default(true),
     printFailure: z.boolean().default(true),
+    scheduledPrint: z.boolean().default(true),
+    maintenanceDue: z.boolean().default(true),
 });
 export type NotificationEvents = z.infer<typeof notificationEventsSchema>;
 
@@ -60,13 +62,21 @@ export const DEFAULT_DRY_PRESETS: AceDryPreset[] = [
     { name: 'PA', targetTemp: 70, duration: 480 },
 ];
 
-export const APP_LOCALES = ['fr', 'en', 'de', 'es', 'it', 'zh-cn'] as const;
+export const costSettingsSchema = z.object({
+    energyPricePerKwh: z.number().min(0).max(100).default(0),
+    printerPowerW: z.number().min(0).max(5000).default(0),
+    hourlyRate: z.number().min(0).max(10000).default(0),
+});
+export type CostSettings = z.infer<typeof costSettingsSchema>;
+
+export const APP_LOCALES = ['fr', 'en', 'de', 'es', 'it', 'zh-cn', 'pt-br'] as const;
 export type AppLocale = (typeof APP_LOCALES)[number];
 
 export const appSettingsSchema = z.object({
     locale: z.enum(APP_LOCALES).default('fr'),
     currency: z.string().trim().min(1).max(8).default('EUR'),
     filamentPricePerKg: z.number().min(0).max(100000).default(0),
+    costs: costSettingsSchema.default(costSettingsSchema.parse({})),
     spoolmanUrl: z.string().trim().default(''),
     spoolmanSyncRateSec: z.number().int().min(0).max(3600).default(0),
     verboseHttpLog: z.boolean().default(false),

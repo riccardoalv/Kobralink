@@ -20,3 +20,8 @@ export type AddQueueItemInput = z.input<typeof addQueueItemSchema>;
 
 export const reorderQueueSchema = z.object({ ids: z.array(z.string().min(1)).max(500) });
 export type ReorderQueueInput = z.infer<typeof reorderQueueSchema>;
+
+export interface QueueStatusDto {
+    awaitingBedClear: boolean;
+    nextFilename: string | null;
+}

@@ -298,6 +298,13 @@ export function PrinterSettingsForm({
                             </Row>
                         )}
                     </form.Field>
+                    <form.Field name="settings.queueBedClearConfirm">
+                        {(field) => (
+                            <Row label={m.settings_queue_bed_clear()} hint={m.settings_queue_bed_clear_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
                     <form.Field name="settings.deletePrinterFileAfterPrint">
                         {(field) => (
                             <Row label={m.settings_delete_after_print()} hint={m.settings_delete_after_print_hint()}>

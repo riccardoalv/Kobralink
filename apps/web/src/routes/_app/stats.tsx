@@ -1,6 +1,7 @@
 import type { StatsBucket, StatsDto } from '@kobralink/shared';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { Download } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +16,10 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrinters } from '@/hooks/use-printers';
+import { api } from '@/lib/api';
 import { formatDuration, formatMoney, formatShortDate } from '@/lib/format';
 import { intlLocale, m } from '@/lib/i18n';
+import { failureReasonLabel } from '@/lib/labels';
 import { statsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 
@@ -78,6 +81,13 @@ function StatsPage() {
                             </button>
                         ))}
                     </div>
+                    <a
+                        href={api.statsCsvUrl(printer, days)}
+                        download
+                        className="flex items-center gap-2 rounded-full bg-secondary px-4 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    >
+                        <Download className="size-3.5" /> {m.stats_export_csv()}
+                    </a>
                 </div>
             </div>
             {stats.data ? <StatsBody data={stats.data} days={days} /> : <Skeleton className="h-96 rounded-3xl" />}
@@ -164,9 +174,15 @@ function StatsBody({ data, days }: { data: StatsDto; days: number }) {
                         value={money(data.totalCost)}
                         sub={m.stats_cost_avg({ value: money(data.totalCost / Math.max(1, data.totalJobs)) })}
                         extra={
-                            data.unpricedG > 0
-                                ? m.stats_cost_unpriced({ g: data.unpricedG })
-                                : m.stats_cost_all_priced()
+                            data.energyCost > 0 || data.machineCost > 0
+                                ? m.stats_cost_breakdown({
+                                      filament: money(data.filamentCost),
+                                      energy: money(data.energyCost),
+                                      machine: money(data.machineCost),
+                                  })
+                                : data.unpricedG > 0
+                                  ? m.stats_cost_unpriced({ g: data.unpricedG })
+                                  : m.stats_cost_all_priced()
                         }
                     />
                 ) : null}
@@ -392,6 +408,38 @@ function StatsBody({ data, days }: { data: StatsDto; days: number }) {
                         )}
                     </CardContent>
                 </Card>
+
+                {data.failures.length ? (
+                    <Card className="rounded-3xl border-0 shadow-none md:col-span-2 xl:col-span-4">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-medium">{m.stats_failures()}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+                                {data.failures.map((f) => {
+                                    const total = data.cancelled + data.errored;
+                                    const pct = total ? Math.round((f.count / total) * 100) : 0;
+                                    return (
+                                        <li key={f.reason} className="rounded-2xl bg-secondary/60 p-3">
+                                            <div className="flex items-center justify-between gap-3 text-sm">
+                                                <span className="font-medium">{failureReasonLabel(f.reason)}</span>
+                                                <span className="tabular-nums text-muted-foreground">
+                                                    {f.count} · {pct}%
+                                                </span>
+                                            </div>
+                                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background/60">
+                                                <div
+                                                    className="h-full rounded-full bg-chart-5"
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                ) : null}
 
                 <Card className="rounded-3xl border-0 shadow-none md:col-span-2 xl:col-span-4">
                     <CardHeader>

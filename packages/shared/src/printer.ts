@@ -27,6 +27,7 @@ export const printerSettingsSchema = z.object({
     timelapseEnabled: z.boolean().default(false),
     timelapseFps: z.number().int().min(5).max(60).default(15),
     queueAutoStart: z.boolean().default(false),
+    queueBedClearConfirm: z.boolean().default(true),
     failureDetection: z.boolean().default(true),
     alerts: alertSettingsSchema.default(alertSettingsSchema.parse({})),
 });

@@ -17,6 +17,11 @@ export class QueueController {
         return this.queue.list(id);
     }
 
+    @Get('status')
+    status(@Param('id') id: string) {
+        return this.queue.status(id);
+    }
+
     @Post()
     add(@Param('id') id: string, @Body(new ZodPipe(addQueueItemSchema)) body: AddQueueItemInput) {
         return this.queue.add(id, body.fileId, body.excludedObjects ?? []);
@@ -31,6 +36,15 @@ export class QueueController {
     async start(@Param('id') id: string) {
         try {
             return await this.queue.startNext(id);
+        } catch (e) {
+            throw new BadGatewayException((e as Error).message);
+        }
+    }
+
+    @Post('bed-clear')
+    async bedClear(@Param('id') id: string) {
+        try {
+            return await this.queue.confirmBedClear(id);
         } catch (e) {
             throw new BadGatewayException((e as Error).message);
         }

@@ -12,6 +12,7 @@ import { CameraCard } from '@/components/printer/camera-card';
 import { ControlsCard } from '@/components/printer/controls-card';
 import { FilesCard } from '@/components/printer/files/files-card';
 import { MacrosCard } from '@/components/printer/macros-card';
+import { MaintenanceCard } from '@/components/printer/maintenance-card';
 import { PrintCard } from '@/components/printer/print-card';
 import { QueueCard } from '@/components/printer/queue-card';
 import { TemperatureCard } from '@/components/printer/temperature-card';
@@ -73,6 +74,7 @@ function PrinterDashboard() {
         temperature: () => <TemperatureCard printerId={printerId} />,
         queue: () => <QueueCard printerId={printerId} />,
         macros: () => <MacrosCard printerId={printerId} />,
+        maintenance: () => <MaintenanceCard printerId={printerId} />,
     };
 
     const header = (

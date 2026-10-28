@@ -1,4 +1,9 @@
-import { type PrinterLiveState, type QueueItemDto, TERMINAL_PRINT_STATES } from '@kobralink/shared';
+import {
+    type PrinterLiveState,
+    type QueueItemDto,
+    type QueueStatusDto,
+    TERMINAL_PRINT_STATES,
+} from '@kobralink/shared';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { localIpFor } from '../common/net';
@@ -15,6 +20,7 @@ interface Watch {
     armed: boolean;
     timer: NodeJS.Timeout | null;
     notified: boolean;
+    awaitingBedClear: boolean;
 }
 
 @Injectable()
@@ -32,7 +38,13 @@ export class QueueService {
 
     attach(bridge: PrinterBridge): void {
         this.bridges.set(bridge.id, bridge);
-        const watch: Watch = { lastKobraState: '', armed: false, timer: null, notified: false };
+        const watch: Watch = {
+            lastKobraState: '',
+            armed: false,
+            timer: null,
+            notified: false,
+            awaitingBedClear: false,
+        };
         this.watches.set(bridge.id, watch);
         const onState = (state: PrinterLiveState) => void this.onState(bridge, watch, state);
         bridge.on('state', onState);
@@ -60,6 +72,7 @@ export class QueueService {
         if (s.kobraState === 'printing' || s.kobraState === 'preheating') {
             w.armed = false;
             w.notified = false;
+            w.awaitingBedClear = false;
             if (w.timer) {
                 clearTimeout(w.timer);
                 w.timer = null;
@@ -70,7 +83,7 @@ export class QueueService {
         w.armed = false;
         const next = await this.peek(bridge.id);
         if (!next) return;
-        if (bridge.settings.queueAutoStart) {
+        if (bridge.settings.queueAutoStart && !bridge.settings.queueBedClearConfirm) {
             this.log.log(`Queue: auto-start of ${next.filename} in ${AUTO_START_DELAY_MS / 1000} s`);
             w.timer = setTimeout(() => {
                 w.timer = null;
@@ -78,14 +91,35 @@ export class QueueService {
                     this.log.warn(`Queue: auto-start failed: ${(e as Error).message}`),
                 );
             }, AUTO_START_DELAY_MS);
-        } else if (!w.notified) {
+            return;
+        }
+        if (bridge.settings.queueAutoStart) {
+            w.awaitingBedClear = true;
+            this.log.log(`Queue: ${next.filename} waits for the bed to be cleared`);
+        }
+        if (!w.notified) {
             w.notified = true;
-            this.notifications.emitCustom(bridge.id, bridge.config.name, 'queue_next', { filename: next.filename });
+            this.notifications.emitCustom(bridge.id, bridge.config.name, 'queue_next', {
+                filename: next.filename,
+                bedClear: w.awaitingBedClear,
+            });
         }
     }
 
     private serveBase(bridge: PrinterBridge): string {
         return `http://${localIpFor(bridge.config.ip)}:${bridge.config.httpPort}`;
+    }
+
+    async status(printerId: string): Promise<QueueStatusDto> {
+        const w = this.watches.get(printerId);
+        const next = await this.peek(printerId);
+        return { awaitingBedClear: Boolean(w?.awaitingBedClear && next), nextFilename: next?.filename ?? null };
+    }
+
+    async confirmBedClear(printerId: string): Promise<QueueItemDto> {
+        const w = this.watches.get(printerId);
+        if (w) w.awaitingBedClear = false;
+        return this.startNext(printerId);
     }
 
     async list(printerId: string): Promise<QueueItemDto[]> {
@@ -106,20 +140,16 @@ export class QueueService {
         return row ? toDto(row) : null;
     }
 
-    async add(printerId: string, fileId: string, excludedObjects: string[]): Promise<QueueItemDto> {
+    async add(printerId: string, fileId: string, excludedObjects: string[], first = false): Promise<QueueItemDto> {
         const file = await this.prisma.client.gcodeFile.findUnique({ where: { id: fileId } });
         if (!file) throw new NotFoundException(m.api_file_not_found());
-        const last = await this.prisma.client.queueItem.findFirst({
+        const edge = await this.prisma.client.queueItem.findFirst({
             where: { printerId },
-            orderBy: { position: 'desc' },
+            orderBy: { position: first ? 'asc' : 'desc' },
         });
+        const position = first ? (edge?.position ?? 1) - 1 : (edge?.position ?? 0) + 1;
         const row = await this.prisma.client.queueItem.create({
-            data: {
-                printerId,
-                fileId,
-                position: (last?.position ?? 0) + 1,
-                excludedObjects: JSON.stringify(excludedObjects),
-            },
+            data: { printerId, fileId, position, excludedObjects: JSON.stringify(excludedObjects) },
             include: { file: true },
         });
         return toDto(row);
@@ -137,6 +167,8 @@ export class QueueService {
 
     async clear(printerId: string): Promise<void> {
         await this.prisma.client.queueItem.deleteMany({ where: { printerId } });
+        const w = this.watches.get(printerId);
+        if (w) w.awaitingBedClear = false;
     }
 
     async reorder(printerId: string, ids: string[]): Promise<QueueItemDto[]> {
@@ -160,6 +192,8 @@ export class QueueService {
             excludedObjects: next.excludedObjects,
         });
         await this.prisma.client.queueItem.delete({ where: { id: next.id } }).catch(() => null);
+        const w = this.watches.get(printerId);
+        if (w) w.awaitingBedClear = false;
         this.log.log(`Queue: started ${next.filename}`);
         return next;
     }

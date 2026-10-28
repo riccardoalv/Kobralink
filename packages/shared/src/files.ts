@@ -1,5 +1,18 @@
 import { z } from 'zod';
+import type { JobCost } from './cost';
 import type { SpoolUsageEntry } from './spools';
+
+export const FAILURE_REASONS = [
+    'spaghetti',
+    'adhesion',
+    'clog',
+    'filament_runout',
+    'layer_shift',
+    'power_loss',
+    'user_cancel',
+    'other',
+] as const;
+export type FailureReason = (typeof FAILURE_REASONS)[number];
 
 export interface GcodeFilament {
     slotIndex: number;
@@ -39,7 +52,19 @@ export interface PrintJobDto {
     filamentMm: number;
     spoolUsage: SpoolUsageEntry[];
     thumbnail: string | null;
+    errorCode: number;
+    errorMsg: string;
+    failureReason: FailureReason | '';
+    note: string;
+    hasSnapshot: boolean;
+    cost: JobCost | null;
 }
+
+export const updatePrintJobSchema = z.object({
+    failureReason: z.union([z.literal(''), z.enum(FAILURE_REASONS)]).optional(),
+    note: z.string().trim().max(500).optional(),
+});
+export type UpdatePrintJobInput = z.infer<typeof updatePrintJobSchema>;
 
 export const filamentAssignmentSchema = z.object({
     paintIndex: z.number().int().min(0).max(63),

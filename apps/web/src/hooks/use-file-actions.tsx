@@ -1,4 +1,4 @@
-import type { GcodeFileDto, StartPrintInput } from '@kobralink/shared';
+import type { GcodeFileDto, SchedulePrintInput, StartPrintInput } from '@kobralink/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { parseFilename } from '@/lib/filename';
+import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -42,6 +43,14 @@ export function useFileActions(printerId: string) {
         },
         onError: (e) => toast.error(e.message),
     });
+    const schedule = useMutation({
+        mutationFn: (input: SchedulePrintInput) => api.schedule.create(printerId, input),
+        onSuccess: (item) => {
+            toast.success(m.schedule_added({ name: item.filename, date: formatDate(item.startAt) }));
+            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] });
+        },
+        onError: (e) => toast.error(e.message),
+    });
     const remove = useMutation({
         mutationFn: (fileId: string) => api.files.remove(printerId, fileId),
         onSuccess: invalidate,
@@ -71,6 +80,10 @@ export function useFileActions(printerId: string) {
                             ? (r) => enqueue.mutate({ fileId: f.id, excludedObjects: r.excludedObjects })
                             : undefined
                     }
+                    onSchedule={async (r, startAt) => {
+                        if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
+                        return schedule.mutateAsync({ fileId: f.id, startAt, ...r });
+                    }}
                 />
             ),
         });

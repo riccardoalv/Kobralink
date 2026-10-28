@@ -51,6 +51,7 @@ const MAX_SAMPLES = 120;
 const SAMPLE_INTERVAL_MS = 2000;
 const RECONNECT_WINDOW_MS = 30000;
 const PRINT_HOLD_MS = 60000;
+const SNAPSHOT_MAX_AGE_MS = 120000;
 const CAMERA_STALE_MS = 30000;
 const CAMERA_FRESH_MS = 5000;
 const CAMERA_KICK_INTERVAL_MS = 60000;
@@ -96,7 +97,7 @@ export interface BridgeEvents {
     log: [line: string];
     event: [event: BridgeDomainEvent];
     layer: [layer: number, total: number];
-    job: [phase: 'start' | 'end', jobId: string, filename: string];
+    job: [phase: 'start' | 'end', jobId: string, filename: string, status: JobEndStatus | null];
 }
 
 interface LastUpload {
@@ -658,10 +659,20 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.currentJobFilename = '';
         const usage = this.spoolUsageEntries();
         const durationSec = Math.round(Math.max(this.s.printDurationSec, this.peakPrintTimeSec));
+        const snapshot =
+            status !== 'completed' &&
+            this.camera.latestJpeg &&
+            Date.now() - this.camera.latestJpegAt < SNAPSHOT_MAX_AGE_MS
+                ? this.camera.latestJpeg
+                : null;
         void this.gcode
-            .finishJob(jobId, status, this.suppliesUsageMm, usage, durationSec)
+            .finishJob(jobId, status, this.suppliesUsageMm, usage, durationSec, {
+                errorCode: this.s.errorCode,
+                errorMsg: this.s.pauseMsg,
+                snapshot,
+            })
             .catch((e) => this.log.warn(`Job finish: ${(e as Error).message}`));
-        this.emit('job', 'end', jobId, filename);
+        this.emit('job', 'end', jobId, filename, status);
         this.jobOptions = {};
         this.emitEvent(status === 'completed' ? 'print_finished' : 'print_cancelled', {
             filename,
@@ -735,7 +746,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         );
         this.currentJobFilename = filename;
         this.log.log(`Job started: ${filename}`);
-        this.emit('job', 'start', this.currentJobId, filename);
+        this.emit('job', 'start', this.currentJobId, filename, null);
         this.emitEvent('print_started', { filename });
     }
 
@@ -1554,6 +1565,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (excluded.length) void this.applyPreprintSkip(excluded);
     }
 }
+
+export type JobEndStatus = 'completed' | 'cancelled' | 'error';
 
 export interface StartPrintOptions {
     serveBase: string;

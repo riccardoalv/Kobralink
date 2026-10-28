@@ -24,15 +24,20 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 
 - **Multi-printer**: add a printer with its IP only, credentials are recovered automatically
 - **Live state**: temperatures, fans, light, speed, progress, pause / resume / cancel, object skip
-- **Print from anywhere**: web dashboard, OrcaSlicer (upload + print), per-printer print queue
+- **Print from anywhere**: web dashboard, OrcaSlicer (upload + print), per-printer print queue with bed-clear
+  confirmation, scheduled starts
 - **GCode library**: thumbnails, estimated time, filaments, per-printer file browser
 - **AMS / ACE**: slot profiles, feeding, auto-feed, drying with scheduled cycles
 - **Filaments**: spool inventory + optional Spoolman sync
 - **Camera** (MJPEG, shared with Moonraker clients) and **timelapses** per job
 - **AI failure detection** (optional, Obico model) with notify / pause / cancel
 - **Notifications**: webhook, Discord, Telegram, ntfy · **Home Assistant** MQTT discovery
-- **History & stats**, **macros**, backup / restore, update check, multi-user
-- UI in **French**, **English**, **German**, **Spanish**, **Italian** and **Simplified Chinese**
+- **History & stats**: cost per print (filament, energy, machine time), CSV export, failures labelled with the
+  camera snapshot of the moment
+- **Preventive maintenance** per printer: tasks due by print hours, number of prints or days, with history
+- **Macros**, backup / restore, update check, multi-user
+- UI in **French**, **English**, **German**, **Spanish**, **Italian**, **Simplified Chinese** and
+  **Brazilian Portuguese**
 
 ## Install in production (Docker Compose)
 
@@ -132,7 +137,7 @@ Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘    
 | `apps/desktop`            | Electron — spawns the API locally, auto-update via GitHub releases                         |
 | `packages/kobra-protocol` | Kobra LAN protocol: mTLS MQTT client, credential recovery, GCode upload / parsing           |
 | `packages/shared`         | zod schemas + types shared between API and UI                                             |
-| `packages/i18n`           | Paraglide (inlang) messages: `fr`, `en`, `de`, `es`, `it`, `zh-cn`                        |
+| `packages/i18n`           | Paraglide (inlang) messages: `fr`, `en`, `de`, `es`, `it`, `zh-cn`, `pt-br`               |
 
 ## Documentation and contributing
 
