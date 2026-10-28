@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.11.0](https://github.com/riccardoalv/farolprint/compare/v0.10.0...v0.11.0) (2026-10-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove the Electron desktop app, FarolPrint runs only as Docker + web
+
+### Features
+
+* log the task settings sent with every print start ([9374b29](https://github.com/riccardoalv/farolprint/commit/9374b2945efe8e1bd51a95ddbea781b2047890f2))
+
+
+### Bug Fixes
+
+* **queue:** keep the print dialog options for queued files ([9374b29](https://github.com/riccardoalv/farolprint/commit/9374b2945efe8e1bd51a95ddbea781b2047890f2))
+
+
+### Refactoring
+
+* remove the Electron desktop app, FarolPrint runs only as Docker + web ([9374b29](https://github.com/riccardoalv/farolprint/commit/9374b2945efe8e1bd51a95ddbea781b2047890f2))
+
 ## [0.10.0](https://github.com/riccardoalv/farolprint/compare/v0.9.0...v0.10.0) (2026-10-28)
 
 
