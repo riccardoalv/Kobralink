@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.0](https://github.com/riccardoalv/farolprint/compare/v0.8.2...v0.9.0) (2026-10-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* Docker image, package names and `FAROLPRINT_*` environment variables are renamed; `KOBRALINK_*` keeps working as a fallback.
+
+### Features
+
+* bed-clear hold, scheduled prints, maintenance, costs, failure archive and pt-br ([#22](https://github.com/riccardoalv/farolprint/issues/22)) ([50ad913](https://github.com/riccardoalv/farolprint/commit/50ad913f16d79c21c32c23157226c0fd6c5b7a2d))
+
+
+### Refactoring
+
+* rename the project to Farol Print ([#26](https://github.com/riccardoalv/farolprint/issues/26)) ([78f5f9b](https://github.com/riccardoalv/farolprint/commit/78f5f9b11217f16cca7624ab4a4d132d6779a8ae))
+
 ## [0.8.2](https://github.com/riccardoalv/farolprint/compare/v0.8.1...v0.8.2) (2026-10-25)
 
 
