@@ -174,49 +174,6 @@ html.desktop [role='dialog'] {
     -webkit-app-region: no-drag;
 }
 
-.react-grid-layout,
-.react-grid-item {
-    transition: none;
-}
-
-.dashboard-editing .react-grid-item {
-    outline: 2px dashed color-mix(in oklab, var(--primary) 50%, transparent);
-    outline-offset: -2px;
-    border-radius: 1.5rem;
-}
-
-.dashboard-editing .react-grid-item > .react-resizable-handle {
-    width: 28px;
-    height: 28px;
-    bottom: 6px;
-    right: 6px;
-    background: none;
-}
-
-.dashboard-editing .react-grid-item > .react-resizable-handle::after {
-    width: 12px;
-    height: 12px;
-    right: 6px;
-    bottom: 6px;
-    border-right: 3px solid var(--primary);
-    border-bottom: 3px solid var(--primary);
-    border-radius: 0 0 4px 0;
-}
-
-.react-grid-item.react-grid-placeholder {
-    background: color-mix(in oklab, var(--primary) 25%, transparent);
-    border-radius: 1.5rem;
-    opacity: 1;
-}
-
-.react-grid-item > * {
-    overflow: hidden;
-}
-
-.dashboard-editing .react-grid-item:not(.react-draggable-dragging):not(.resizing) {
-    transition: transform 200ms ease, width 200ms ease, height 200ms ease;
-}
-
 @property --scroll-fade-t {
     syntax: "<length-percentage>";
     inherits: false;

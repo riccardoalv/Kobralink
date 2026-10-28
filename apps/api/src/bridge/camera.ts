@@ -22,6 +22,43 @@ export function resolveFfmpeg(): string {
     return 'ffmpeg';
 }
 
+function inputArgs(url: string): string[] {
+    const base = ['-fflags', 'nobuffer', '-flags', 'low_delay', '-timeout', '10000000'];
+    if (url.toLowerCase().startsWith('rtsp://')) {
+        return [...base, '-probesize', '32', '-analyzeduration', '0', '-rtsp_transport', 'tcp'];
+    }
+    return [...base, '-use_wallclock_as_timestamps', '1', '-probesize', '500000', '-analyzeduration', '500000'];
+}
+
+export function cameraFfmpegArgs(url: string): string[] {
+    return [
+        '-loglevel',
+        'warning',
+        ...inputArgs(url),
+        '-i',
+        url,
+        '-vsync',
+        'passthrough',
+        '-f',
+        'image2pipe',
+        '-vcodec',
+        'mjpeg',
+        '-q:v',
+        '2',
+        '-flush_packets',
+        '1',
+        'pipe:1',
+        '-c:v',
+        'copy',
+        '-an',
+        '-f',
+        'mpegts',
+        '-flush_packets',
+        '1',
+        'pipe:3',
+    ];
+}
+
 export class CameraCache {
     private url = '';
     private proc: FfmpegProc | null = null;
@@ -179,42 +216,9 @@ export class CameraCache {
         }, IDLE_STOP_MS);
     }
 
-    private inputArgs(url: string): string[] {
-        const base = ['-fflags', 'nobuffer', '-flags', 'low_delay', '-timeout', '10000000'];
-        if (url.toLowerCase().startsWith('rtsp://')) {
-            return [...base, '-probesize', '32', '-analyzeduration', '0', '-rtsp_transport', 'tcp'];
-        }
-        return [...base, '-use_wallclock_as_timestamps', '1', '-probesize', '500000', '-analyzeduration', '500000'];
-    }
-
     private spawnFfmpeg(): void {
         const url = this.url;
-        const args = [
-            '-loglevel',
-            'warning',
-            ...this.inputArgs(url),
-            '-i',
-            url,
-            '-vf',
-            'fps=15,scale=640:-2',
-            '-f',
-            'image2pipe',
-            '-vcodec',
-            'mjpeg',
-            '-q:v',
-            '3',
-            '-flush_packets',
-            '1',
-            'pipe:1',
-            '-c:v',
-            'copy',
-            '-an',
-            '-f',
-            'mpegts',
-            '-flush_packets',
-            '1',
-            'pipe:3',
-        ];
+        const args = cameraFfmpegArgs(url);
         let proc: FfmpegProc;
         try {
             proc = spawn(resolveFfmpeg(), args, { stdio: ['ignore', 'pipe', 'pipe', 'pipe'] }) as FfmpegProc;

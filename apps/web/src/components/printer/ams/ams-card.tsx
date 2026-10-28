@@ -1,4 +1,4 @@
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/printer/panel';
 import { useLiveState } from '@/hooks/use-printers';
 import { useExternalSpool } from '@/hooks/use-slot-spool';
 import { rgbCss } from '@/lib/color';
@@ -11,7 +11,7 @@ import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
 import { SlotSpool, SpoolTileBody } from './spool-art';
 
-export function AmsCard({ printerId }: { printerId: string }) {
+export function AmsCard({ printerId, className }: { printerId: string; className?: string }) {
     const state = useLiveState(printerId);
     const slots = [...state.amsSlots].sort((a, b) => a.globalIndex - b.globalIndex);
     const loaded = slots.find((s) => s.globalIndex === state.amsLoadedSlot);
@@ -19,20 +19,24 @@ export function AmsCard({ printerId }: { printerId: string }) {
     const offline = !state.connected;
     const busy = state.printState === 'printing';
 
+    const status = loaded
+        ? m.ams_loaded_type({ type: loaded.type || '?' })
+        : state.externalSpoolOnly
+          ? null
+          : m.ams_none_loaded();
+
     return (
-        <Card className="rounded-3xl border-0 shadow-none">
-            <CardHeader>
-                <CardTitle className="text-lg font-medium">{m.ams_title()}</CardTitle>
-                <CardDescription>{FILAMENT_MODE_LABEL[state.filamentMode]?.()}</CardDescription>
-                <CardAction className="text-sm text-muted-foreground">
-                    {loaded
-                        ? m.ams_loaded_type({ type: loaded.type || '?' })
-                        : state.externalSpoolOnly
-                          ? null
-                          : m.ams_none_loaded()}
-                </CardAction>
-            </CardHeader>
-            <CardContent className="space-y-5">
+        <Panel
+            className={className}
+            title={m.ams_title()}
+            description={FILAMENT_MODE_LABEL[state.filamentMode]?.()}
+            action={
+                status && (
+                    <span className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">{status}</span>
+                )
+            }
+        >
+            <div className="flex flex-col gap-5">
                 {slots.length === 0 ? (
                     state.externalSpoolOnly ? (
                         <ExternalSpoolSlot printerId={printerId} disabled={offline} />
@@ -40,7 +44,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
                         <p className="text-sm text-muted-foreground">{m.ams_no_slots()}</p>
                     )
                 ) : (
-                    <div className="flex flex-wrap gap-3">
+                    <div className={GRID}>
                         {slots.map((s) => {
                             const isLoaded = s.globalIndex === state.amsLoadedSlot;
                             const empty = s.status !== 5 && !s.type;
@@ -89,8 +93,8 @@ export function AmsCard({ printerId }: { printerId: string }) {
                 {state.aceUnits.length > 0 && (
                     <AceControls printerId={printerId} units={state.aceUnits} disabled={offline} busy={busy} />
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </Panel>
     );
 }
 
@@ -99,7 +103,7 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
     const openDialog = confirmationDialogStore.actions.openDialog;
 
     return (
-        <div className="flex flex-wrap gap-3">
+        <div className={GRID}>
             <button
                 type="button"
                 disabled={disabled}
@@ -121,12 +125,14 @@ function ExternalSpoolSlot({ printerId, disabled }: { printerId: string; disable
     );
 }
 
+const GRID = 'grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3';
+
 const TILE =
-    'flex w-56 cursor-pointer items-center gap-3 rounded-2xl bg-secondary p-2.5 text-left outline-none transition-colors enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
+    'flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-2xl bg-secondary/60 p-3 text-left outline-none transition-colors enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
 
 function TileHeader({ title, badge }: { title: string; badge: React.ReactNode }) {
     return (
-        <span className="flex w-full items-center justify-between gap-2 text-xs">
+        <span className="flex w-full items-center justify-between gap-2 text-sm">
             <span className="truncate font-medium">{title}</span>
             <span className="shrink-0 text-muted-foreground">{badge}</span>
         </span>

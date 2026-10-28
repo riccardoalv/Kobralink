@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 type Phase = 'off' | 'starting' | 'live' | 'error';
 
-export function CameraCard({ printerId }: { printerId: string }) {
+export function CameraCard({ printerId, className }: { printerId: string; className?: string }) {
     const state = useLiveState(printerId);
     const settings = usePrinter(printerId)?.settings;
     const cameraOnPrint = settings?.cameraOnPrint ?? false;
@@ -68,10 +68,12 @@ export function CameraCard({ printerId }: { printerId: string }) {
     useEffect(() => () => setSrc(''), []);
 
     return (
-        <section className="flex flex-col overflow-hidden border border-card rounded-3xl bg-card text-card-foreground">
-            <div className="flex items-center justify-between gap-3 p-6 pb-3">
+        <section
+            className={cn('flex min-w-0 flex-col overflow-hidden rounded-3xl bg-card text-card-foreground', className)}
+        >
+            <div className="flex min-h-9 flex-wrap items-center justify-between gap-3 p-5 sm:px-6">
                 <div>
-                    <h2 className="text-lg font-medium">{m.camera_title()}</h2>
+                    <h2 className="text-lg font-medium leading-tight">{m.camera_title()}</h2>
                     <p className="text-sm text-muted-foreground">
                         {phase === 'live'
                             ? m.camera_live()
@@ -128,7 +130,7 @@ export function CameraCard({ printerId }: { printerId: string }) {
                     )}
                 </div>
             </div>
-            <div className="relative min-h-0 w-full flex-1 bg-black/40 aspect-video">
+            <div className="relative aspect-video max-h-[70svh] w-full flex-1 bg-black/40">
                 {src && (
                     <img
                         src={src}

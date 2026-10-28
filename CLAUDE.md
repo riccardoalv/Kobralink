@@ -92,7 +92,8 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   label (`failureReason`, `note`) editable with `PATCH history/:jobId`.
 - Macros are lists of JSON actions (`macroActionSchema` in `packages/shared/src/macros.ts`), not G-code; run by
   `macro.service.ts` through the `PrinterBridge` methods.
-- Camera: `bridge/camera.ts` (`CameraCache`) = one ffmpeg per printer (FLV → MJPEG 15 fps/640px), fanned out to
+- Camera: `bridge/camera.ts` (`CameraCache`) = one ffmpeg per printer (FLV → MJPEG at the camera's native frame
+  rate and resolution, plus the original H.264 copied as MPEG-TS), fanned out to
   `/api/v1/printers/:id/camera/{stream,snapshot}` (dashboard) and `/api/camera/{stream,snapshot}` (Moonraker,
   announced by `server/webcams/list`). Binary from `FAROLPRINT_FFMPEG`, else `@ffmpeg-installer/ffmpeg` (external in the
   Electron bundle), else `ffmpeg` from the PATH. Stops after 60 s without consumers.
