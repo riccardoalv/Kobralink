@@ -1,4 +1,4 @@
-import { FAILURE_REASONS, type FailureReason, type PrintJobDto } from '@kobralink/shared';
+import { FAILURE_REASONS, type FailureReason, type PrintJobDto } from '@farolprint/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';

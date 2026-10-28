@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { type AppSettings, appSettingsSchema, mergePatch, type UpdateAppSettingsInput } from '@kobralink/shared';
+import { type AppSettings, appSettingsSchema, mergePatch, type UpdateAppSettingsInput } from '@farolprint/shared';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 

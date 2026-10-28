@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
 
-const API = process.env.KOBRALINK_API_URL ?? 'http://localhost:7100';
+const API = process.env.FAROLPRINT_API_URL ?? 'http://localhost:7100';
 
 export default defineConfig({
     plugins: [

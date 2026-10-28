@@ -12,16 +12,16 @@ import {
     type KobraSkipData,
     type PrintStartPayload,
     uploadGcode,
-} from '@kobralink/kobra-protocol';
+} from '@farolprint/kobra-protocol';
 import {
     ACTIVE_PRINT_STATES,
     type AceDrying,
     type AmsSlot,
     type ConnectionError,
+    type FarolPrintEventType,
     type FilamentAssignment,
     type FilamentMode,
     KOBRA_TO_KLIPPER_STATE,
-    type KobralinkEventType,
     PRE_PRINT_STATES,
     type PrinterFileDto,
     type PrinterLiveState,
@@ -30,7 +30,7 @@ import {
     type SpoolUsageEntry,
     slotUsableForPrint,
     TERMINAL_PRINT_STATES,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Logger } from '@nestjs/common';
 import type { GcodeService, StoredFile } from '../gcode/gcode.service';
 import { connectionErrorMessage, m, protocolErrorMessage } from '../i18n/locale';
@@ -71,7 +71,7 @@ export interface BridgePrinterConfig {
 }
 
 export interface BridgeDomainEvent {
-    type: KobralinkEventType;
+    type: FarolPrintEventType;
     data?: Record<string, string | number | boolean | null>;
 }
 
@@ -211,7 +211,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             deviceId: c.deviceId,
             cert: this.certs.cert,
             key: this.certs.key,
-            clientId: `kobralink-${process.pid}-${randomBytes(3).toString('hex')}`,
+            clientId: `farolprint-${process.pid}-${randomBytes(3).toString('hex')}`,
             logger: {
                 debug: (m) => this.log.debug(m),
                 info: (m) => this.log.log(m),
@@ -439,7 +439,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private nozzleAlerted = false;
     private bedAlerted = false;
 
-    emitEvent(type: KobralinkEventType, data?: BridgeDomainEvent['data']): void {
+    emitEvent(type: FarolPrintEventType, data?: BridgeDomainEvent['data']): void {
         this.emit('event', { type, data });
     }
 
@@ -645,7 +645,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.jobSync = this.gcode
             .closeOpenJobs(this.config.id, status)
             .then((n) => {
-                if (n) this.log.warn(`${n} job(s) left open while Kobralink was offline closed as ${status}`);
+                if (n) this.log.warn(`${n} job(s) left open while Farol Print was offline closed as ${status}`);
             })
             .catch((e) => this.log.warn(`Job reconcile: ${(e as Error).message}`))
             .finally(() => {

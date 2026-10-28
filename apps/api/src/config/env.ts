@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export interface KobralinkEnv {
+export interface FarolPrintEnv {
     dataDir: string;
     gcodeDir: string;
     databaseUrl: string;
@@ -25,7 +25,7 @@ export interface KobralinkEnv {
     isDev: boolean;
 }
 
-let cached: KobralinkEnv | null = null;
+let cached: FarolPrintEnv | null = null;
 
 function csv(value: string | undefined): string[] {
     return (value ?? '')
@@ -50,39 +50,58 @@ function ensureSecret(dataDir: string): string {
     return secret;
 }
 
-export function loadEnv(): KobralinkEnv {
+export function adoptLegacyEnv(): void {
+    for (const [key, value] of Object.entries(process.env)) {
+        if (!key.startsWith('KOBRALINK_') || value === undefined) continue;
+        const next = `FAROLPRINT_${key.slice('KOBRALINK_'.length)}`;
+        if (process.env[next] === undefined) process.env[next] = value;
+    }
+}
+
+export function adoptLegacyDatabase(dataDir: string): void {
+    const next = path.join(dataDir, 'farolprint.db');
+    const legacy = path.join(dataDir, 'kobralink.db');
+    if (fs.existsSync(next) || !fs.existsSync(legacy)) return;
+    for (const suffix of ['', '-wal', '-shm']) {
+        if (fs.existsSync(legacy + suffix)) fs.renameSync(legacy + suffix, next + suffix);
+    }
+}
+
+export function loadEnv(): FarolPrintEnv {
     if (cached) return cached;
+    adoptLegacyEnv();
     const root = apiRoot();
-    const dataDir = process.env.KOBRALINK_DATA_DIR
-        ? path.resolve(process.env.KOBRALINK_DATA_DIR)
+    const dataDir = process.env.FAROLPRINT_DATA_DIR
+        ? path.resolve(process.env.FAROLPRINT_DATA_DIR)
         : path.resolve(root, '..', '..', 'data');
     const gcodeDir = path.join(dataDir, 'gcodes');
     fs.mkdirSync(gcodeDir, { recursive: true });
+    adoptLegacyDatabase(dataDir);
 
-    const port = Number(process.env.KOBRALINK_PORT ?? 7100);
+    const port = Number(process.env.FAROLPRINT_PORT ?? 7100);
     const baseUrl = (process.env.BETTER_AUTH_URL ?? `http://localhost:${port}`).replace(/\/$/, '');
-    const webDirEnv = process.env.KOBRALINK_WEB_DIR
-        ? path.resolve(process.env.KOBRALINK_WEB_DIR)
+    const webDirEnv = process.env.FAROLPRINT_WEB_DIR
+        ? path.resolve(process.env.FAROLPRINT_WEB_DIR)
         : path.resolve(root, '..', 'web', 'dist');
     const webDir = fs.existsSync(path.join(webDirEnv, 'index.html')) ? webDirEnv : null;
 
     cached = {
         dataDir,
         gcodeDir,
-        databaseUrl: process.env.DATABASE_URL ?? `file:${path.join(dataDir, 'kobralink.db')}`,
+        databaseUrl: process.env.DATABASE_URL ?? `file:${path.join(dataDir, 'farolprint.db')}`,
         port,
         baseUrl,
         authSecret: ensureSecret(dataDir),
         webDir,
-        certsDir: process.env.KOBRALINK_CERTS_DIR ?? path.join(root, 'certs'),
+        certsDir: process.env.FAROLPRINT_CERTS_DIR ?? path.join(root, 'certs'),
         assetsDir: path.join(root, 'assets'),
         migrationsDir: path.join(root, 'prisma', 'migrations'),
-        extraOrigins: (process.env.KOBRALINK_EXTRA_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173')
+        extraOrigins: (process.env.FAROLPRINT_EXTRA_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173')
             .split(',')
             .map((s) => s.trim())
             .filter(Boolean),
-        trustedProxies: csv(process.env.KOBRALINK_TRUSTED_PROXIES),
-        ipAddressHeaders: csv(process.env.KOBRALINK_IP_HEADERS),
+        trustedProxies: csv(process.env.FAROLPRINT_TRUSTED_PROXIES),
+        ipAddressHeaders: csv(process.env.FAROLPRINT_IP_HEADERS),
         isDev: process.env.NODE_ENV !== 'production',
     };
     return cached;

@@ -1,4 +1,4 @@
-import type { PrintJobDto } from '@kobralink/shared';
+import type { PrintJobDto } from '@farolprint/shared';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

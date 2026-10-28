@@ -31,7 +31,7 @@ export class SystemController {
     async backup(@Query('timelapses') timelapses: string | undefined, @Res() res: Response) {
         const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
         res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="kobralink-backup-${stamp}.zip"`);
+        res.setHeader('Content-Disposition', `attachment; filename="farolprint-backup-${stamp}.zip"`);
         await this.system.writeBackup(res, timelapses === 'true');
     }
 

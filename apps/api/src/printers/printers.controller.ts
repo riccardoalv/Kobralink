@@ -6,7 +6,7 @@ import {
     powerActionSchema,
     type UpdatePrinterInput,
     updatePrinterSchema,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import {
     BadRequestException,
     Body,

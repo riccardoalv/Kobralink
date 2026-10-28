@@ -1,4 +1,4 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import type { GcodeFileDto } from '@farolprint/shared';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import type { ParsedGcode, WorkerResponse } from '@/lib/gcode-parser.worker';

@@ -5,7 +5,7 @@ import {
     setLocalSpoolMapSchema,
     type UpdateLocalSpoolInput,
     updateLocalSpoolSchema,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ZodPipe } from '../common/zod.pipe';
 import { LocalSpoolService } from './local-spool.service';

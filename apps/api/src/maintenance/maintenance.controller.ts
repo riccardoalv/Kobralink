@@ -3,7 +3,7 @@ import {
     completeMaintenanceSchema,
     type MaintenanceTaskInput,
     maintenanceTaskSchema,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ZodPipe } from '../common/zod.pipe';
 import { MaintenanceService } from './maintenance.service';

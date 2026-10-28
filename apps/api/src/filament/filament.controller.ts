@@ -1,4 +1,4 @@
-import { type SetSlotProfileInput, setSlotProfileSchema } from '@kobralink/shared';
+import { type SetSlotProfileInput, setSlotProfileSchema } from '@farolprint/shared';
 import {
     BadRequestException,
     Body,

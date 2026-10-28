@@ -7,16 +7,16 @@ export const RESTART_EXIT_CODE = 75;
 export function applyPendingRestore(dataDir: string, log: (m: string) => void): void {
     const pending = path.join(dataDir, RESTORE_DIR);
     if (!fs.existsSync(pending)) return;
-    const db = path.join(pending, 'kobralink.db');
+    const db = path.join(pending, 'farolprint.db');
     if (!fs.existsSync(db)) {
         fs.rmSync(pending, { recursive: true, force: true });
         return;
     }
     log('Applying pending restore…');
     for (const suffix of ['', '-wal', '-shm']) {
-        fs.rmSync(path.join(dataDir, `kobralink.db${suffix}`), { force: true });
+        fs.rmSync(path.join(dataDir, `farolprint.db${suffix}`), { force: true });
     }
-    fs.renameSync(db, path.join(dataDir, 'kobralink.db'));
+    fs.renameSync(db, path.join(dataDir, 'farolprint.db'));
     const gcodes = path.join(pending, 'gcodes');
     if (fs.existsSync(gcodes)) {
         fs.rmSync(path.join(dataDir, 'gcodes'), { recursive: true, force: true });

@@ -5,7 +5,7 @@ import {
     localSpoolSchema,
     type UpdateLocalSpoolInput,
     updateLocalSpoolSchema,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import type { FilamentUsageSink } from '../bridge/printer-bridge';
 import type { LocalSpool } from '../generated/prisma/client';

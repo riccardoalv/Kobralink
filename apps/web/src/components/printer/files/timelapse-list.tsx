@@ -1,4 +1,4 @@
-import type { TimelapseDto } from '@kobralink/shared';
+import type { TimelapseDto } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Film, Play, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';

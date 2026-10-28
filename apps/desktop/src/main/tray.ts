@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { m } from '@kobralink/i18n';
+import { m } from '@farolprint/i18n';
 import { app, type BrowserWindow, Menu, nativeImage, Tray } from 'electron';
 import trayIcon from '../../resources/tray.png?asset';
 import trayTemplate2x from '../../resources/trayTemplate@2x.png?asset';
@@ -45,7 +45,7 @@ function render(getWindow: () => BrowserWindow | null): void {
               : '';
     if (process.platform === 'darwin') tray.setTitle(title);
     tray.setToolTip(
-        active.length ? active.map((p) => `${p.name}: ${Math.round(p.progress * 100)}%`).join('\n') : 'Kobralink',
+        active.length ? active.map((p) => `${p.name}: ${Math.round(p.progress * 100)}%`).join('\n') : 'Farol Print',
     );
     const items: Electron.MenuItemConstructorOptions[] = printers.length
         ? printers.map((p) => {
@@ -64,7 +64,7 @@ function render(getWindow: () => BrowserWindow | null): void {
                       win.show();
                       win.focus();
                       void win.webContents.executeJavaScript(
-                          `window.dispatchEvent(new CustomEvent('kobralink:navigate',{detail:${JSON.stringify(`/printers/${p.id}`)}}))`,
+                          `window.dispatchEvent(new CustomEvent('farolprint:navigate',{detail:${JSON.stringify(`/printers/${p.id}`)}}))`,
                       );
                   },
               };

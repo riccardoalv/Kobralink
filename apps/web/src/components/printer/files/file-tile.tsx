@@ -1,4 +1,4 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import type { GcodeFileDto } from '@farolprint/shared';
 import { Box, Clock, Download, Eye, ListPlus, MoreVertical, Play, Trash2 } from 'lucide-react';
 import {
     DropdownMenu,

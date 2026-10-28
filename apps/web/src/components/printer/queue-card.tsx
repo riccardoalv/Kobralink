@@ -1,4 +1,4 @@
-import type { QueueItemDto, ScheduledPrintDto } from '@kobralink/shared';
+import type { QueueItemDto, ScheduledPrintDto } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, CalendarClock, Check, ListOrdered, Play, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';

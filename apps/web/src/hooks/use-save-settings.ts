@@ -1,4 +1,4 @@
-import type { AppSettings, UpdateAppSettingsInput } from '@kobralink/shared';
+import type { AppSettings, UpdateAppSettingsInput } from '@farolprint/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';

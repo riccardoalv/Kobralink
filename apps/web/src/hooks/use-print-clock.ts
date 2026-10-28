@@ -1,4 +1,4 @@
-import type { PrinterLiveState } from '@kobralink/shared';
+import type { PrinterLiveState } from '@farolprint/shared';
 import { useEffect, useState } from 'react';
 
 export function usePrintClock(state: PrinterLiveState): { elapsedSec: number; remainSec: number } {

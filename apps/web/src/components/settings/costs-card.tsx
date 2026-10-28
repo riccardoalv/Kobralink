@@ -1,4 +1,4 @@
-import type { AppSettings } from '@kobralink/shared';
+import type { AppSettings } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { Input } from '@/components/ui/input';
 import { useSaveSettings } from '@/hooks/use-save-settings';

@@ -1,4 +1,4 @@
-import { type MacroAction, type MacroDto, type MacroIcon, type MacroInput, macroSchema } from '@kobralink/shared';
+import { type MacroAction, type MacroDto, type MacroIcon, type MacroInput, macroSchema } from '@farolprint/shared';
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import type { Macro } from '../generated/prisma/client';

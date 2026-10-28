@@ -164,7 +164,7 @@ function LogsPage() {
                             href={
                                 source === 'all' ? api.logs.downloadUrl : `${api.logs.downloadUrl}?printerId=${source}`
                             }
-                            download="kobralink-log.txt"
+                            download="farolprint-log.txt"
                         >
                             <Download /> {m.common_download()}
                         </a>

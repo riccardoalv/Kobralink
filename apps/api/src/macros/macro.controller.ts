@@ -1,4 +1,4 @@
-import { type MacroInput, macroSchema, reorderMacrosSchema } from '@kobralink/shared';
+import { type MacroInput, macroSchema, reorderMacrosSchema } from '@farolprint/shared';
 import {
     BadGatewayException,
     Body,

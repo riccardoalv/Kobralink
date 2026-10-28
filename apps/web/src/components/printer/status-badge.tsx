@@ -1,4 +1,4 @@
-import type { PrinterLiveState } from '@kobralink/shared';
+import type { PrinterLiveState } from '@farolprint/shared';
 import { kobraStateLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 

@@ -4,7 +4,7 @@ import { app, type UtilityProcess, utilityProcess } from 'electron';
 
 const RESTART_EXIT_CODE = 75;
 
-export const LOCAL_PORT = Number(process.env.KOBRALINK_PORT) || 7100;
+export const LOCAL_PORT = Number(process.env.FAROLPRINT_PORT) || 7100;
 
 let child: UtilityProcess | null = null;
 let log: fs.WriteStream | null = null;
@@ -53,11 +53,11 @@ export function startLocalApi(port: number): UtilityProcess {
         env: {
             ...process.env,
             NODE_ENV: 'production',
-            KOBRALINK_DATA_DIR: dataDir,
-            KOBRALINK_PORT: String(port),
-            KOBRALINK_WEB_DIR: webDir(),
-            KOBRALINK_PACKAGED: 'electron',
-            KOBRALINK_VERSION: app.getVersion(),
+            FAROLPRINT_DATA_DIR: dataDir,
+            FAROLPRINT_PORT: String(port),
+            FAROLPRINT_WEB_DIR: webDir(),
+            FAROLPRINT_PACKAGED: 'electron',
+            FAROLPRINT_VERSION: app.getVersion(),
             BETTER_AUTH_URL: `http://localhost:${port}`,
         },
     });

@@ -1,4 +1,4 @@
-import type { AmsSlot } from '@kobralink/shared';
+import type { AmsSlot } from '@farolprint/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { loadEnv } from '../config/env';
@@ -81,7 +81,7 @@ export class MoonrakerService {
         return {
             state: 'ready',
             state_message: 'Printer is ready',
-            hostname: 'kobralink-bridge',
+            hostname: 'farolprint-bridge',
             klipper_path: '/home/pi/klipper',
             python_path: '/home/pi/klippy-env/bin/python',
             log_file: '/tmp/klippy.log',
@@ -314,7 +314,7 @@ export class MoonrakerService {
         return {
             webcams: [
                 {
-                    name: 'Kobralink',
+                    name: 'Farol Print',
                     location: 'printer',
                     service: 'mjpegstreamer',
                     enabled: true,

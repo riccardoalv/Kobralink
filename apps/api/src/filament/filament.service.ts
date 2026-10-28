@@ -6,7 +6,7 @@ import type {
     ImportProfilesResult,
     SlotFilamentInfo,
     SlotProfileRef,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { unzipSync } from 'fflate';
 import { loadEnv } from '../config/env';

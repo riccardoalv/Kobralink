@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { schedulePrintSchema, updatePrintJobSchema } from '@kobralink/shared';
+import { schedulePrintSchema, updatePrintJobSchema } from '@farolprint/shared';
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 import type { BridgeRegistry } from '../src/bridge/bridge.registry';
 import { ZodPipe } from '../src/common/zod.pipe';

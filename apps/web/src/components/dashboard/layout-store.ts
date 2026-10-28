@@ -49,8 +49,8 @@ export interface LayoutPreset {
     layout: Layout;
 }
 
-const LAYOUT_KEY = (printerId: string) => `kobralink.layout.${printerId}`;
-const PRESETS_KEY = 'kobralink.layout.presets';
+const LAYOUT_KEY = (printerId: string) => `farolprint.layout.${printerId}`;
+const PRESETS_KEY = 'farolprint.layout.presets';
 
 function read<T>(key: string): T | null {
     try {

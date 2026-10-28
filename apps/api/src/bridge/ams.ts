@@ -1,4 +1,4 @@
-import type { AmsBoxMappingEntry, KobraBoxSlot, KobraColorBox, KobraDryingStatus } from '@kobralink/kobra-protocol';
+import type { AmsBoxMappingEntry, KobraBoxSlot, KobraColorBox, KobraDryingStatus } from '@farolprint/kobra-protocol';
 import {
     type AceDrying,
     type AceUnit,
@@ -7,7 +7,7 @@ import {
     type FilamentMode,
     type GcodeFilament,
     slotUsableForPrint,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 
 export function detectFilamentMode(boxes: KobraColorBox[]): FilamentMode {
     const toolhead = boxes.some((b) => b.id === -1);

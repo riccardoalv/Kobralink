@@ -11,11 +11,11 @@ import type {
     CreateUserInput,
     DetectionModelDto,
     FailureDetectionStatusDto,
+    FarolPrintEvent,
     FilamentProfile,
     FileObjectsDto,
     GcodeFileDto,
     ImportProfilesResult,
-    KobralinkEvent,
     LocalSpoolDto,
     LocalSpoolInput,
     MacroDto,
@@ -58,7 +58,7 @@ import type {
     UpdatePrintJobInput,
     UpdateUserInput,
     UserDto,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { getLocale } from '@/lib/i18n';
 
 export class ApiError extends Error {
@@ -189,7 +189,7 @@ export const api = {
     },
 
     events: {
-        recent: () => request<KobralinkEvent[]>('/api/v1/notifications'),
+        recent: () => request<FarolPrintEvent[]>('/api/v1/notifications'),
         test: () =>
             request<{ delivered: string[]; failed: { channel: string; error: string }[] }>(
                 '/api/v1/notifications/test',

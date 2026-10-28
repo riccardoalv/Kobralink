@@ -1,4 +1,4 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import type { GcodeFileDto } from '@farolprint/shared';
 import { Box, Crosshair, Move, RotateCcw } from 'lucide-react';
 import { type ComponentProps, lazy, Suspense, useEffect, useState } from 'react';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';

@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { type AppSettings, appSettingsSchema } from '@kobralink/shared';
+import { type AppSettings, appSettingsSchema } from '@farolprint/shared';
 import { installI18n } from '../src/i18n/locale';
 import { NotificationService } from '../src/notifications/notification.service';
 import type { SettingsService } from '../src/settings/settings.service';

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { type AppSettings, appSettingsSchema } from '@kobralink/shared';
+import { type AppSettings, appSettingsSchema } from '@farolprint/shared';
 import type { SettingsService } from '../src/settings/settings.service';
 import { StatsService } from '../src/stats/stats.service';
 import { seedFile, seedJob, seedPrinter, type TestDb, testDb } from './helpers/db';

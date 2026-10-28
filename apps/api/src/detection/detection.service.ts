@@ -8,7 +8,7 @@ import type {
     FailureDetectionSettings,
     FailureDetectionStatusDto,
     PrinterDetectionDto,
-} from '@kobralink/shared';
+} from '@farolprint/shared';
 import { BadRequestException, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { loadEnv } from '../config/env';
@@ -19,7 +19,7 @@ import { FailureModel, loadOrt } from './model';
 import { DETECTION_THRESH, ESCALATING_FACTOR, FailurePrediction } from './prediction';
 
 const MODEL_URL =
-    process.env.KOBRALINK_DETECTION_MODEL_URL ??
+    process.env.FAROLPRINT_DETECTION_MODEL_URL ??
     'https://tsd-pub-static.s3.amazonaws.com/ml-models/model-weights-5a6b1be1fa.onnx';
 const MODEL_MIN_BYTES = 50 * 1024 * 1024;
 const TICK_MS = 1000;

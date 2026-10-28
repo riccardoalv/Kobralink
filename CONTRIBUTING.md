@@ -1,4 +1,4 @@
-# Contributing to Kobralink
+# Contributing to Farol Print
 
 Thanks for helping! The most valuable contributions are **printer support** (models, firmwares, accessories such as
 the ACE) and **real printer data** (anonymized MQTT messages). See [Development](docs/development.md) to get started,
