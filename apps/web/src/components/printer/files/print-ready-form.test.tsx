@@ -1,7 +1,8 @@
 import type { GcodeFileDto, PrinterLiveState } from '@kobralink/shared';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { m } from '@/lib/i18n';
 import { renderWithProviders } from '@/test/render';
 import { PrintReadyForm } from './print-ready-form';
 
@@ -65,5 +66,31 @@ describe('PrintReadyForm', () => {
                 failureDetection: false,
             }),
         );
+    });
+});
+
+describe('PrintReadyForm scheduling', () => {
+    it('offers no schedule button without a handler', async () => {
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} />);
+        expect(screen.queryByRole('button', { name: m.schedule_button() })).toBeNull();
+    });
+
+    it('asks for a start time, ignores an empty one and schedules with the options', async () => {
+        const onSchedule = vi.fn().mockResolvedValue(undefined);
+        await renderWithProviders(
+            <PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} onSchedule={onSchedule} />,
+        );
+        expect(screen.queryByLabelText(m.schedule_start_at())).toBeNull();
+        await userEvent.click(screen.getByRole('button', { name: m.schedule_button() }));
+        const input = screen.getByLabelText(m.schedule_start_at());
+        await userEvent.click(screen.getByRole('button', { name: m.schedule_confirm() }));
+        expect(onSchedule).not.toHaveBeenCalled();
+        fireEvent.change(input, { target: { value: '2026-11-01T08:00' } });
+        await userEvent.click(screen.getByRole('switch', { name: /record a timelapse/i }));
+        await userEvent.click(screen.getByRole('button', { name: m.schedule_confirm() }));
+        await waitFor(() => expect(onSchedule).toHaveBeenCalledOnce());
+        const [options, startAt] = onSchedule.mock.calls[0];
+        expect(options).toMatchObject({ autoLeveling: true, timelapse: false });
+        expect(startAt).toBe(new Date('2026-11-01T08:00').toISOString());
     });
 });

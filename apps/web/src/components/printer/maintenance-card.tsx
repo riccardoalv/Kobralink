@@ -203,7 +203,15 @@ function Small({ title, ...props }: React.ComponentProps<'button'> & { title: st
     );
 }
 
-function TaskForm({ printerId, task, onSaved }: { printerId: string; task?: MaintenanceTaskDto; onSaved: () => void }) {
+export function TaskForm({
+    printerId,
+    task,
+    onSaved,
+}: {
+    printerId: string;
+    task?: MaintenanceTaskDto;
+    onSaved: () => void;
+}) {
     const close = confirmationDialogStore.actions.closeDialog;
     const save = useMutation({
         mutationFn: (v: ReturnType<typeof maintenanceTaskSchema.parse>) =>
@@ -325,7 +333,15 @@ function TaskForm({ printerId, task, onSaved }: { printerId: string; task?: Main
     );
 }
 
-function DoneForm({ printerId, task, onSaved }: { printerId: string; task: MaintenanceTaskDto; onSaved: () => void }) {
+export function DoneForm({
+    printerId,
+    task,
+    onSaved,
+}: {
+    printerId: string;
+    task: MaintenanceTaskDto;
+    onSaved: () => void;
+}) {
     const close = confirmationDialogStore.actions.closeDialog;
     const done = useMutation({
         mutationFn: (note: string) => api.maintenance.complete(printerId, task.id, { note }),
@@ -379,7 +395,7 @@ function DoneForm({ printerId, task, onSaved }: { printerId: string; task: Maint
     );
 }
 
-function LogList({ printerId, task }: { printerId: string; task: MaintenanceTaskDto }) {
+export function LogList({ printerId, task }: { printerId: string; task: MaintenanceTaskDto }) {
     const logs = useQuery({
         queryKey: ['printers', printerId, 'maintenance', task.id, 'log'],
         queryFn: () => api.maintenance.logs(printerId, task.id),

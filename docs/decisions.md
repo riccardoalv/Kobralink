@@ -24,6 +24,11 @@ reasons behind them.
   change, docs that follow the code.
 - **Everything in English**: code, docs, commits, issues and PRs.
 
+- **Tests for everything, always** (maintainer's rule, October 2026). Every change, in every layer, ships with tests
+  for every case it introduces; nothing is merged with "tests later". The expected coverage per layer is listed in
+  [development.md](development.md#tests). After the single-printer workflow landed with partial coverage, the missing
+  tests were added before any new feature.
+
 ## Printers
 
 - **No firmware change, ever.** Newer Anycubic printers (Kobra X, and likely the Kobra 4) verify signed firmware

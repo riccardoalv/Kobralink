@@ -1,0 +1,102 @@
+import { describe, expect, it } from 'bun:test';
+import { createClient } from '@libsql/client';
+import { applyMigrations } from '../src/prisma/migrator';
+import { MIGRATIONS_DIR, testDb } from './helpers/db';
+
+async function columns(file: string, table: string): Promise<string[]> {
+    const db = createClient({ url: `file:${file}` });
+    try {
+        const res = await db.execute(`PRAGMA table_info("${table}")`);
+        return res.rows.map((r) => String(r.name));
+    } finally {
+        db.close();
+    }
+}
+
+async function tables(file: string): Promise<string[]> {
+    const db = createClient({ url: `file:${file}` });
+    try {
+        const res = await db.execute("SELECT name FROM sqlite_master WHERE type = 'table'");
+        return res.rows.map((r) => String(r.name));
+    } finally {
+        db.close();
+    }
+}
+
+describe('migrations', () => {
+    it('create the single-printer workflow tables and columns on a fresh database', async () => {
+        const db = await testDb();
+        try {
+            const names = await tables(db.file);
+            expect(names).toEqual(
+                expect.arrayContaining(['print_job', 'scheduled_print', 'maintenance_task', 'maintenance_log']),
+            );
+            expect(await columns(db.file, 'print_job')).toEqual(
+                expect.arrayContaining(['errorCode', 'errorMsg', 'failureReason', 'note', 'snapshot']),
+            );
+            expect(await columns(db.file, 'scheduled_print')).toEqual(
+                expect.arrayContaining(['printerId', 'fileId', 'startAt', 'options']),
+            );
+            expect(await columns(db.file, 'maintenance_task')).toEqual(
+                expect.arrayContaining([
+                    'intervalHours',
+                    'intervalJobs',
+                    'intervalDays',
+                    'lastDoneAt',
+                    'dueNotifiedAt',
+                ]),
+            );
+            expect(await columns(db.file, 'maintenance_log')).toEqual(
+                expect.arrayContaining(['taskId', 'doneAt', 'note', 'hours', 'jobs']),
+            );
+        } finally {
+            await db.close();
+        }
+    });
+
+    it('are idempotent and recorded once each', async () => {
+        const db = await testDb();
+        try {
+            const logs: string[] = [];
+            await applyMigrations(`file:${db.file}`, MIGRATIONS_DIR, (msg) => logs.push(msg));
+            expect(logs).toEqual([]);
+            const rows = await db.client.$queryRawUnsafe<{ migration_name: string }[]>(
+                'SELECT migration_name FROM "_prisma_migrations" ORDER BY migration_name',
+            );
+            const names = rows.map((r) => r.migration_name);
+            expect(new Set(names).size).toBe(names.length);
+            expect(names).toContain('20261028000000_single_printer_features');
+        } finally {
+            await db.close();
+        }
+    });
+
+    it('cascade scheduled prints and maintenance tasks when their printer is deleted', async () => {
+        const db = await testDb();
+        try {
+            await db.client.printer.create({
+                data: {
+                    id: 'p1',
+                    name: 'Kobra',
+                    ip: '127.0.0.1',
+                    username: 'u',
+                    password: 'p',
+                    deviceId: 'd',
+                    httpPort: 17999,
+                },
+            });
+            await db.client.gcodeFile.create({ data: { id: 'f1', filename: 'a.gcode', sizeBytes: 1, md5: 'f1' } });
+            await db.client.scheduledPrint.create({
+                data: { printerId: 'p1', fileId: 'f1', startAt: new Date(), options: '{}' },
+            });
+            const task = await db.client.maintenanceTask.create({ data: { printerId: 'p1', name: 'Lube' } });
+            await db.client.maintenanceLog.create({ data: { taskId: task.id } });
+            await db.client.printer.delete({ where: { id: 'p1' } });
+            expect(await db.client.scheduledPrint.count()).toBe(0);
+            expect(await db.client.maintenanceTask.count()).toBe(0);
+            expect(await db.client.maintenanceLog.count()).toBe(0);
+        } finally {
+            await db.close();
+        }
+    });
+});
