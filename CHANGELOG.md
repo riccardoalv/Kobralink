@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/riccardoalv/farolprint/compare/v0.14.0...v0.14.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **notifications:** show a visible link in Discord and ntfy ([#39](https://github.com/riccardoalv/farolprint/issues/39)) ([46d3c4e](https://github.com/riccardoalv/farolprint/commit/46d3c4e7e948b4d765ae70587895d6e0f5e8a523))
+
 ## [0.14.0](https://github.com/riccardoalv/farolprint/compare/v0.13.0...v0.14.0) (2026-10-30)
 
 
