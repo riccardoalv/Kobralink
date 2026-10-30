@@ -1152,5 +1152,21 @@
     "history_page_hint": "Tutte le stampe, con fallimenti e costi.",
     "maintenance_page_hint": "Manutenzione preventiva di tutte le stampanti.",
     "page_no_printer": "Aggiungi prima una stampante.",
-    "notify_queue_filament_body": "{filename} è in attesa: il filamento caricato non basterà. Carica o cambia una bobina."
+    "notify_queue_filament_body": "{filename} è in attesa: il filamento caricato non basterà. Carica o cambia una bobina.",
+    "print_cancel_reason": "Perché annullare? (facoltativo)",
+    "print_cancel_reason_none": "Non specificare",
+    "stats_vs_previous": "Rispetto ai {n} giorni precedenti",
+    "stats_delta_points": "{n} pti",
+    "stats_utilization": "Utilizzo",
+    "stats_utilization_sub": "del tempo di {n} stampante/i",
+    "stats_longest_extra": "La più lunga riuscita: {duration}",
+    "stats_printer_utilization": "{pct}% di utilizzo",
+    "stats_mtbf": "Tempo medio tra i guasti",
+    "stats_mtbf_none": "nessun guasto",
+    "stats_idle_after": "Inattiva dopo una stampa",
+    "stats_estimate_accuracy": "Stima dello slicer",
+    "stats_estimate_accuracy_value": "{pct}% del tempo reale",
+    "stats_unknown": "—",
+    "stats_failures_hint": "Le più frequenti prima: risolvere le prime cause elimina la maggior parte dei guasti.",
+    "stats_pareto_cumulative": "{pct}% cumulativo"
 }

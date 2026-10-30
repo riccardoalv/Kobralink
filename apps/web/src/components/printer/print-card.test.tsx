@@ -130,7 +130,7 @@ describe('PrintCard', () => {
         expect(alert.title).toBe(m.print_cancel_title());
         expect(control.cancel).not.toHaveBeenCalled();
         await alert.onAction?.();
-        expect(control.cancel).toHaveBeenCalledWith('p1');
+        expect(control.cancel).toHaveBeenCalledWith('p1', '');
         await userEvent.click(screen.getByRole('button', { name: m.print_skip_objects() }));
         expect(confirmationDialogStore.state.isOpen).toBe(true);
         expect(confirmationDialogStore.state.title).toBe(m.print_skip_objects());

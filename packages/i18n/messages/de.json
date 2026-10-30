@@ -1152,5 +1152,21 @@
     "history_page_hint": "Alle Drucke mit Fehlschlägen und Kosten.",
     "maintenance_page_hint": "Vorbeugende Wartung aller Drucker.",
     "page_no_printer": "Fügen Sie zuerst einen Drucker hinzu.",
-    "notify_queue_filament_body": "{filename} wartet: Das geladene Filament reicht nicht. Lade oder wechsle eine Spule."
+    "notify_queue_filament_body": "{filename} wartet: Das geladene Filament reicht nicht. Lade oder wechsle eine Spule.",
+    "print_cancel_reason": "Warum abbrechen? (optional)",
+    "print_cancel_reason_none": "Keine Angabe",
+    "stats_vs_previous": "Im Vergleich zu den vorherigen {n} Tagen",
+    "stats_delta_points": "{n} Pp.",
+    "stats_utilization": "Auslastung",
+    "stats_utilization_sub": "der Zeit von {n} Drucker(n)",
+    "stats_longest_extra": "Längster erfolgreicher: {duration}",
+    "stats_printer_utilization": "{pct} % Auslastung",
+    "stats_mtbf": "Mittlere Zeit zwischen Fehlschlägen",
+    "stats_mtbf_none": "keine Fehlschläge",
+    "stats_idle_after": "Leerlauf nach einem Druck",
+    "stats_estimate_accuracy": "Slicer-Schätzung",
+    "stats_estimate_accuracy_value": "{pct} % der echten Zeit",
+    "stats_unknown": "—",
+    "stats_failures_hint": "Häufigste zuerst: Wer die ersten Ursachen behebt, beseitigt die meisten Fehlschläge.",
+    "stats_pareto_cumulative": "{pct} % kumuliert"
 }

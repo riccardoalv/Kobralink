@@ -1152,5 +1152,21 @@
     "history_page_hint": "Todas las impresiones, con sus fallos y costes.",
     "maintenance_page_hint": "Mantenimiento preventivo de todas las impresoras.",
     "page_no_printer": "Primero añade una impresora.",
-    "notify_queue_filament_body": "{filename} está en espera: el filamento cargado no alcanzará. Carga o cambia una bobina."
+    "notify_queue_filament_body": "{filename} está en espera: el filamento cargado no alcanzará. Carga o cambia una bobina.",
+    "print_cancel_reason": "¿Por qué cancelar? (opcional)",
+    "print_cancel_reason_none": "No indicar",
+    "stats_vs_previous": "Comparado con los {n} días anteriores",
+    "stats_delta_points": "{n} pts",
+    "stats_utilization": "Utilización",
+    "stats_utilization_sub": "del tiempo de {n} impresora(s)",
+    "stats_longest_extra": "La más larga con éxito: {duration}",
+    "stats_printer_utilization": "{pct} % de utilización",
+    "stats_mtbf": "Tiempo medio entre fallos",
+    "stats_mtbf_none": "sin fallos",
+    "stats_idle_after": "Inactiva tras una impresión",
+    "stats_estimate_accuracy": "Estimación del laminador",
+    "stats_estimate_accuracy_value": "{pct} % del tiempo real",
+    "stats_unknown": "—",
+    "stats_failures_hint": "Las más frecuentes primero: corregir las primeras causas elimina la mayoría de los fallos.",
+    "stats_pareto_cumulative": "{pct} % acumulado"
 }

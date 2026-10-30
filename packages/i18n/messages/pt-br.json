@@ -1152,5 +1152,21 @@
     "history_page_hint": "Todas as impressões, com falhas e custos.",
     "maintenance_page_hint": "Manutenção preventiva de todas as impressoras.",
     "page_no_printer": "Adicione uma impressora primeiro.",
-    "notify_queue_filament_body": "{filename} está em espera: o filamento carregado não vai dar. Carregue ou troque um carretel."
+    "notify_queue_filament_body": "{filename} está em espera: o filamento carregado não vai dar. Carregue ou troque um carretel.",
+    "print_cancel_reason": "Por que cancelar? (opcional)",
+    "print_cancel_reason_none": "Não informar",
+    "stats_vs_previous": "Comparado com os {n} dias anteriores",
+    "stats_delta_points": "{n} p.p.",
+    "stats_utilization": "Utilização",
+    "stats_utilization_sub": "do tempo de {n} impressora(s)",
+    "stats_longest_extra": "Mais longa com sucesso: {duration}",
+    "stats_printer_utilization": "{pct}% de utilização",
+    "stats_mtbf": "Tempo médio entre falhas",
+    "stats_mtbf_none": "nenhuma falha",
+    "stats_idle_after": "Parada depois de uma impressão",
+    "stats_estimate_accuracy": "Estimativa do fatiador",
+    "stats_estimate_accuracy_value": "{pct}% do tempo real",
+    "stats_unknown": "—",
+    "stats_failures_hint": "As mais frequentes primeiro: resolver as primeiras causas elimina a maioria das falhas.",
+    "stats_pareto_cumulative": "{pct}% acumulado"
 }

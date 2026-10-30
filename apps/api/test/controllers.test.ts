@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { schedulePrintSchema, updatePrintJobSchema } from '@farolprint/shared';
+import { cancelPrintSchema, schedulePrintSchema, updatePrintJobSchema } from '@farolprint/shared';
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 import type { BridgeRegistry } from '../src/bridge/bridge.registry';
 import { ZodPipe } from '../src/common/zod.pipe';
@@ -214,6 +214,19 @@ describe('CoreController history routes', () => {
         expect(sendFile).toHaveBeenCalledWith('/data/failures/j1.jpg');
         gcode.snapshotPath.mockImplementationOnce(async () => null);
         await expect(ctrl.jobSnapshot('p1', 'j2', res as never)).rejects.toBeInstanceOf(NotFoundException);
+    });
+});
+
+describe('CoreController cancel', () => {
+    it('passes the cancel reason to the printer, none by default', async () => {
+        const cancel = mock(async (_reason: string) => undefined);
+        const registry = { get: () => ({ cancel }) } as unknown as BridgeRegistry;
+        const ctrl = new CoreController(registry, {} as GcodeService, {} as StatsService);
+        const pipe = new ZodPipe(cancelPrintSchema);
+        await ctrl.cancel('p1', pipe.transform({ reason: 'adhesion' }));
+        await ctrl.cancel('p1', pipe.transform(undefined));
+        expect(cancel.mock.calls).toEqual([['adhesion'], ['']]);
+        expect(() => pipe.transform({ reason: 'bogus' })).toThrow(BadRequestException);
     });
 });
 

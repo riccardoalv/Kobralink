@@ -229,7 +229,13 @@ export class GcodeService implements OnApplicationBootstrap {
         filamentMm = 0,
         spoolUsage: SpoolUsageEntry[] = [],
         printDurationSec: number | null = null,
-        failure: { errorCode?: number; errorMsg?: string; snapshot?: Buffer | null; pausedAt?: Date | null } = {},
+        failure: {
+            errorCode?: number;
+            errorMsg?: string;
+            snapshot?: Buffer | null;
+            pausedAt?: Date | null;
+            failureReason?: string;
+        } = {},
     ): Promise<void> {
         const job = await this.prisma.client.printJob.findUnique({ where: { id: jobId } });
         if (!job) return;
@@ -249,6 +255,7 @@ export class GcodeService implements OnApplicationBootstrap {
                 errorMsg: status === 'completed' ? '' : (failure.errorMsg ?? '').slice(0, 500),
                 ...(snapshot ? { snapshot } : {}),
                 ...(failure.pausedAt !== undefined ? { pausedAt: failure.pausedAt } : {}),
+                ...(status !== 'completed' && failure.failureReason ? { failureReason: failure.failureReason } : {}),
             },
         });
     }

@@ -69,6 +69,17 @@ describe('finishJob', () => {
         expect(row.durationSec).toBeLessThanOrEqual(92);
     });
 
+    it('keeps the reason given when cancelling, never on a completed job', async () => {
+        const cancelled = await svc.startJob('p1', 'why.gcode', null);
+        await svc.finishJob(cancelled, 'cancelled', 0, [], 10, { failureReason: 'adhesion' });
+        const completed = await svc.startJob('p1', 'fine.gcode', null);
+        await svc.finishJob(completed, 'completed', 0, [], 10, { failureReason: 'adhesion' });
+        const rows = await db.client.printJob.findMany({ where: { id: { in: [cancelled, completed] } } });
+        const reason = (id: string) => rows.find((r) => r.id === id)?.failureReason;
+        expect(reason(cancelled)).toBe('adhesion');
+        expect(reason(completed)).toBe('');
+    });
+
     it('ignores unknown jobs', async () => {
         await expect(svc.finishJob('missing', 'error')).resolves.toBeUndefined();
     });

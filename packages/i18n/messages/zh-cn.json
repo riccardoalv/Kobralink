@@ -1152,5 +1152,21 @@
     "history_page_hint": "所有打印记录，包括失败与成本。",
     "maintenance_page_hint": "所有打印机的预防性维护。",
     "page_no_printer": "请先添加打印机。",
-    "notify_queue_filament_body": "{filename} 已暂停排队：已装载的耗材不够。请装载或更换耗材盘。"
+    "notify_queue_filament_body": "{filename} 已暂停排队：已装载的耗材不够。请装载或更换耗材盘。",
+    "print_cancel_reason": "取消原因（可选）",
+    "print_cancel_reason_none": "不说明",
+    "stats_vs_previous": "与之前 {n} 天相比",
+    "stats_delta_points": "{n} 个百分点",
+    "stats_utilization": "利用率",
+    "stats_utilization_sub": "占 {n} 台打印机的可用时间",
+    "stats_longest_extra": "最长成功打印：{duration}",
+    "stats_printer_utilization": "利用率 {pct}%",
+    "stats_mtbf": "平均故障间隔",
+    "stats_mtbf_none": "无失败",
+    "stats_idle_after": "打印后空闲",
+    "stats_estimate_accuracy": "切片软件预估",
+    "stats_estimate_accuracy_value": "实际时间的 {pct}%",
+    "stats_unknown": "—",
+    "stats_failures_hint": "按频率排序：解决前几个原因即可消除大部分失败。",
+    "stats_pareto_cumulative": "累计 {pct}%"
 }

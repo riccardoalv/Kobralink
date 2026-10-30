@@ -238,3 +238,79 @@ describe('StatsService.compute with printer profiles', () => {
         expect(stats.totalCost).toBe(1);
     });
 });
+
+describe('StatsService.compute fleet metrics', () => {
+    let fleet: TestDb;
+    const hour = 3_600_000;
+
+    beforeAll(async () => {
+        fleet = await testDb();
+        await seedPrinter(fleet.client, 'f1', 'Fleet A');
+        await seedPrinter(fleet.client, 'f2', 'Fleet B');
+        const first = at(2);
+        await seedJob(fleet.client, 'f1', {
+            filename: 'a.gcode',
+            durationSec: 7200,
+            estimatedSec: 6000,
+            startedAt: first,
+            finishedAt: new Date(first.getTime() + 2 * hour),
+        });
+        await seedJob(fleet.client, 'f1', {
+            filename: 'b.gcode',
+            status: 'cancelled',
+            failureReason: 'spaghetti',
+            durationSec: 3600,
+            startedAt: new Date(first.getTime() + 3 * hour),
+            finishedAt: new Date(first.getTime() + 4 * hour),
+        });
+        for (const daysAgo of [9, 10]) {
+            await seedJob(fleet.client, 'f1', { filename: 'old.gcode', durationSec: 3600, startedAt: at(daysAgo) });
+        }
+        await seedJob(fleet.client, 'f2', { filename: 'older.gcode', durationSec: 3600, startedAt: at(20) });
+    });
+
+    afterAll(() => fleet.close());
+
+    it('compares the period with the one before it', async () => {
+        current = unpriced;
+        const stats = await new StatsService(fleet.prisma, settings).compute(undefined, 7);
+        expect(stats.previous).toEqual({
+            totalJobs: 2,
+            successRate: 1,
+            totalDurationSec: 7200,
+            utilization: 7200 / (7 * 86_400 * 2),
+            totalFilamentG: 0,
+            totalCost: 0,
+        });
+        const now = new Date();
+        const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+        const windowSec = (now.getTime() - since.getTime()) / 1000;
+        expect(stats.utilization ?? 0).toBeCloseTo(10_800 / (windowSec * 2), 5);
+    });
+
+    it('measures each printer, idle ones included', async () => {
+        current = unpriced;
+        const stats = await new StatsService(fleet.prisma, settings).compute(undefined, 7);
+        const [a, b] = stats.printers;
+        expect(a).toMatchObject({
+            printerId: 'f1',
+            jobs: 2,
+            completed: 1,
+            failed: 1,
+            durationSec: 10_800,
+            mtbfSec: 10_800,
+            idleAfterSec: 3600,
+            estimateRatio: 1.2,
+        });
+        expect(a.utilization).toBeGreaterThan(0);
+        expect(b).toMatchObject({ printerId: 'f2', name: 'Fleet B', jobs: 0, utilization: 0, mtbfSec: null });
+    });
+
+    it('has no previous period over all time and lists only the chosen printer', async () => {
+        current = unpriced;
+        const stats = await new StatsService(fleet.prisma, settings).compute('f1', 0);
+        expect(stats.previous).toBeNull();
+        expect(stats.printers.map((p) => p.printerId)).toEqual(['f1']);
+        expect(stats.utilization).toBeGreaterThan(0);
+    });
+});

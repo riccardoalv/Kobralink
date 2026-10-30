@@ -197,10 +197,21 @@ Bambu tools so people migrating from them find things where they expect. The pha
   need more than a spool holds shows "filament". An item held for filament is notified once (under the "Queue"
   notification switch) instead of being started.
 - **A cleared bed is rated good or bad** (maintainer's decision). "Good" starts the next file when auto-start is on.
-  "Bad" marks the last print as failed with the reason "print quality" and puts its file back at the front of the
+  "Bad" marks the last print as failed with the reason "rejected quality" and puts its file back at the front of the
   queue for the same printer, so the reprint comes before anything else. The light trigger counts as "good".
 - **Maintenance mode** takes a printer out of the queue without removing its items: nothing is dispatched to it, the
   home page shows it apart, and the queue starts again when it comes back.
+- **How the statistics are measured** (October 2026). Key figures are compared with the previous period of the same
+  length (the 7, 30, 90 or 365 days before); "All" has no comparison. Utilisation is the print time divided by the
+  time of every printer in the period (from the start of the period, or the first print for "All", until now), so an
+  idle printer lowers it; each printer is listed, idle ones included. The mean time between failures is the print time
+  divided by the failed prints (errors and cancels, except a cancel labelled "cancelled on purpose"). The idle time after
+  a print is the median wait between the end of a print and the next start on the same printer; the median keeps a
+  weekend without prints from hiding the usual wait. The estimate accuracy compares the slicer estimate with the real
+  time of completed prints. Failures are shown most frequent first with their cumulative share (Pareto).
+- **The cancel dialog asks why** (maintainer's decision), with the same reasons as the history and "Don't say" as the
+  default. The reason is kept by the bridge until the print ends and stored on the job; a cancel from OrcaSlicer or
+  the printer screen stays unlabelled and can be labelled later from the history.
 
 ## Releases
 

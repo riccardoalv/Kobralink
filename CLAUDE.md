@@ -92,7 +92,9 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
 - Costs: `stats/job-cost.ts` prices a job from the spool (or default) filament price plus `settings.costs` (energy
   per kWh × printer power, hourly machine rate). `GET /api/v1/stats/export.csv` exports one row per job. A cancelled
   or errored job keeps the printer error code, the last camera frame (`dataDir/failures/<jobId>.jpg`) and a user
-  label (`failureReason`, `note`) editable with `PATCH history/:jobId`.
+  label (`failureReason`, `note`) editable with `PATCH history/:jobId`; `POST print/cancel` takes an optional
+  `reason` the bridge stores on the job when it ends. `stats/stats-metrics.ts` defines utilisation, MTBF, idle time
+  after a print and estimate accuracy; `compute` also returns the previous period (`previous`) for comparisons.
 - Macros are lists of JSON actions (`macroActionSchema` in `packages/shared/src/macros.ts`), not G-code; run by
   `macro.service.ts` through the `PrinterBridge` methods.
 - Camera: `bridge/camera.ts` (`CameraCache`) = one ffmpeg per printer (FLV → MJPEG at the camera's native frame

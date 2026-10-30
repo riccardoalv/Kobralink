@@ -32,10 +32,15 @@ export interface StatsPrinterEntry {
     name: string;
     jobs: number;
     completed: number;
+    failed: number;
     durationSec: number;
     filamentMm: number;
     weightG: number;
     cost: number;
+    utilization: number | null;
+    mtbfSec: number | null;
+    idleAfterSec: number | null;
+    estimateRatio: number | null;
 }
 
 export interface StatsWasteEntry {
@@ -53,6 +58,15 @@ export interface StatsWaste {
 export interface StatsFailureEntry {
     reason: string;
     count: number;
+}
+
+export interface StatsSummary {
+    totalJobs: number;
+    successRate: number;
+    totalDurationSec: number;
+    utilization: number | null;
+    totalFilamentG: number;
+    totalCost: number;
 }
 
 export interface StatsDto {
@@ -87,4 +101,6 @@ export interface StatsDto {
     materials: StatsMaterialEntry[];
     failures: StatsFailureEntry[];
     waste: StatsWaste;
+    utilization: number | null;
+    previous: StatsSummary | null;
 }

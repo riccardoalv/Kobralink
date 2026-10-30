@@ -2,7 +2,13 @@ import { describe, expect, it, mock } from 'bun:test';
 import { type BridgePrinterConfig, PrinterBridge } from '../src/bridge/printer-bridge';
 import type { GcodeService } from '../src/gcode/gcode.service';
 
-type Failure = { errorCode?: number; errorMsg?: string; snapshot?: Buffer | null; pausedAt?: Date | null };
+type Failure = {
+    errorCode?: number;
+    errorMsg?: string;
+    snapshot?: Buffer | null;
+    pausedAt?: Date | null;
+    failureReason?: string;
+};
 type FinishArgs = [string, string, number, unknown[], number | null, Failure];
 
 function harness(open: { id: string; filename: string; pausedAt: Date | null } | null = null) {
@@ -56,7 +62,7 @@ describe('job end', () => {
         await h.report({ state: 'finished', data: { filename: 'part.gcode' } });
         const [jobId, status, , , durationSec, failure] = h.last();
         expect([jobId, status, durationSec]).toEqual(['job-1', 'completed', 600]);
-        expect(failure).toEqual({ errorCode: 0, errorMsg: '', snapshot: null, pausedAt: null });
+        expect(failure).toEqual({ errorCode: 0, errorMsg: '', snapshot: null, pausedAt: null, failureReason: '' });
         expect(h.jobs).toEqual([
             ['start', 'job-1', 'part.gcode', null],
             ['end', 'job-1', 'part.gcode', 'completed'],
@@ -79,6 +85,7 @@ describe('job end', () => {
             errorMsg: 'Filament runout',
             snapshot: frame,
             pausedAt: expect.any(Date),
+            failureReason: '',
         });
         expect(h.jobs[1]).toEqual(['end', 'job-1', 'part.gcode', 'cancelled']);
         expect(h.bridge.snapshot()).toMatchObject({ errorCode: 0, pauseMsg: '' });
@@ -102,7 +109,38 @@ describe('job end', () => {
         await h.report({ state: 'resuming', data: { filename: 'part.gcode' } });
         await h.report({ state: 'stoped', data: { filename: 'part.gcode' } });
         const [, , , , , failure] = h.last();
-        expect(failure).toEqual({ errorCode: 0, errorMsg: '', snapshot: null, pausedAt: null });
+        expect(failure).toEqual({ errorCode: 0, errorMsg: '', snapshot: null, pausedAt: null, failureReason: '' });
+    });
+
+    it('labels a print cancelled from FarolPrint with the reason given', async () => {
+        const h = harness();
+        const stopPrint = mock(async () => undefined);
+        (h.bridge as unknown as { client: { stopPrint: typeof stopPrint } }).client = {
+            connected: true,
+            stopPrint,
+        } as never;
+        await h.start();
+        await h.bridge.cancel('spaghetti');
+        expect(stopPrint).toHaveBeenCalledOnce();
+        await h.report({ state: 'stoped', data: { filename: 'part.gcode' } });
+        expect(h.last()[5].failureReason).toBe('spaghetti');
+        await h.start();
+        await h.report({ state: 'stoped', data: { filename: 'part.gcode' } });
+        expect(h.last()[5].failureReason).toBe('');
+    });
+
+    it('forgets the reason when the cancel command fails', async () => {
+        const h = harness();
+        (h.bridge as unknown as { client: { stopPrint: () => Promise<void> } }).client = {
+            connected: true,
+            stopPrint: async () => {
+                throw new Error('timeout');
+            },
+        } as never;
+        await h.start();
+        await expect(h.bridge.cancel('clog')).rejects.toThrow('timeout');
+        await h.report({ state: 'stoped', data: { filename: 'part.gcode' } });
+        expect(h.last()[5].failureReason).toBe('');
     });
 
     it('does nothing when no job is open', async () => {

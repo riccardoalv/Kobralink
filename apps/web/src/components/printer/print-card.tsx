@@ -1,6 +1,8 @@
-import { type GcodeFileDto, isCalibrating } from '@farolprint/shared';
+import { type FailureReason, type GcodeFileDto, isCalibrating } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { confirmCancel } from '@/components/printer/cancel-print';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { openPrintReadyDialog } from '@/components/printer/print-ready-watcher';
 import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
@@ -15,18 +17,20 @@ import { m } from '@/lib/i18n';
 import { kobraStateLabel } from '@/lib/labels';
 import { filesQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
-import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function PrintCard({ printerId, className }: { printerId: string; className?: string }) {
     const state = useLiveState(printerId);
     const clock = usePrintClock(state);
-    const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const openDialog = confirmationDialogStore.actions.openDialog;
 
     const pause = usePrinterAction(printerId, api.control.pause, m.print_pause_requested);
     const resume = usePrinterAction(printerId, api.control.resume, m.print_resume_requested);
-    const cancel = usePrinterAction(printerId, api.control.cancel, m.print_cancel_requested);
+    const cancel = useMutation({
+        mutationFn: (reason: FailureReason | '') => api.control.cancel(printerId, reason),
+        onSuccess: () => toast.success(m.print_cancel_requested()),
+        onError: (e: Error) => toast.error(e.message),
+    });
 
     const printing = state.printState === 'printing';
     const paused = state.printState === 'paused';
@@ -151,15 +155,7 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
                         <ActionButton
                             danger
                             title={m.common_cancel()}
-                            onClick={() =>
-                                openAlertDialog({
-                                    title: m.print_cancel_title(),
-                                    description: m.print_cancel_hint(),
-                                    actionLabel: m.print_cancel_action(),
-                                    cancelLabel: m.print_cancel_keep(),
-                                    onAction: () => cancel.mutateAsync(),
-                                })
-                            }
+                            onClick={() => confirmCancel((reason) => cancel.mutateAsync(reason))}
                             disabled={cancel.isPending}
                         >
                             <Ban />

@@ -70,6 +70,12 @@ export const updatePrintJobSchema = z.object({
 });
 export type UpdatePrintJobInput = z.infer<typeof updatePrintJobSchema>;
 
+export const cancelPrintSchema = z
+    .object({ reason: z.union([z.literal(''), z.enum(FAILURE_REASONS)]).optional() })
+    .optional()
+    .transform((v) => ({ reason: v?.reason ?? '' }));
+export type CancelPrintInput = z.input<typeof cancelPrintSchema>;
+
 export const filamentAssignmentSchema = z.object({
     paintIndex: z.number().int().min(0).max(63),
     slotIndex: z.number().int().min(-1).max(63),

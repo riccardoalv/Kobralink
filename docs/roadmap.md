@@ -42,7 +42,7 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
 - Pages: Queue (queued, awaiting removal, scheduled), Files, History (every printer, filterable by printer),
   Maintenance (all printers).
 
-## 5. Statistics
+## 5. Statistics (done)
 
 - Wasted filament of unfinished prints, split between paused and cancelled ones (shipped early, with phase 1).
 - Key figures compared with the previous period: success rate, print hours, utilisation, filament, cost.

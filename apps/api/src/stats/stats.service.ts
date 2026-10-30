@@ -6,6 +6,7 @@ import {
     type StatsDto,
     type StatsFileEntry,
     type StatsPrinterEntry,
+    type StatsSummary,
     type StatsWaste,
     type StatsWasteEntry,
 } from '@farolprint/shared';
@@ -17,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { hasAnyPricing, type PricedSpool, type PricingContext, priceJob } from './job-cost';
 import { jobsToCsv } from './stats-csv';
+import { estimateRatio, idleAfterSec, mtbfSec, utilization } from './stats-metrics';
 
 const DAILY_MAX_DAYS = 90;
 
@@ -93,8 +95,10 @@ export class StatsService {
     }
 
     async compute(printerId?: string, days = 0): Promise<StatsDto> {
+        const now = new Date();
         const since = sinceDate(days);
-        const [jobs, printerRows, ctx] = await Promise.all([
+        const previousSince = since ? new Date(since.getTime() - days * 86_400_000) : undefined;
+        const [jobs, printerRows, ctx, previousJobs] = await Promise.all([
             this.prisma.client.printJob.findMany({
                 where: { ...(printerId ? { printerId } : {}), ...(since ? { startedAt: { gte: since } } : {}) },
                 include: { file: { select: { thumbnail: true, id: true, filaments: true } } },
@@ -102,6 +106,16 @@ export class StatsService {
             }),
             this.prisma.client.printer.findMany({ select: { id: true, name: true } }),
             this.pricing(),
+            previousSince && since
+                ? this.prisma.client.printJob.findMany({
+                      where: {
+                          ...(printerId ? { printerId } : {}),
+                          startedAt: { gte: previousSince, lt: since },
+                          status: { not: 'printing' },
+                      },
+                      include: { file: { select: { thumbnail: true, id: true, filaments: true } } },
+                  })
+                : Promise.resolve(null),
         ]);
         const { currency } = this.settings.get();
         const printerNames = new Map(printerRows.map((p) => [p.id, p.name]));
@@ -113,9 +127,13 @@ export class StatsService {
         const totalDuration = sum(finished, (j) => j.durationSec ?? 0);
         const completedDuration = sum(completed, (j) => j.durationSec ?? 0);
         const totalFilament = sum(finished, (j) => j.filamentMm);
-        const estimated = completed.filter((j) => j.estimatedSec > 0 && (j.durationSec ?? 0) > 0);
-        const estimatedSec = sum(estimated, (j) => j.estimatedSec);
-        const estimatedActualSec = sum(estimated, (j) => j.durationSec ?? 0);
+        const estimatedSec = sum(
+            completed.filter((j) => j.estimatedSec > 0 && (j.durationSec ?? 0) > 0),
+            (j) => j.estimatedSec,
+        );
+        const fleetSize = printerId ? 1 : Math.max(1, printerRows.length);
+        const windowStart = since ?? jobs[0]?.startedAt ?? null;
+        const windowSec = windowStart ? Math.max(0, (now.getTime() - windowStart.getTime()) / 1000) : 0;
 
         const daily = new Map<string, StatsBucket>();
         if (since && days <= DAILY_MAX_DAYS) {
@@ -167,18 +185,10 @@ export class StatsService {
                 we.filamentCost += priced.filamentCost;
             }
 
-            const pe = printers.get(j.printerId) ?? {
-                printerId: j.printerId,
-                name: printerNames.get(j.printerId) ?? j.printerId,
-                jobs: 0,
-                completed: 0,
-                durationSec: 0,
-                filamentMm: 0,
-                weightG: 0,
-                cost: 0,
-            };
+            const pe = printers.get(j.printerId) ?? emptyPrinter(j.printerId, printerNames.get(j.printerId));
             pe.jobs += 1;
             if (ok) pe.completed += 1;
+            else pe.failed += 1;
             pe.durationSec += dur;
             pe.filamentMm += j.filamentMm;
             pe.weightG += priced.weightG;
@@ -224,6 +234,18 @@ export class StatsService {
             machineCost += priced.cost.machine;
         }
 
+        for (const p of printerRows) {
+            if ((!printerId || p.id === printerId) && !printers.has(p.id))
+                printers.set(p.id, emptyPrinter(p.id, p.name));
+        }
+        for (const pe of printers.values()) {
+            const own = jobs.filter((j) => j.printerId === pe.printerId);
+            pe.utilization = utilization(pe.durationSec, windowSec);
+            pe.mtbfSec = mtbfSec(own);
+            pe.idleAfterSec = idleAfterSec(own);
+            pe.estimateRatio = estimateRatio(own);
+        }
+
         const first = finished[0]?.startedAt ?? null;
         const last = finished[finished.length - 1]?.startedAt ?? null;
         return {
@@ -238,7 +260,7 @@ export class StatsService {
             avgDurationSec: completed.length ? Math.round(completedDuration / completed.length) : 0,
             longestDurationSec: completed.length ? Math.max(...completed.map((j) => j.durationSec ?? 0)) : 0,
             estimatedDurationSec: estimatedSec,
-            estimateRatio: estimatedSec > 0 ? estimatedActualSec / estimatedSec : null,
+            estimateRatio: estimateRatio(finished),
             totalFilamentMm: Math.round(totalFilament),
             totalFilamentG: Math.round(totalFilamentG),
             totalCost: round2(filamentCost + energyCost + machineCost),
@@ -281,8 +303,48 @@ export class StatsService {
                 .map(([reason, count]) => ({ reason, count }))
                 .sort((a, b) => b.count - a.count),
             waste: { paused: roundWaste(waste.paused), cancelled: roundWaste(waste.cancelled) },
+            utilization: utilization(totalDuration, windowSec, fleetSize),
+            previous: previousJobs ? this.summarize(previousJobs, ctx, days * 86_400, fleetSize) : null,
         };
     }
+
+    private summarize(jobs: JobRow[], ctx: PricingContext, windowSec: number, printers: number): StatsSummary {
+        let weightG = 0;
+        let cost = 0;
+        for (const j of jobs) {
+            const priced = priceJob(j, ctx);
+            weightG += priced.weightG;
+            cost += priced.cost.total;
+        }
+        const completed = jobs.filter((j) => j.status === 'completed').length;
+        const durationSec = sum(jobs, (j) => j.durationSec ?? 0);
+        return {
+            totalJobs: jobs.length,
+            successRate: jobs.length ? completed / jobs.length : 0,
+            totalDurationSec: durationSec,
+            utilization: utilization(durationSec, windowSec, printers),
+            totalFilamentG: Math.round(weightG),
+            totalCost: round2(cost),
+        };
+    }
+}
+
+function emptyPrinter(printerId: string, name?: string): StatsPrinterEntry {
+    return {
+        printerId,
+        name: name ?? printerId,
+        jobs: 0,
+        completed: 0,
+        failed: 0,
+        durationSec: 0,
+        filamentMm: 0,
+        weightG: 0,
+        cost: 0,
+        utilization: null,
+        mtbfSec: null,
+        idleAfterSec: null,
+        estimateRatio: null,
+    };
 }
 
 function sinceDate(days: number): Date | undefined {

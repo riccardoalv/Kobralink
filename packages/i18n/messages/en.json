@@ -1152,5 +1152,21 @@
     "history_page_hint": "Every print, with its failures and costs.",
     "maintenance_page_hint": "Preventive maintenance of every printer.",
     "page_no_printer": "Add a printer first.",
-    "notify_queue_filament_body": "{filename} is on hold: the loaded filament will not last. Load or change a spool."
+    "notify_queue_filament_body": "{filename} is on hold: the loaded filament will not last. Load or change a spool.",
+    "print_cancel_reason": "Why cancel? (optional)",
+    "print_cancel_reason_none": "Don't say",
+    "stats_vs_previous": "Compared with the previous {n} days",
+    "stats_delta_points": "{n} pts",
+    "stats_utilization": "Utilisation",
+    "stats_utilization_sub": "of the time of {n} printer(s)",
+    "stats_longest_extra": "Longest successful: {duration}",
+    "stats_printer_utilization": "{pct}% utilisation",
+    "stats_mtbf": "Mean time between failures",
+    "stats_mtbf_none": "no failures",
+    "stats_idle_after": "Idle after a print",
+    "stats_estimate_accuracy": "Slicer estimate",
+    "stats_estimate_accuracy_value": "{pct}% of the real time",
+    "stats_unknown": "—",
+    "stats_failures_hint": "Most frequent first: fixing the first reasons removes most failures.",
+    "stats_pareto_cumulative": "{pct}% cumulative"
 }

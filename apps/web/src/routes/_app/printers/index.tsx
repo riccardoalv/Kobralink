@@ -1,9 +1,11 @@
+import type { FailureReason } from '@farolprint/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
+import { confirmCancel } from '@/components/printer/cancel-print';
 import { PrinterCard } from '@/components/printer/printer-card';
 import { GettingStarted } from '@/components/printers/getting-started';
 import { HOME_STATUSES, homeStatus } from '@/components/printers/printer-status';
@@ -13,7 +15,6 @@ import { useCanOperate } from '@/hooks/use-role';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { printersQuery } from '@/lib/queries';
-import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 export const Route = createFileRoute('/_app/printers/')({
     validateSearch: z.object({ status: z.enum(HOME_STATUSES).optional().catch(undefined) }),
@@ -44,7 +45,7 @@ function PrintersPage() {
         onError,
     });
     const cancel = useMutation({
-        mutationFn: api.control.cancel,
+        mutationFn: ({ id, reason }: { id: string; reason: FailureReason | '' }) => api.control.cancel(id, reason),
         onSuccess: () => toast.success(m.print_cancel_requested()),
         onError,
     });
@@ -100,15 +101,7 @@ function PrintersPage() {
                         canOperate={canOperate}
                         onPause={() => pause.mutate(p.id)}
                         onResume={() => resume.mutate(p.id)}
-                        onCancel={() =>
-                            alertConfirmationDialogStore.actions.openAlertDialog({
-                                title: m.print_cancel_title(),
-                                description: m.print_cancel_hint(),
-                                actionLabel: m.print_cancel_action(),
-                                cancelLabel: m.print_cancel_keep(),
-                                onAction: () => cancel.mutateAsync(p.id),
-                            })
-                        }
+                        onCancel={() => confirmCancel((reason) => cancel.mutateAsync({ id: p.id, reason }))}
                         onReconnect={() => reconnect.mutate(p.id)}
                         onLight={(on) => light.mutate({ id: p.id, on })}
                     />

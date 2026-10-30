@@ -18,6 +18,7 @@ import {
     type AceDrying,
     type AmsSlot,
     type ConnectionError,
+    type FailureReason,
     type FarolPrintEventType,
     type FilamentAssignment,
     type FilamentMode,
@@ -133,6 +134,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private currentJobId = '';
     private currentJobFilename = '';
     private jobPausedAt: Date | null = null;
+    private cancelReason: FailureReason | '' = '';
     private jobPrinted = false;
     private lightOnTimes: number[] = [];
     private lastOwnLightAt = 0;
@@ -702,7 +704,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 : null;
         const pausedAt = this.jobPausedAt;
         this.jobPausedAt = null;
-        const failure = { errorCode: this.s.errorCode, errorMsg: this.s.pauseMsg, snapshot, pausedAt };
+        const failureReason = status === 'completed' ? '' : this.cancelReason;
+        this.cancelReason = '';
+        const failure = { errorCode: this.s.errorCode, errorMsg: this.s.pauseMsg, snapshot, pausedAt, failureReason };
         const filamentMm = this.suppliesUsageMm;
         void this.priceUsage(usage)
             .then((priced) => this.gcode.finishJob(jobId, status, filamentMm, priced, reportedSec, failure))
@@ -804,6 +808,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.s.slicerTimeSec || file?.estPrintTimeSec || 0,
             elapsed > 0 ? new Date(Date.now() - elapsed * 1000) : undefined,
         );
+        this.cancelReason = '';
         this.currentJobFilename = filename;
         this.jobPausedAt = null;
         this.jobPrinted = this.s.currLayer > 0 || this.s.printDurationSec > 0;
@@ -1352,9 +1357,15 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         await this.client.resumePrint(this.s.taskId);
     }
 
-    async cancel(): Promise<void> {
+    async cancel(reason: FailureReason | '' = ''): Promise<void> {
         this.ensureConnected();
-        await this.client.stopPrint(this.s.taskId);
+        this.cancelReason = reason;
+        try {
+            await this.client.stopPrint(this.s.taskId);
+        } catch (e) {
+            this.cancelReason = '';
+            throw e;
+        }
     }
 
     async startCamera(): Promise<string> {

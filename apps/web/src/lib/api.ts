@@ -11,6 +11,7 @@ import type {
     CreateUserInput,
     DetectionModelDto,
     FailureDetectionStatusDto,
+    FailureReason,
     FarolPrintEvent,
     FilamentProfile,
     FileObjectsDto,
@@ -146,7 +147,8 @@ export const api = {
         axisOff: (id: string) => request<void>(`/api/v1/printers/${id}/axis/off`, { method: 'POST' }),
         pause: (id: string) => request<void>(`/api/v1/printers/${id}/print/pause`, { method: 'POST' }),
         resume: (id: string) => request<void>(`/api/v1/printers/${id}/print/resume`, { method: 'POST' }),
-        cancel: (id: string) => request<void>(`/api/v1/printers/${id}/print/cancel`, { method: 'POST' }),
+        cancel: (id: string, reason: FailureReason | '' = '') =>
+            request<void>(`/api/v1/printers/${id}/print/cancel`, json({ reason })),
         clearFileReady: (id: string) => request<void>(`/api/v1/printers/${id}/file-ready/clear`, { method: 'POST' }),
     },
 
