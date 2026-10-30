@@ -246,7 +246,7 @@ Bambu tools so people migrating from them find things where they expect. The pha
 - **Every notification opens its screen**: the printer page for print events, the queue for queue and scheduled
   print events, maintenance, filament for low spools and automations for automation messages. Discord, Telegram, ntfy
   and the webhook get the link built from FarolPrint's own address (`publicUrl`, set in the setup wizard or the general
-  settings); without it they carry no link. In the dashboard, the toast and the browser notification open the screen.
+  settings); without it they carry no link. Discord shows it as an "Open in FarolPrint" link under the message (a clickable embed title alone went unnoticed), ntfy as a button, Telegram as a link line. In the dashboard, the toast and the browser notification open the screen.
 
 ## Releases
 
