@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, ListOrdered, Play, Trash2, Wrench, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmptyState, IconButton, Panel } from '@/components/printer/panel';
+import { AutoStartCountdown } from '@/components/queue/auto-start-countdown';
 import { BedClearBanner } from '@/components/queue/bed-clear-banner';
 import { moveInOrder, QueueItemRow } from '@/components/queue/queue-item-row';
+import { queueModeText } from '@/components/queue/queue-mode';
 import { Button } from '@/components/ui/button';
 import { useLiveState, usePrinter, usePrinters } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
@@ -114,6 +116,9 @@ export function QueueCard({ printerId, className }: { printerId: string; classNa
                     </div>
                 )}
                 {status.data?.awaitingBedClear && idle && <BedClearBanner printerId={printerId} />}
+                {status.data?.autoStartAt && (
+                    <AutoStartCountdown printerId={printerId} startsAt={status.data.autoStartAt} />
+                )}
                 {scheduled.length > 0 && (
                     <ul className="space-y-1">
                         {scheduled.map((s) => (
@@ -142,13 +147,7 @@ export function QueueCard({ printerId, className }: { printerId: string; classNa
                             </ul>
                         </div>
                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                            <span>
-                                {printer?.settings.queueAutoStart
-                                    ? printer.settings.queueBedClearConfirm
-                                        ? m.queue_auto_confirm()
-                                        : m.queue_auto_on()
-                                    : m.queue_auto_off()}
-                            </span>
+                            <span>{printer ? queueModeText(printer.settings) : null}</span>
                             <Button
                                 size="sm"
                                 className="rounded-full"

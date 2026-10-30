@@ -58,7 +58,7 @@ const CAMERA_STALE_MS = 30000;
 const CAMERA_FRESH_MS = 5000;
 const CAMERA_KICK_INTERVAL_MS = 60000;
 const LIGHT_TRIGGER_WINDOW_MS = 20_000;
-const LIGHT_TRIGGER_COUNT = 3;
+const LIGHT_TRIGGER_TAPS = 3;
 const LIGHT_OWN_COMMAND_MS = 5_000;
 const PAUSE_KOBRA_STATES = new Set(['pausing', 'paused', 'pause']);
 const RESUME_KOBRA_STATES = new Set(['resuming', 'resumed', 'printing']);
@@ -137,7 +137,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private cancelReason: FailureReason | '' = '';
     private readonly unknownStates = new Set<string>();
     private jobPrinted = false;
-    private lightOnTimes: number[] = [];
+    private lightTaps: number[] = [];
     private lastOwnLightAt = 0;
     private jobSync: Promise<void> | null = null;
     private jobsReconciled = false;
@@ -936,19 +936,19 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private onLight(p: KobraMessage<KobraLightData>): void {
         const d = p.data ?? {};
-        const wasOn = this.s.lightOn;
         this.s.lightOn = Boolean(d.status);
-        if (!wasOn && this.s.lightOn) this.countLightOn(Date.now());
+        this.countLightTap(Date.now());
         this.s.lightBrightness = Number(d.brightness ?? 80);
         this.publish();
     }
 
-    private countLightOn(now: number): void {
+    private countLightTap(now: number): void {
         if (now - this.lastOwnLightAt < LIGHT_OWN_COMMAND_MS) return;
-        this.lightOnTimes = [...this.lightOnTimes.filter((t) => now - t <= LIGHT_TRIGGER_WINDOW_MS), now];
-        if (this.lightOnTimes.length < LIGHT_TRIGGER_COUNT) return;
-        this.lightOnTimes = [];
-        this.log.log('Light turned on three times on the printer: bed clear trigger');
+        this.lightTaps = [...this.lightTaps.filter((t) => now - t <= LIGHT_TRIGGER_WINDOW_MS), now];
+        this.log.log(`Light switched on the printer screen (${this.lightTaps.length}/${LIGHT_TRIGGER_TAPS})`);
+        if (this.lightTaps.length < LIGHT_TRIGGER_TAPS) return;
+        this.lightTaps = [];
+        this.log.log('Light switched three times on the printer: bed clear trigger');
         this.emit('light_trigger');
     }
 

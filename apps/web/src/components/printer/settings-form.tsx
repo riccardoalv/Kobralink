@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { SaveBar } from '@/components/form/save-bar';
+import { queueModeText } from '@/components/queue/queue-mode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -326,7 +327,14 @@ export function PrinterSettingsForm({
                     <form.Field name="settings.queueAutoStart">
                         {(field) => (
                             <Row label={m.settings_queue_auto_start()} hint={m.settings_queue_auto_start_hint()}>
-                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                                <Switch
+                                    checked={field.state.value}
+                                    aria-label={m.settings_queue_auto_start()}
+                                    onCheckedChange={(on) => {
+                                        field.handleChange(on);
+                                        if (!on) form.setFieldValue('settings.lightTrigger', false);
+                                    }}
+                                />
                             </Row>
                         )}
                     </form.Field>
@@ -337,13 +345,52 @@ export function PrinterSettingsForm({
                             </Row>
                         )}
                     </form.Field>
+                    <form.Subscribe selector={(s) => s.values.settings.queueAutoStart}>
+                        {(autoStart) =>
+                            autoStart ? (
+                                <form.Field name="settings.queueAutoStartDelaySec">
+                                    {(field) => (
+                                        <Row label={m.settings_queue_delay()} hint={m.settings_queue_delay_hint()}>
+                                            <Input
+                                                id={field.name}
+                                                type="number"
+                                                min={0}
+                                                max={3600}
+                                                step={5}
+                                                aria-label={m.settings_queue_delay()}
+                                                value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                                                onBlur={field.handleBlur}
+                                                onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                                                aria-invalid={fieldInvalid(field.state.meta)}
+                                                className="w-28 shrink-0 rounded-full px-4"
+                                            />
+                                        </Row>
+                                    )}
+                                </form.Field>
+                            ) : null
+                        }
+                    </form.Subscribe>
                     <form.Field name="settings.lightTrigger">
                         {(field) => (
                             <Row label={m.settings_light_trigger()} hint={m.settings_light_trigger_hint()}>
-                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                                <Switch
+                                    checked={field.state.value}
+                                    aria-label={m.settings_light_trigger()}
+                                    onCheckedChange={(on) => {
+                                        field.handleChange(on);
+                                        if (on) form.setFieldValue('settings.queueAutoStart', true);
+                                    }}
+                                />
                             </Row>
                         )}
                     </form.Field>
+                    <form.Subscribe selector={(s) => s.values.settings}>
+                        {(settings) => (
+                            <p role="note" className="rounded-2xl bg-primary/10 px-4 py-3 text-sm">
+                                {queueModeText(settings)}
+                            </p>
+                        )}
+                    </form.Subscribe>
                     <form.Field name="settings.deletePrinterFileAfterPrint">
                         {(field) => (
                             <Row label={m.settings_delete_after_print()} hint={m.settings_delete_after_print_hint()}>

@@ -52,7 +52,13 @@ function attach(id: string, settings: Record<string, unknown> = {}): FakeBridge 
         externalSpoolOnly: true,
         filamentMode: 'toolhead',
     };
-    const all = { queueAutoStart: false, queueBedClearConfirm: true, lightTrigger: false, ...settings };
+    const all = {
+        queueAutoStart: false,
+        queueBedClearConfirm: true,
+        queueAutoStartDelaySec: 0,
+        lightTrigger: false,
+        ...settings,
+    };
     const bridge = Object.assign(emitter, {
         id,
         config: { name: `Kobra ${id}`, ip: '127.0.0.1', httpPort: 7125 },
@@ -339,8 +345,9 @@ describe('bed clear', () => {
             bedClear: true,
         });
         expect(printStoredFile).not.toHaveBeenCalled();
-        const started = await svc.confirmBedClear('p1');
-        expect(started?.fileId).toBe('f1');
+        const result = await svc.confirmBedClear('p1');
+        expect(result.started?.fileId).toBe('f1');
+        expect(result.startsAt).toBeNull();
         expect((await svc.status('p1')).awaitingBedClear).toBe(false);
     });
 
@@ -348,13 +355,88 @@ describe('bed clear', () => {
         attach('p1');
         await seedJob(db.client, 'p1', { fileId: 'f3', filename: 'f3.gcode', startedAt: new Date() });
         await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
-        expect(await svc.confirmBedClear('p1', 'bad')).toBeNull();
+        expect(await svc.confirmBedClear('p1', 'bad')).toEqual({ started: null, startsAt: null });
         const job = await db.client.printJob.findFirstOrThrow({ where: { printerId: 'p1', filename: 'f3.gcode' } });
         expect(job).toMatchObject({ status: 'error', failureReason: 'quality' });
         expect((await svc.list()).map((i) => [i.fileId, i.printerId])).toEqual([
             ['f3', 'p1'],
             ['f1', 'p1'],
         ]);
+    });
+
+    it('holds as soon as a print ends, before the printer reports free', async () => {
+        const p1 = attach('p1', { queueAutoStart: true });
+        await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+        await p1.state('printing');
+        await p1.state('finished');
+        expect((await svc.status('p1')).awaitingBedClear).toBe(true);
+        await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+        expect(printStoredFile).not.toHaveBeenCalled();
+    });
+
+    it('holds a cancelled or failed print even without the confirmation', async () => {
+        for (const ended of ['stoped', 'canceled', 'failed']) {
+            await db.client.printer.updateMany({ data: { awaitingBedClear: false } });
+            const p1 = attach('p1', { queueAutoStart: true, queueBedClearConfirm: false });
+            await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+            await p1.state('printing');
+            await p1.state(ended);
+            await p1.state('free');
+            expect((await svc.status('p1')).awaitingBedClear).toBe(true);
+            expect(printStoredFile).not.toHaveBeenCalled();
+            svc.detach('p1');
+            await db.client.queueItem.deleteMany();
+        }
+    });
+
+    it('ignores an ended state when no print was seen', async () => {
+        const p1 = attach('p1');
+        await p1.state('stoped');
+        expect((await svc.status('p1')).awaitingBedClear).toBe(false);
+    });
+
+    it('starts the next file after the configured wait when the confirmation is off', async () => {
+        const p1 = attach('p1', { queueAutoStart: true, queueBedClearConfirm: false, queueAutoStartDelaySec: 1 });
+        await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+        await p1.state('printing');
+        await p1.state('finished');
+        await p1.state('free');
+        expect((await svc.status('p1')).awaitingBedClear).toBe(false);
+        const at = (await svc.status('p1')).autoStartAt;
+        expect(at).not.toBeNull();
+        expect(Date.parse(at as string) - Date.now()).toBeGreaterThan(500);
+        expect(printStoredFile).not.toHaveBeenCalled();
+        await new Promise((r) => setTimeout(r, 1200));
+        expect(printStoredFile).toHaveBeenCalledTimes(1);
+        expect((await svc.status('p1')).autoStartAt).toBeNull();
+    });
+
+    it('waits the configured time after the bed is confirmed, and the wait can be cancelled', async () => {
+        attach('p1', { queueAutoStart: true, queueAutoStartDelaySec: 15 });
+        await db.client.printer.update({ where: { id: 'p1' }, data: { awaitingBedClear: true } });
+        expect(await svc.confirmBedClear('p1')).toEqual({ started: null, startsAt: null });
+        await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+        expect(printStoredFile).not.toHaveBeenCalled();
+        const result = await svc.confirmBedClear('p1');
+        expect(result.started).toBeNull();
+        expect(Date.parse(result.startsAt as string) - Date.now()).toBeGreaterThan(14_000);
+        expect((await svc.status('p1')).autoStartAt).toBe(result.startsAt);
+        await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+        expect(printStoredFile).not.toHaveBeenCalled();
+        expect(svc.cancelAutoStart('p1')).toBe(true);
+        expect(svc.cancelAutoStart('p1')).toBe(false);
+        expect((await svc.status('p1')).autoStartAt).toBeNull();
+    });
+
+    it('drops a pending automatic start when the next file starts by hand', async () => {
+        attach('p1', { queueAutoStart: true, queueAutoStartDelaySec: 15 });
+        await db.client.printer.update({ where: { id: 'p1' }, data: { maintenance: true } });
+        await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+        await db.client.printer.update({ where: { id: 'p1' }, data: { maintenance: false, awaitingBedClear: true } });
+        expect((await svc.confirmBedClear('p1')).startsAt).not.toBeNull();
+        expect((await svc.startNext('p1')).fileId).toBe('f1');
+        expect(printStoredFile).toHaveBeenCalledTimes(1);
+        expect((await svc.status('p1')).autoStartAt).toBeNull();
     });
 
     it('drops the hold when a print starts by other means', async () => {

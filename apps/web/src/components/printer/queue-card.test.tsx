@@ -36,9 +36,17 @@ const { item, other, queue, schedule, printer } = vi.hoisted(() => {
             clear: vi.fn(),
             reorder: vi.fn(),
             maintenance: vi.fn(),
+            cancelAutoStart: vi.fn(),
         },
         schedule: { list: vi.fn(), remove: vi.fn() },
-        printer: { settings: { queueAutoStart: true, queueBedClearConfirm: true } },
+        printer: {
+            settings: {
+                queueAutoStart: true,
+                queueBedClearConfirm: true,
+                queueAutoStartDelaySec: 15,
+                lightTrigger: false,
+            },
+        },
     };
 });
 
@@ -80,7 +88,12 @@ beforeEach(() => {
     queue.maintenance.mockReset().mockResolvedValue(status({ maintenance: true }));
     schedule.list.mockReset().mockResolvedValue([scheduled]);
     schedule.remove.mockReset().mockResolvedValue(undefined);
-    printer.settings = { queueAutoStart: true, queueBedClearConfirm: true };
+    printer.settings = {
+        queueAutoStart: true,
+        queueBedClearConfirm: true,
+        queueAutoStartDelaySec: 15,
+        lightTrigger: false,
+    };
 });
 
 describe('QueueCard', () => {
@@ -123,10 +136,31 @@ describe('QueueCard', () => {
     });
 
     it('explains the auto-start mode from the printer settings', async () => {
-        printer.settings = { queueAutoStart: true, queueBedClearConfirm: false };
+        printer.settings = {
+            queueAutoStart: true,
+            queueBedClearConfirm: false,
+            queueAutoStartDelaySec: 15,
+            lightTrigger: false,
+        };
         await renderWithProviders(<QueueCard printerId="p1" />);
-        expect(await screen.findByText(m.queue_auto_on())).toBeTruthy();
-        printer.settings = { queueAutoStart: false, queueBedClearConfirm: true };
+        expect(await screen.findByText(m.queue_mode_auto({ when: m.queue_when_after({ seconds: 15 }) }))).toBeTruthy();
+        printer.settings = {
+            queueAutoStart: false,
+            queueBedClearConfirm: true,
+            queueAutoStartDelaySec: 15,
+            lightTrigger: false,
+        };
+    });
+
+    it('counts down to an automatic start and cancels it', async () => {
+        const at = new Date(Date.now() + 12_400).toISOString();
+        queue.status.mockResolvedValue(status({ autoStartAt: at }));
+        queue.cancelAutoStart.mockResolvedValue(status());
+        await renderWithProviders(<QueueCard printerId="p1" />);
+        expect(await screen.findByText(m.queue_starts_in({ seconds: 13 }))).toBeTruthy();
+        await userEvent.click(screen.getByRole('button', { name: m.queue_cancel_start() }));
+        expect(queue.cancelAutoStart).toHaveBeenCalledWith('p1');
+        await waitFor(() => expect(screen.queryByText(/13 s/)).toBeNull());
     });
 
     it('removes a scheduled print and a queued one, and clears the printer queue', async () => {

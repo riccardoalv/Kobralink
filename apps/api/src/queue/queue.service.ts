@@ -1,5 +1,7 @@
 import { EventEmitter } from 'node:events';
 import {
+    ACTIVE_PRINT_STATES,
+    type BedClearResultDto,
     blockingReasons,
     COLOR_TOLERANCE,
     type CompatReason,
@@ -35,14 +37,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SpoolmanService } from '../spoolman/spoolman.service';
 import { LocalSpoolService } from '../spools/local-spool.service';
 
-const AUTO_START_DELAY_MS = 15_000;
 const START_COOLDOWN_MS = 30_000;
 export const EXTERNAL_SLOT_KEY = '0';
 
 interface Watch {
     lastKobraState: string;
+    active: boolean;
     armed: boolean;
     timer: NodeJS.Timeout | null;
+    startAt: number | null;
     notified: boolean;
 }
 
@@ -143,7 +146,14 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
 
     attach(bridge: PrinterBridge): void {
         this.bridges.set(bridge.id, bridge);
-        const watch: Watch = { lastKobraState: '', armed: false, timer: null, notified: false };
+        const watch: Watch = {
+            lastKobraState: '',
+            active: false,
+            armed: false,
+            timer: null,
+            startAt: null,
+            notified: false,
+        };
         this.watches.set(bridge.id, watch);
         const onState = (state: PrinterLiveState) => void this.onState(bridge, watch, state);
         const onLight = () => {
@@ -175,43 +185,65 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         const prev = w.lastKobraState;
         w.lastKobraState = s.kobraState;
         if (prev === s.kobraState) return;
-        if (s.kobraState === 'finished') {
-            w.armed = true;
-            w.notified = false;
-            return;
-        }
-        if (s.kobraState === 'printing' || s.kobraState === 'preheating') {
+        if (ACTIVE_PRINT_STATES.has(s.kobraState)) {
+            w.active = true;
             w.armed = false;
             w.notified = false;
-            if (w.timer) {
-                clearTimeout(w.timer);
-                w.timer = null;
-            }
+            cancelTimer(w);
             await this.setAwaiting(bridge.id, false);
+            return;
+        }
+        if (ENDED_STATES.has(s.kobraState)) {
+            const ended = w.active || s.kobraState === 'finished';
+            w.active = false;
+            if (!ended) return;
+            if (bridge.settings.queueBedClearConfirm || s.kobraState !== 'finished') {
+                await this.setAwaiting(bridge.id, true);
+                await this.notifyNext(bridge, w, true);
+                return;
+            }
+            w.armed = true;
             return;
         }
         if (!w.armed || s.kobraState !== 'free' || !s.connected) return;
         w.armed = false;
+        if (bridge.settings.queueAutoStart && (await this.nextFor(bridge.id))) this.scheduleStart(bridge, w);
+        await this.notifyNext(bridge, w, false);
+    }
+
+    private async notifyNext(bridge: PrinterBridge, w: Watch, bedClear: boolean): Promise<void> {
+        if (w.notified) return;
         const next = await this.nextFor(bridge.id);
-        if (bridge.settings.queueBedClearConfirm) {
-            await this.setAwaiting(bridge.id, true);
-            if (next) this.log.log(`Queue: ${next.filename} waits for the bed of ${bridge.config.name} to be cleared`);
-        } else if (bridge.settings.queueAutoStart && next) {
-            this.log.log(`Queue: auto-start of ${next.filename} in ${AUTO_START_DELAY_MS / 1000} s`);
-            w.timer = setTimeout(() => {
-                w.timer = null;
-                void this.dispatch(bridge.id).catch((e) =>
-                    this.log.warn(`Queue: auto-start failed: ${(e as Error).message}`),
-                );
-            }, AUTO_START_DELAY_MS);
-        }
-        if (next && !w.notified) {
-            w.notified = true;
-            this.notifications.emitCustom(bridge.id, bridge.config.name, 'queue_next', {
-                filename: next.filename,
-                bedClear: bridge.settings.queueBedClearConfirm,
-            });
-        }
+        if (!next) return;
+        w.notified = true;
+        if (bedClear) this.log.log(`Queue: ${next.filename} waits for the bed of ${bridge.config.name} to be cleared`);
+        this.notifications.emitCustom(bridge.id, bridge.config.name, 'queue_next', {
+            filename: next.filename,
+            bedClear,
+        });
+    }
+
+    private scheduleStart(bridge: PrinterBridge, w: Watch): number {
+        cancelTimer(w);
+        const delayMs = bridge.settings.queueAutoStartDelaySec * 1000;
+        w.startAt = Date.now() + delayMs;
+        this.log.log(`Queue: auto-start on ${bridge.config.name} in ${delayMs / 1000} s`);
+        w.timer = setTimeout(() => {
+            w.timer = null;
+            w.startAt = null;
+            void this.dispatch(bridge.id).catch((e) =>
+                this.log.warn(`Queue: auto-start failed: ${(e as Error).message}`),
+            );
+        }, delayMs);
+        return w.startAt;
+    }
+
+    cancelAutoStart(printerId: string): boolean {
+        const w = this.watches.get(printerId);
+        if (!w?.timer) return false;
+        cancelTimer(w);
+        this.log.log(`Queue: auto-start on ${printerId} cancelled`);
+        return true;
     }
 
     private async setAwaiting(printerId: string, awaiting: boolean): Promise<void> {
@@ -344,6 +376,7 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
             awaitingBedClear: Boolean(p?.awaitingBedClear),
             maintenance: Boolean(p?.maintenance),
             nextFilename: next?.filename ?? null,
+            autoStartAt: startAtOf(this.watches.get(printerId)),
         };
     }
 
@@ -358,13 +391,18 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         return this.status(printerId);
     }
 
-    async confirmBedClear(printerId: string, outcome: 'good' | 'bad' = 'good'): Promise<QueueItemDto | null> {
+    async confirmBedClear(printerId: string, outcome: 'good' | 'bad' = 'good'): Promise<BedClearResultDto> {
         await this.setAwaiting(printerId, false);
         if (outcome === 'bad') await this.reject(printerId);
         this.emit('bed_cleared', printerId, outcome);
         const bridge = this.bridges.get(printerId);
-        if (!bridge?.settings.queueAutoStart) return null;
-        return this.dispatch(printerId).catch(() => null);
+        const w = this.watches.get(printerId);
+        if (!bridge?.settings.queueAutoStart || !w) return { started: null, startsAt: null };
+        if (bridge.settings.queueAutoStartDelaySec <= 0) {
+            return { started: await this.dispatch(printerId).catch(() => null), startsAt: null };
+        }
+        if (!(await this.nextFor(printerId))) return { started: null, startsAt: null };
+        return { started: null, startsAt: new Date(this.scheduleStart(bridge, w)).toISOString() };
     }
 
     private async reject(printerId: string): Promise<void> {
@@ -518,6 +556,7 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         const bridge = this.bridges.get(printerId);
         const p = await this.prisma.client.printer.findUnique({ where: { id: printerId } });
         if (!bridge || !p || !bridge.settings.queueAutoStart || !this.ready(p, bridge.snapshot())) return;
+        if (this.watches.get(printerId)?.timer) return;
         if (this.recentlyStarted(printerId)) return;
         await this.dispatch(printerId).catch(() => null);
     }
@@ -570,6 +609,8 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
             throw e;
         }
         await this.prisma.client.queueItem.delete({ where: { id: next.id } }).catch(() => null);
+        const watch = this.watches.get(printerId);
+        if (watch) cancelTimer(watch);
         await this.setAwaiting(printerId, false);
         this.log.log(`Queue: started ${dto.filename} on ${bridge.config.name}`);
         return dto;
@@ -617,6 +658,18 @@ export function describeRefusal(printers: QueueCheckDto['printers']): string {
                     .join(', ')}`,
         )
         .join('; ');
+}
+
+const ENDED_STATES = new Set([...TERMINAL_PRINT_STATES, 'failed']);
+
+function cancelTimer(w: Watch): void {
+    if (w.timer) clearTimeout(w.timer);
+    w.timer = null;
+    w.startAt = null;
+}
+
+function startAtOf(w: Watch | undefined): string | null {
+    return w?.startAt ? new Date(w.startAt).toISOString() : null;
 }
 
 function toDto(r: Row, waiting: QueueWaitReason | null, candidates: string[]): QueueItemDto {

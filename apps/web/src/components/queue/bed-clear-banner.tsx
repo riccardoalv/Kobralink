@@ -4,13 +4,15 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
+import { secondsLeft } from './auto-start-countdown';
 
 export function BedClearBanner({ printerId, name }: { printerId: string; name?: string }) {
     const qc = useQueryClient();
     const confirm = useMutation({
         mutationFn: (outcome: 'good' | 'bad') => api.queue.bedClear(printerId, outcome),
-        onSuccess: ({ started }) => {
+        onSuccess: ({ started, startsAt }) => {
             if (started) toast.success(m.files_print_started({ name: started.filename }));
+            else if (startsAt) toast.info(m.queue_starts_in({ seconds: secondsLeft(startsAt) }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId] });
             void qc.invalidateQueries({ queryKey: ['printers'] });
             void qc.invalidateQueries({ queryKey: ['queue'] });

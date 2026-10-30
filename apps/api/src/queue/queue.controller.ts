@@ -85,10 +85,16 @@ export class QueueController {
     @Post('printers/:id/queue/bed-clear')
     async bedClear(@Param('id') id: string, @Body(new ZodPipe(bedClearSchema)) body: BedClearInput) {
         try {
-            return { started: await this.queue.confirmBedClear(id, body.outcome ?? 'good') };
+            return await this.queue.confirmBedClear(id, body.outcome ?? 'good');
         } catch (e) {
             throw new BadGatewayException((e as Error).message);
         }
+    }
+
+    @Delete('printers/:id/queue/auto-start')
+    cancelAutoStart(@Param('id') id: string) {
+        this.queue.cancelAutoStart(id);
+        return this.queue.status(id);
     }
 
     @Post('printers/:id/queue/maintenance')
