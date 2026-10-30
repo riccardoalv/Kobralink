@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
-import { Button } from '@/components/ui/button';
+import { SaveBar } from '@/components/form/save-bar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,7 +42,11 @@ export function SpoolmanCard({ settings }: { settings: AppSettings }) {
     const form = useForm({
         defaultValues: { spoolmanUrl: settings.spoolmanUrl, spoolmanSyncRateSec: settings.spoolmanSyncRateSec },
         validators: { onSubmit: spoolmanSchema },
-        onSubmit: ({ value }) => save.mutateAsync(value).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync(value)
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
     const dot = !settings.spoolmanUrl
         ? 'bg-muted-foreground/40'
@@ -113,15 +117,11 @@ export function SpoolmanCard({ settings }: { settings: AppSettings }) {
                             </div>
                         )}
                     </form.Field>
-                    <div>
-                        <form.Subscribe selector={(s) => s.isSubmitting}>
-                            {(isSubmitting) => (
-                                <Button type="submit" className="rounded-full px-6" disabled={isSubmitting}>
-                                    {m.common_save()}
-                                </Button>
-                            )}
-                        </form.Subscribe>
-                    </div>
+                    <form.Subscribe selector={(s) => [!s.isDefaultValue, s.isSubmitting] as const}>
+                        {([changed, isSubmitting]) => (
+                            <SaveBar changed={changed} submitting={isSubmitting} onDiscard={() => form.reset()} />
+                        )}
+                    </form.Subscribe>
                 </CardContent>
             </Card>
         </form>

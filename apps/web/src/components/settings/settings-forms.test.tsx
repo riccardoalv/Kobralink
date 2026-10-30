@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrinterSettingsForm } from '@/components/printer/settings-form';
+import { usePrinter } from '@/hooks/use-printers';
 import type { PrinterWithLive } from '@/lib/api';
 import { installI18n, m } from '@/lib/i18n';
+import { printersStore } from '@/stores/printers';
 import { renderWithProviders } from '@/test/render';
 import { COSTS_KEYS, CostsCard } from './costs-card';
 import { DetectionCard } from './detection-card';
@@ -200,6 +202,12 @@ describe('saving a settings card without edits keeps every stored value', () => 
     });
 });
 
+function StoredPrinterForm({ id }: { id: string }) {
+    const printer = usePrinter(id);
+    if (!printer) return null;
+    return <PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />;
+}
+
 function switchAfter(label: string): HTMLElement {
     const el = screen.getByText(label).closest('div.flex')?.querySelector('[role="switch"]');
     if (!el) throw new Error(`no switch for ${label}`);
@@ -269,12 +277,42 @@ describe('editing the new settings', () => {
             settings: printerSettingsSchema.parse({}),
             live: null,
         } as unknown as PrinterWithLive;
-        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        printersStore.actions.upsertPrinter(printer);
+        mocks.printerUpdate.mockImplementation(async (_id: string, body: { settings: unknown }) => ({
+            ...printer,
+            settings: body.settings,
+        }));
+        await renderWithProviders(<StoredPrinterForm id="p1" />);
         expect(switchAfter(m.settings_light_trigger()).getAttribute('aria-checked')).toBe('false');
         await userEvent.click(switchAfter(m.settings_light_trigger()));
-        await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+        await userEvent.click(screen.getByRole('button', { name: m.common_save() }));
         await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
         expect(mocks.printerUpdate.mock.calls[0][1].settings.lightTrigger).toBe(true);
+        await waitFor(() => expect(screen.queryByText(m.form_unsaved())).toBeNull());
+    });
+
+    it('shows the save bar on a printer change and discards it', async () => {
+        const printer = {
+            id: 'p1',
+            name: 'Kobra 4',
+            ip: '192.168.1.235',
+            httpPort: 7125,
+            deviceId: 'abcdef123456',
+            modeId: '20028',
+            username: 'user',
+            createdAt: '2026-10-20T00:00:00.000Z',
+            model: 'Anycubic Kobra 4',
+            settings: printerSettingsSchema.parse({}),
+            live: null,
+        } as unknown as PrinterWithLive;
+        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        expect(screen.queryByText(m.form_unsaved())).toBeNull();
+        await userEvent.click(switchAfter(m.settings_light_trigger()));
+        expect(await screen.findByText(m.form_unsaved())).toBeTruthy();
+        await userEvent.click(screen.getByRole('button', { name: m.form_discard() }));
+        expect(switchAfter(m.settings_light_trigger()).getAttribute('aria-checked')).toBe('false');
+        expect(screen.queryByText(m.form_unsaved())).toBeNull();
+        expect(mocks.printerUpdate).not.toHaveBeenCalled();
     });
 });
 

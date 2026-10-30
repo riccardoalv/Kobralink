@@ -1,5 +1,5 @@
 import type { AppSettings } from '@farolprint/shared';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { Input } from '@/components/ui/input';
 import { useSaveSettings } from '@/hooks/use-save-settings';
 import { m } from '@/lib/i18n';
@@ -17,8 +17,13 @@ export function CostsCard({ settings }: { settings: AppSettings }) {
             printerPowerW: settings.costs.printerPowerW,
             hourlyRate: settings.costs.hourlyRate,
         },
-        onSubmit: ({ value }) => save.mutateAsync({ costs: value }).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync({ costs: value })
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
+    const changed = useStore(form.store, (s) => !s.isDefaultValue);
     const num = (name: CostField, label: string, hint: string, step: number, id: string) => (
         <form.Field name={name}>
             {(field) => (
@@ -42,6 +47,8 @@ export function CostsCard({ settings }: { settings: AppSettings }) {
             title={m.settings_costs()}
             description={m.settings_costs_hint({ currency: settings.currency })}
             onSubmit={() => void form.handleSubmit()}
+            changed={changed}
+            onDiscard={() => form.reset()}
             submitting={save.isPending}
         >
             {num('energyPricePerKwh', m.settings_energy_price(), m.settings_energy_price_hint(), 0.01, 'cost-energy')}

@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import {
+    blockingReasons,
     COLOR_TOLERANCE,
     type CompatReason,
     type GcodeFilament,
@@ -77,11 +78,13 @@ function rgbHex([r, g, b]: [number, number, number]): string {
     return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`.toUpperCase();
 }
 
-function sameFilament(slot: SlotFilament, need: GcodeFilament): boolean {
+function sameMaterial(slot: SlotFilament, need: GcodeFilament): boolean {
     const family = materialFamily(need.material);
-    if (slot.material && family && materialFamily(slot.material) !== family) return false;
-    if (slot.colorHex && need.colorHex && hexDistance(slot.colorHex, need.colorHex) > COLOR_TOLERANCE) return false;
-    return true;
+    return !(slot.material && family && materialFamily(slot.material) !== family);
+}
+
+function closeColor(slot: SlotFilament, need: GcodeFilament): boolean {
+    return !(slot.colorHex && need.colorHex && hexDistance(slot.colorHex, need.colorHex) > COLOR_TOLERANCE);
 }
 
 export function filamentFit(
@@ -96,14 +99,19 @@ export function filamentFit(
         const assigned = assignments?.find((a) => a.paintIndex === need.slotIndex)?.slotIndex;
         let key = assigned !== undefined && assigned >= 0 ? String(assigned) : undefined;
         if (key === undefined) {
-            key = slots.size === 1 ? [...slots.keys()][0] : [...slots].find(([, s]) => sameFilament(s, need))?.[0];
+            const entries = [...slots];
+            key =
+                slots.size === 1
+                    ? entries[0][0]
+                    : (entries.find(([, s]) => sameMaterial(s, need) && closeColor(s, need)) ??
+                          entries.find(([, s]) => sameMaterial(s, need)))?.[0];
         }
         const slot = key === undefined ? undefined : slots.get(key);
         if (!slot || key === undefined) {
             if ([...slots.values()].some((s) => s.material)) return { fit: 'mismatch', spend };
             continue;
         }
-        if (!sameFilament(slot, need)) return { fit: 'mismatch', spend };
+        if (!sameMaterial(slot, need)) return { fit: 'mismatch', spend };
         if (need.usedG === null || need.usedG === undefined) continue;
         const total = (spend.get(key) ?? 0) + need.usedG;
         spend.set(key, total);
@@ -326,7 +334,7 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
             reasons.push(...staticReasons(file, info), ...stock);
             return { printerId: p.id, name: p.name, reasons };
         });
-        return { ok: printers.some((p) => p.reasons.length === 0), printers };
+        return { ok: printers.some((p) => blockingReasons(p.reasons).length === 0), printers };
     }
 
     async status(printerId: string): Promise<QueueStatusDto> {
@@ -462,7 +470,11 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         if (!file) throw new NotFoundException(m.api_file_not_found());
         if (validate) {
             const check = await this.check(fileId, target);
-            if (!check.ok) throw new UnprocessableEntityException(m.api_queue_no_printer({ name: file.filename }));
+            if (!check.ok) {
+                throw new UnprocessableEntityException(
+                    m.api_queue_no_printer({ name: file.filename, details: describeRefusal(check.printers) }),
+                );
+            }
         }
         const edge = await this.prisma.client.queueItem.findFirst({ orderBy: { position: first ? 'asc' : 'desc' } });
         const position = first ? (edge?.position ?? 1) - 1 : (edge?.position ?? 0) + 1;
@@ -585,6 +597,26 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         const s = b.snapshot();
         return s.connected && (s.kobraState === 'free' || TERMINAL_PRINT_STATES.has(s.kobraState));
     }
+}
+
+const COMPAT_TEXT: Record<CompatReason, () => string> = {
+    target: m.compat_target,
+    model: m.compat_model,
+    nozzle: m.compat_nozzle,
+    size: m.compat_size,
+    material: m.compat_material,
+    color: m.compat_color,
+};
+
+export function describeRefusal(printers: QueueCheckDto['printers']): string {
+    return printers
+        .map(
+            (p) =>
+                `${p.name}: ${blockingReasons(p.reasons)
+                    .map((r) => COMPAT_TEXT[r]())
+                    .join(', ')}`,
+        )
+        .join('; ');
 }
 
 function toDto(r: Row, waiting: QueueWaitReason | null, candidates: string[]): QueueItemDto {

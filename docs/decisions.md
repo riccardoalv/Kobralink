@@ -195,6 +195,13 @@ Bambu tools so people migrating from them find things where they expect. The pha
   place for another printer. Two starts on the same printer within 30 s are refused, so a double click or the light
   trigger cannot start two files. The existing per-printer queues were merged in their old order, each item targeting
   its printer.
+- **Colour is a hint, not a rule** (October 2026, after a real refusal). The colour in a G-code is the slicer profile's
+  colour (the Anycubic PETG profile is teal), which rarely matches the spool actually used, so a file was refused
+  although the right material was loaded. Colour no longer blocks adding a file or starting it: only the printer
+  model, the nozzle, the build volume and the material do. A colour with no spool in stock is still reported, and
+  with several slots the closest colour of the right material is picked. A refusal now names each printer and its
+  reasons. An empty `printer_model` in the G-code (custom OrcaSlicer printer profiles) leaves the model unknown, so it
+  is not checked.
 - **Every queued item says why it waits**: no printer can take it, the printer is offline, in maintenance, printing,
   waiting for its bed to be cleared, short of filament, or ready for a manual start. The filament is simulated in queue
   order: each item spends from the spools of the printer it would go to, so the second of two prints that together
@@ -221,7 +228,8 @@ Bambu tools so people migrating from them find things where they expect. The pha
   the given tags, or every printer) and up to ten actions run in order: a macro, the light, loading or unloading an
   ACE slot, the smart plug, a wait and a notification. Actions only use the LAN protocol and the printer's power URLs;
   there is no G-code action. A rule runs once at a time per printer, stops at the first failing action and keeps the
-  error, shown on the Automations page with a "Run now" button. Time rules run in the server's time zone.
+  error, shown on the Automations page with a "Run now" button. Time rules run in the server's time zone, which is
+  UTC in the Docker image unless `TZ` is set in `.env` (the daily statistics use it too).
 - **Powering a printer off waits for it** (maintainer's rule: never risk the printer). The power-off action is refused
   while a print is running or paused and waits until the nozzle is below 50 °C (at most 30 minutes, then it gives up),
   so the hotend fan can cool the heat break. Power on works on an offline printer, so a morning rule can wake it.

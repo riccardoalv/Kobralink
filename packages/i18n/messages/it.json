@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "Sconosciuto",
     "print_ready_filament_short_hint": "Una bobina finisce prima della fine della stampa. Sostituiscila o conferma per stampare comunque.",
     "print_ready_filament_accept": "Stampa comunque",
-    "api_queue_no_printer": "Nessuna stampante può stampare {name}: modello, ugello, dimensioni o filamento non corrispondono.",
+    "api_queue_no_printer": "Nessuna stampante può stampare {name} — {details}.",
     "api_queue_maintenance": "La stampante è in manutenzione.",
     "failure_reason_quality": "Qualità rifiutata",
     "nav_queue": "Coda",
@@ -1214,5 +1214,9 @@
     "automations_never": "Mai eseguita",
     "automations_last_error": "Non riuscita: {error}",
     "automations_enabled": "Attiva",
-    "notif_ev_automation": "Messaggi delle automazioni"
+    "notif_ev_automation": "Messaggi delle automazioni",
+    "system_time_zone": "Fuso orario",
+    "automations_time_zone": "Ora del server ({zone}). Imposta TZ in .env per cambiarla.",
+    "form_unsaved": "Modifiche non salvate",
+    "form_discard": "Annulla modifiche"
 }

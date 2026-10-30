@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "Unbekannt",
     "print_ready_filament_short_hint": "Eine Spule ist vor Druckende leer. Tauschen Sie sie oder bestätigen Sie den Druck trotzdem.",
     "print_ready_filament_accept": "Trotzdem drucken",
-    "api_queue_no_printer": "Kein Drucker kann {name} drucken: Modell, Düse, Größe oder Filament passen nicht.",
+    "api_queue_no_printer": "Kein Drucker kann {name} drucken — {details}.",
     "api_queue_maintenance": "Der Drucker ist in Wartung.",
     "failure_reason_quality": "Qualität abgelehnt",
     "nav_queue": "Warteschlange",
@@ -1214,5 +1214,9 @@
     "automations_never": "Noch nie ausgeführt",
     "automations_last_error": "Fehlgeschlagen: {error}",
     "automations_enabled": "Aktiv",
-    "notif_ev_automation": "Nachrichten der Automatisierungen"
+    "notif_ev_automation": "Nachrichten der Automatisierungen",
+    "system_time_zone": "Zeitzone",
+    "automations_time_zone": "Serverzeit ({zone}). Setze TZ in .env, um sie zu ändern.",
+    "form_unsaved": "Ungespeicherte Änderungen",
+    "form_discard": "Verwerfen"
 }

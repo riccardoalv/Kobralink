@@ -117,7 +117,26 @@ describe('GeneralSettingsPage', () => {
         await waitFor(() => expect(holder.save).toHaveBeenCalledOnce());
         expect(holder.save.mock.calls[0][0]).toMatchObject({ currency: 'USD' });
         expect((screen.getByLabelText(m.settings_energy_price()) as HTMLInputElement).value).toBe('0.75');
-        expect(within(general).getByDisplayValue('USD')).toBeTruthy();
+        const saved = screen.getByText(m.settings_general()).closest('form');
+        if (!saved) throw new Error('general card is not a form');
+        expect(within(saved).getByDisplayValue('USD')).toBeTruthy();
+        expect(within(saved).queryByText(m.form_unsaved())).toBeNull();
+    });
+
+    it('shows a save bar once a card changes, and discards the changes', async () => {
+        await renderWithProviders(<GeneralSettingsPage />, { queryClient: client(stored) });
+        expect(screen.queryByText(m.form_unsaved())).toBeNull();
+        const energy = screen.getByLabelText(m.settings_energy_price()) as HTMLInputElement;
+        const before = energy.value;
+        await userEvent.clear(energy);
+        await userEvent.type(energy, '0.75');
+        const bar = await screen.findByRole('status');
+        expect(within(bar).getByText(m.form_unsaved())).toBeTruthy();
+        expect(screen.getAllByText(m.form_unsaved())).toHaveLength(1);
+        await userEvent.click(within(bar).getByRole('button', { name: m.form_discard() }));
+        expect((screen.getByLabelText(m.settings_energy_price()) as HTMLInputElement).value).toBe(before);
+        expect(screen.queryByText(m.form_unsaved())).toBeNull();
+        expect(holder.save).not.toHaveBeenCalled();
     });
 });
 

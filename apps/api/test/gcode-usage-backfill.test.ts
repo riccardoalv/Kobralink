@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import fs from 'node:fs';
-import { GcodeService } from '../src/gcode/gcode.service';
+import { GcodeService, META_VERSION } from '../src/gcode/gcode.service';
 import { type TestDb, testDb } from './helpers/db';
 
 let db: TestDb;
@@ -54,5 +54,33 @@ describe('backfillFilamentUsage', () => {
     it('stores the usage of new uploads right away', async () => {
         const file = await svc.save(null, 'new.gcode', Buffer.from(gcode));
         expect(file.filaments[0]).toMatchObject({ usedMm: 1500.5, usedG: 4.47 });
+    });
+});
+
+describe('backfillTargets', () => {
+    const sliced = [
+        '; printer_model = ',
+        '; printer_notes = ',
+        '; nozzle_diameter = 0.4',
+        '; printable_area = 0x0,260x0,260x260,0x260',
+        'G1 X1',
+    ].join('\n');
+
+    it('reads the print target again for files stored by an older parser', async () => {
+        await db.client.gcodeFile.create({
+            data: {
+                id: 'stale',
+                filename: 'stale.gcode',
+                sizeBytes: sliced.length,
+                md5: 'stale',
+                printerModel: '; printer_notes =',
+                metaVersion: 1,
+            },
+        });
+        fs.writeFileSync(svc.filePath('stale', 'stale.gcode'), sliced);
+        expect(await svc.backfillTargets()).toBeGreaterThanOrEqual(1);
+        const row = await db.client.gcodeFile.findUniqueOrThrow({ where: { id: 'stale' } });
+        expect(row).toMatchObject({ printerModel: '', nozzleMm: 0.4, bedX: 260, metaVersion: META_VERSION });
+        expect(await svc.backfillTargets()).toBe(0);
     });
 });

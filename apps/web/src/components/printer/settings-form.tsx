@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
+import { SaveBar } from '@/components/form/save-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import { m } from '@/lib/i18n';
 import { appSettingsQuery, filamentVendorsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { printersStore } from '@/stores/printers';
 import { PrinterSpecsCard } from './printer-specs-card';
 import { ProfileFields } from './profile-fields';
 
@@ -51,7 +53,8 @@ export function PrinterSettingsForm({
                 httpPort: value.httpPort,
                 settings: value.settings,
             }),
-        onSuccess: () => {
+        onSuccess: (updated) => {
+            printersStore.actions.upsertPrinter({ ...printer, ...updated });
             toast.success(m.settings_saved());
             onSaved();
         },
@@ -99,7 +102,11 @@ export function PrinterSettingsForm({
             settings: printer.settings,
         } as z.input<typeof printerSettingsFormSchema>,
         validators: { onSubmit: printerSettingsFormSchema },
-        onSubmit: ({ value }) => save.mutateAsync(value).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync(value)
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
 
     return (
@@ -514,18 +521,16 @@ export function PrinterSettingsForm({
                 </CardContent>
             </Card>
 
-            <div className="flex items-center gap-2">
-                <form.Subscribe selector={(s) => s.isSubmitting}>
-                    {(isSubmitting) => (
-                        <Button type="submit" className="rounded-full px-6" disabled={isSubmitting}>
-                            {m.common_save()}
-                        </Button>
-                    )}
-                </form.Subscribe>
+            <form.Subscribe selector={(s) => [!s.isDefaultValue, s.isSubmitting] as const}>
+                {([changed, isSubmitting]) => (
+                    <SaveBar changed={changed} submitting={isSubmitting} onDiscard={() => form.reset()} />
+                )}
+            </form.Subscribe>
+            <div className="flex justify-end">
                 <Button
                     type="button"
                     variant="destructive"
-                    className="ml-auto rounded-full"
+                    className="rounded-full"
                     onClick={() =>
                         openAlertDialog({
                             title: m.settings_delete_title({ name: printer.name }),

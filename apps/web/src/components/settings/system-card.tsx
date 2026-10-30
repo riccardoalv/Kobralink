@@ -55,6 +55,7 @@ export function SystemCard() {
                         <Row k={m.system_runtime()} v={`${d.runtime} · ${d.platform}`} />
                         <Row k={m.system_mode()} v={d.packaged} />
                         <Row k={m.system_uptime()} v={formatDuration(d.uptimeSec, { zero: true })} />
+                        <Row k={m.system_time_zone()} v={d.timeZone} />
                         <Row k={m.system_data_dir()} v={d.dataDir} mono />
                     </dl>
                 )}

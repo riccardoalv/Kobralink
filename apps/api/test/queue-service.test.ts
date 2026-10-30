@@ -4,8 +4,16 @@ import type { SpoolmanSpool } from '@farolprint/shared';
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import type { PrinterBridge } from '../src/bridge/printer-bridge';
 import type { GcodeService } from '../src/gcode/gcode.service';
+import { m } from '../src/i18n/locale';
 import type { NotificationService } from '../src/notifications/notification.service';
-import { filamentFit, parseQueueOptions, parseTags, QueueService, type SlotFilament } from '../src/queue/queue.service';
+import {
+    describeRefusal,
+    filamentFit,
+    parseQueueOptions,
+    parseTags,
+    QueueService,
+    type SlotFilament,
+} from '../src/queue/queue.service';
 import type { SpoolmanService } from '../src/spoolman/spoolman.service';
 import type { LocalSpoolService } from '../src/spools/local-spool.service';
 import { seedFile, seedJob, seedPrinter, type TestDb, testDb } from './helpers/db';
@@ -200,6 +208,25 @@ describe('compatibility', () => {
         expect(pla.printers[0].reasons).toEqual(['material']);
     });
 
+    it('reports a colour with no spool in stock without refusing the file', async () => {
+        spools = [{ id: 1, filament: { id: 1, material: 'PETG', color_hex: 'FFFFFF' } }];
+        const check = await svc.check('f1', { printerId: 'p1', targetTags: [] });
+        expect(check.ok).toBe(true);
+        expect(check.printers[0].reasons).toEqual(['color']);
+        expect((await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] })).fileId).toBe('f1');
+    });
+
+    it('says why each printer refuses a file', async () => {
+        spools = [{ id: 1, filament: { id: 1, material: 'PETG', color_hex: 'FFFFFF' } }];
+        const error = await svc.add('f2', []).catch((e: Error) => e);
+        expect(error).toBeInstanceOf(UnprocessableEntityException);
+        expect((error as Error).message).toContain(`Kobra p1: ${m.compat_model()}`);
+        expect((error as Error).message).not.toContain(m.compat_color());
+        expect(describeRefusal([{ printerId: 'p1', name: 'K', reasons: ['nozzle', 'color', 'size'] }])).toBe(
+            `K: ${m.compat_nozzle()}, ${m.compat_size()}`,
+        );
+    });
+
     it('refuses another nozzle and parts bigger than the bed', async () => {
         await db.client.gcodeFile.update({ where: { id: 'f3' }, data: { nozzleMm: 0.6, extentX: 300 } });
         const check = await svc.check('f3', { printerId: 'p1', targetTags: [] });
@@ -367,9 +394,22 @@ describe('filamentFit', () => {
         expect(filamentFit(need(50), undefined, external(200), new Map([['0', 40]])).fit).toBe('short');
     });
 
-    it('does not match another material or a far colour', () => {
+    it('does not match another material, but a far colour still fits', () => {
         expect(filamentFit(need(10), undefined, external(200, 'PLA'), new Map()).fit).toBe('mismatch');
-        expect(filamentFit(need(10), undefined, external(200, 'PETG', '#FFFFFF'), new Map()).fit).toBe('mismatch');
+        expect(filamentFit(need(10), undefined, external(200, 'PETG', '#FFFFFF'), new Map()).fit).toBe('ok');
+    });
+
+    it('prefers the slot closest in colour, then any slot of the material', () => {
+        const slots = new Map<string, SlotFilament>([
+            ['0', { material: 'PLA', colorHex: '#111111', remainingG: 500 }],
+            ['1', { material: 'PETG', colorHex: '#FFFFFF', remainingG: 500 }],
+            ['2', { material: 'PETG', colorHex: '#121212', remainingG: 500 }],
+        ]);
+        expect([...filamentFit(need(10), undefined, slots, new Map()).spend.keys()]).toEqual(['2']);
+        slots.delete('2');
+        expect([...filamentFit(need(10), undefined, slots, new Map()).spend.keys()]).toEqual(['1']);
+        slots.delete('1');
+        expect(filamentFit(need(10), undefined, slots, new Map()).fit).toBe('mismatch');
     });
 
     it('trusts unknown spools and unknown amounts', () => {

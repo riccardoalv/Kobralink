@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "未知",
     "print_ready_filament_short_hint": "有料盘会在打印结束前用完。请更换，或确认仍要打印。",
     "print_ready_filament_accept": "仍要打印",
-    "api_queue_no_printer": "没有打印机可以打印 {name}：型号、喷嘴、尺寸或耗材不匹配。",
+    "api_queue_no_printer": "没有打印机可以打印 {name} — {details}。",
     "api_queue_maintenance": "打印机正在维护中。",
     "failure_reason_quality": "质量不合格",
     "nav_queue": "队列",
@@ -1214,5 +1214,9 @@
     "automations_never": "从未运行",
     "automations_last_error": "失败：{error}",
     "automations_enabled": "已启用",
-    "notif_ev_automation": "自动化消息"
+    "notif_ev_automation": "自动化消息",
+    "system_time_zone": "时区",
+    "automations_time_zone": "服务器时间（{zone}）。在 .env 中设置 TZ 可更改。",
+    "form_unsaved": "有未保存的更改",
+    "form_discard": "放弃"
 }
