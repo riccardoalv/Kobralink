@@ -1214,5 +1214,9 @@
     "automations_never": "Nunca executada",
     "automations_last_error": "Falhou: {error}",
     "automations_enabled": "Ativada",
-    "notif_ev_automation": "Mensagens das automações"
+    "notif_ev_automation": "Mensagens das automações",
+    "system_time_zone": "Fuso horário",
+    "automations_time_zone": "Horário do servidor ({zone}). Defina TZ no .env para mudar.",
+    "form_unsaved": "Alterações não salvas",
+    "form_discard": "Descartar"
 }

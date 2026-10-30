@@ -1214,5 +1214,9 @@
     "automations_never": "Noch nie ausgeführt",
     "automations_last_error": "Fehlgeschlagen: {error}",
     "automations_enabled": "Aktiv",
-    "notif_ev_automation": "Nachrichten der Automatisierungen"
+    "notif_ev_automation": "Nachrichten der Automatisierungen",
+    "system_time_zone": "Zeitzone",
+    "automations_time_zone": "Serverzeit ({zone}). Setze TZ in .env, um sie zu ändern.",
+    "form_unsaved": "Ungespeicherte Änderungen",
+    "form_discard": "Verwerfen"
 }

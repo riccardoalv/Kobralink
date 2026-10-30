@@ -1214,5 +1214,9 @@
     "automations_never": "从未运行",
     "automations_last_error": "失败：{error}",
     "automations_enabled": "已启用",
-    "notif_ev_automation": "自动化消息"
+    "notif_ev_automation": "自动化消息",
+    "system_time_zone": "时区",
+    "automations_time_zone": "服务器时间（{zone}）。在 .env 中设置 TZ 可更改。",
+    "form_unsaved": "有未保存的更改",
+    "form_discard": "放弃"
 }

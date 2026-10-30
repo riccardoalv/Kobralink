@@ -221,7 +221,8 @@ Bambu tools so people migrating from them find things where they expect. The pha
   the given tags, or every printer) and up to ten actions run in order: a macro, the light, loading or unloading an
   ACE slot, the smart plug, a wait and a notification. Actions only use the LAN protocol and the printer's power URLs;
   there is no G-code action. A rule runs once at a time per printer, stops at the first failing action and keeps the
-  error, shown on the Automations page with a "Run now" button. Time rules run in the server's time zone.
+  error, shown on the Automations page with a "Run now" button. Time rules run in the server's time zone, which is
+  UTC in the Docker image unless `TZ` is set in `.env` (the daily statistics use it too).
 - **Powering a printer off waits for it** (maintainer's rule: never risk the printer). The power-off action is refused
   while a print is running or paused and waits until the nozzle is below 50 °C (at most 30 minutes, then it gives up),
   so the hotend fan can cool the heat break. Power on works on an offline printer, so a morning rule can wake it.

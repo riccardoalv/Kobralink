@@ -98,6 +98,7 @@ every port listens on all interfaces).
 | `FAROLPRINT_BIND`          | `0.0.0.0`                   | Host interface (`127.0.0.1` behind a reverse proxy)     |
 | `FAROLPRINT_PORT`          | `7100`                      | Dashboard port on the host                              |
 | `BETTER_AUTH_URL`         | —                           | **Required**: URL used by the browser                   |
+| `TZ`                      | `UTC`                       | Server time zone, used by time-based automations and daily statistics (`America/Sao_Paulo`) |
 | `BETTER_AUTH_SECRET`      | generated in `/data`        | Session secret (`openssl rand -base64 32`)              |
 | `FAROLPRINT_EXTRA_ORIGINS` | —                           | Extra allowed origins, comma-separated                  |
 | `FAROLPRINT_TRUSTED_PROXIES` | —                         | Proxy IPs/CIDRs (real client IP for auth rate limiting) |

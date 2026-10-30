@@ -18,7 +18,7 @@ import {
     toInput,
 } from './rule-form';
 
-const { automations, macros, toast, state } = vi.hoisted(() => ({
+const { automations, macros, system, toast, state } = vi.hoisted(() => ({
     automations: {
         list: vi.fn(),
         create: vi.fn(),
@@ -28,13 +28,14 @@ const { automations, macros, toast, state } = vi.hoisted(() => ({
         remove: vi.fn(),
     },
     macros: { list: vi.fn() },
+    system: { info: vi.fn() },
     toast: { success: vi.fn(), error: vi.fn() },
     state: { canOperate: true },
 }));
 
 vi.mock('sonner', () => ({ toast }));
 vi.mock('@/lib/api', () => ({
-    api: new Proxy({ automations, macros } as Record<string, unknown>, {
+    api: new Proxy({ automations, macros, system } as Record<string, unknown>, {
         get: (target, key: string) => target[key] ?? new Proxy({}, { get: () => vi.fn().mockResolvedValue([]) }),
     }),
 }));
@@ -76,6 +77,7 @@ beforeEach(() => {
     automations.run.mockReset().mockResolvedValue({ ...rule, lastRunAt: '2026-10-30T22:00:00.000Z' });
     automations.remove.mockReset().mockResolvedValue(undefined);
     macros.list.mockReset().mockResolvedValue([{ id: 'm1', name: 'Purge', icon: 'zap', actions: [] }]);
+    system.info.mockReset().mockResolvedValue({ timeZone: 'America/Sao_Paulo' });
     toast.success.mockReset();
     toast.error.mockReset();
     state.canOperate = true;
@@ -223,6 +225,7 @@ describe('RuleForm', () => {
         await renderWithProviders(<RuleForm rule={{ ...rule, enabled: false }} onSaved={vi.fn()} />);
         expect((screen.getByLabelText(m.automations_time()) as HTMLInputElement).value).toBe('22:00');
         expect(screen.getByText(m.automations_power_hint())).toBeTruthy();
+        expect(await screen.findByText(m.automations_time_zone({ zone: 'America/Sao_Paulo' }))).toBeTruthy();
         await userEvent.click(screen.getByRole('button', { name: m.common_save() }));
         await waitFor(() => expect(automations.update).toHaveBeenCalledOnce());
         expect(automations.update.mock.calls[0]).toEqual([

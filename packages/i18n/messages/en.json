@@ -1214,5 +1214,9 @@
     "automations_never": "Never run",
     "automations_last_error": "Failed: {error}",
     "automations_enabled": "Enabled",
-    "notif_ev_automation": "Automation messages"
+    "notif_ev_automation": "Automation messages",
+    "system_time_zone": "Time zone",
+    "automations_time_zone": "Server time ({zone}). Set TZ in .env to change it.",
+    "form_unsaved": "Unsaved changes",
+    "form_discard": "Discard"
 }

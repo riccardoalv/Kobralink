@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { usePrinters } from '@/hooks/use-printers';
 import { api, type PrinterWithLive } from '@/lib/api';
 import { m } from '@/lib/i18n';
-import { macrosQuery } from '@/lib/queries';
+import { macrosQuery, systemInfoQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export const TRIGGER_LABEL: Record<AutomationTrigger, () => string> = {
@@ -122,6 +122,7 @@ export function RuleForm({ rule, onSaved }: { rule?: AutomationRuleDto; onSaved:
     const close = confirmationDialogStore.actions.closeDialog;
     const printers = usePrinters();
     const macros = useQuery(macrosQuery).data ?? [];
+    const timeZone = useQuery(systemInfoQuery).data?.timeZone;
     const save = useMutation({
         mutationFn: (input: AutomationRuleInput) =>
             rule ? api.automations.update(rule.id, input) : api.automations.create(input),
@@ -221,6 +222,11 @@ export function RuleForm({ rule, onSaved }: { rule?: AutomationRuleDto; onSaved:
                                                 className="rounded-full px-4"
                                             />
                                             <FieldError meta={field.state.meta} />
+                                            {timeZone && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    {m.automations_time_zone({ zone: timeZone })}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 </form.Field>
