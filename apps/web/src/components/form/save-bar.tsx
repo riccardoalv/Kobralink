@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { m } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
 
 export function SaveBar({
     changed,
@@ -26,15 +25,15 @@ export function SaveBar({
     return (
         <div
             role="status"
-            className="sticky bottom-24 z-20 flex flex-wrap items-center gap-2 rounded-3xl bg-primary py-2 pr-2 pl-5 text-primary-foreground shadow-lg ring-4 ring-primary/25 duration-200 animate-in fade-in slide-in-from-bottom-2 md:bottom-4"
+            className="sticky bottom-24 z-20 flex items-center gap-1 rounded-full bg-primary py-2 pr-2 pl-5 text-primary-foreground shadow-lg ring-4 ring-primary/25 duration-200 animate-in fade-in slide-in-from-bottom-2 md:bottom-4"
         >
-            <span className="mr-auto text-sm font-medium">{m.form_unsaved()}</span>
-            {extra}
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{m.form_unsaved()}</span>
+            {extra && <span className="hidden shrink-0 md:inline-flex">{extra}</span>}
             {onDiscard && (
                 <Button
                     type="button"
                     variant="ghost"
-                    className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                    className="shrink-0 rounded-full px-3 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
                     disabled={submitting}
                     onClick={onDiscard}
                 >
@@ -43,7 +42,7 @@ export function SaveBar({
             )}
             <Button
                 type="submit"
-                className={cn('rounded-full bg-background px-6 text-foreground shadow-sm hover:bg-background/90')}
+                className="shrink-0 rounded-full bg-background px-5 text-foreground shadow-sm hover:bg-background/90"
                 disabled={submitting}
             >
                 {m.common_save()}
