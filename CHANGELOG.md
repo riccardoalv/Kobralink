@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.0](https://github.com/riccardoalv/farolprint/compare/v0.12.0...v0.13.0) (2026-10-30)
+
+
+### Features
+
+* show the server time zone for time-based automations ([50dc698](https://github.com/riccardoalv/farolprint/commit/50dc69850fdf83404e33ce08ffbe35af828f7962))
+* **web:** highlight unsaved changes with a save bar ([50dc698](https://github.com/riccardoalv/farolprint/commit/50dc69850fdf83404e33ce08ffbe35af828f7962))
+
+
+### Bug Fixes
+
+* **queue:** stop refusing files over an empty printer model or a colour ([50dc698](https://github.com/riccardoalv/farolprint/commit/50dc69850fdf83404e33ce08ffbe35af828f7962))
+
 ## [0.12.0](https://github.com/riccardoalv/farolprint/compare/v0.11.0...v0.12.0) (2026-10-30)
 
 
