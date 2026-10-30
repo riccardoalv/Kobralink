@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/riccardoalv/farolprint/compare/v0.13.0...v0.14.0) (2026-10-30)
+
+
+### Features
+
+* **queue:** clearer automatic start with a configurable wait ([#36](https://github.com/riccardoalv/farolprint/issues/36)) ([61e68fb](https://github.com/riccardoalv/farolprint/commit/61e68fbf9f19c2c474c8cef5b4fc7d5512f63d83))
+
 ## [0.13.0](https://github.com/riccardoalv/farolprint/compare/v0.12.0...v0.13.0) (2026-10-30)
 
 
