@@ -162,7 +162,7 @@ export function FilesCard({ printerId, className }: { printerId: string; classNa
                     </label>
                 )}
                 {actions.isUploading && (
-                    <div className="mt-3 flex items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2.5 text-xs font-medium text-primary">
+                    <div className="mt-3 flex items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2.5 text-xs font-medium text-primary-strong">
                         <Loader2 className="size-4 animate-spin" />
                         <span>
                             {actions.uploadingCount > 1

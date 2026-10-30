@@ -86,6 +86,25 @@ describe('PrintCard', () => {
         expect(control.pause).toHaveBeenCalledWith('p1');
     });
 
+    it('shows the calibration instead of the progress and the elapsed time', async () => {
+        Object.assign(live, {
+            printState: 'printing',
+            kobraState: 'auto_leveling',
+            filename: 'bracket.gcode',
+            progress: 0,
+            remainTimeSec: 7080,
+            printTimeAt: Date.now(),
+        });
+        await renderWithProviders(<PrintCard printerId="p1" />);
+        expect(screen.getByText(m.state_calibrating())).toBeTruthy();
+        expect(screen.getByText(m.print_calibrating_hint({ step: m.state_auto_leveling() }))).toBeTruthy();
+        expect(screen.queryByRole('progressbar')).toBeNull();
+        expect(screen.queryByText('0%')).toBeNull();
+        const elapsed = screen.getByText(m.print_elapsed()).parentElement;
+        expect(elapsed?.textContent).toBe(`${m.print_elapsed()}—`);
+        expect(screen.getByRole('button', { name: m.common_pause() })).toBeTruthy();
+    });
+
     it('resumes a paused print and shows the pause message', async () => {
         Object.assign(live, {
             printState: 'paused',

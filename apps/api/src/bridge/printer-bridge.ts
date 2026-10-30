@@ -27,6 +27,7 @@ import {
     type PrinterLiveState,
     type PrinterSample,
     type PrinterSettings,
+    type SpoolmanPricing,
     type SpoolUsageEntry,
     slotUsableForPrint,
     TERMINAL_PRINT_STATES,
@@ -55,6 +56,8 @@ const SNAPSHOT_MAX_AGE_MS = 120000;
 const CAMERA_STALE_MS = 30000;
 const CAMERA_FRESH_MS = 5000;
 const CAMERA_KICK_INTERVAL_MS = 60000;
+const PAUSE_KOBRA_STATES = new Set(['pausing', 'paused', 'pause']);
+const RESUME_KOBRA_STATES = new Set(['resuming', 'resumed', 'printing']);
 
 export interface BridgePrinterConfig {
     id: string;
@@ -79,7 +82,8 @@ export interface FilamentUsageSink {
     readonly name: string;
     slotMap(printerId: string): ReadonlyMap<number, string | number>;
     readonly syncRateSec: number;
-    useFilament(spoolId: string | number, mm: number): Promise<void>;
+    useFilament(spoolId: string | number, mm: number, printerId: string): Promise<void>;
+    describe?(spoolId: string | number): Promise<SpoolmanPricing | null>;
 }
 
 export interface CommandRefused {
@@ -124,6 +128,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private reportedModel = '';
     private currentJobId = '';
     private currentJobFilename = '';
+    private jobPausedAt: Date | null = null;
+    private jobPrinted = false;
     private jobSync: Promise<void> | null = null;
     private jobsReconciled = false;
     private peakPrintTimeSec = 0;
@@ -535,6 +541,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private applyKobraState(kobraState: string, fallback: 'printing' | 'standby'): void {
         this.s.printState = KOBRA_TO_KLIPPER_STATE[kobraState] ?? fallback;
         this.s.kobraState = kobraState;
+        this.trackPause(kobraState);
         if (kobraState === 'printing') {
             if (this.config.settings.cameraOnPrint && !this.cameraAutostarted && !this.cameraUserStopped) {
                 this.cameraAutostarted = true;
@@ -544,6 +551,20 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.cameraAutostarted = false;
             if (!this.config.settings.cameraAlwaysOn) this.cameraUserStopped = false;
         }
+    }
+
+    private trackPause(kobraState: string): void {
+        if (!this.currentJobId) return;
+        if (PAUSE_KOBRA_STATES.has(kobraState)) {
+            if (this.jobPausedAt) return;
+            this.jobPausedAt = new Date();
+        } else if (RESUME_KOBRA_STATES.has(kobraState)) {
+            if (!this.jobPausedAt) return;
+            this.jobPausedAt = null;
+        } else return;
+        void this.gcode
+            .setJobPaused(this.currentJobId, this.jobPausedAt)
+            .catch((e) => this.log.warn(`Job pause: ${(e as Error).message}`));
     }
 
     private onPrint(p: KobraMessage<KobraPrintData>): void {
@@ -579,7 +600,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         } else {
             this.s.filename = d.filename ?? this.s.filename;
         }
-        if (d.progress !== undefined && !PRE_PRINT_STATES.has(kobraState)) this.s.progress = Number(d.progress) / 100;
+        if (PRE_PRINT_STATES.has(kobraState)) this.s.progress = 0;
+        else if (d.progress !== undefined) this.s.progress = Number(d.progress) / 100;
         if (d.remain_time !== undefined) this.s.remainTimeSec = Number(d.remain_time) * 60;
         if (d.curr_layer !== undefined) this.setLayer(Number(d.curr_layer));
         if (d.total_layers !== undefined) this.s.totalLayers = Number(d.total_layers);
@@ -589,6 +611,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private setPrintTime(sec: number): void {
+        if (sec > 0 && this.currentJobId) this.jobPrinted = true;
         if (sec > this.peakPrintTimeSec) this.peakPrintTimeSec = sec;
         if (sec === this.s.printDurationSec && this.s.printTimeAt) return;
         this.s.printDurationSec = sec;
@@ -596,6 +619,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private setLayer(layer: number): void {
+        if (layer > 0 && this.currentJobId) this.jobPrinted = true;
         const prev = this.s.currLayer;
         this.s.currLayer = layer;
         if (layer !== prev && layer > 0 && this.s.printState === 'printing')
@@ -660,19 +684,22 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.currentJobId = '';
         this.currentJobFilename = '';
         const usage = this.spoolUsageEntries();
-        const durationSec = Math.round(Math.max(this.s.printDurationSec, this.peakPrintTimeSec));
+        const printedSec = Math.round(Math.max(this.s.printDurationSec, this.peakPrintTimeSec));
+        const durationSec = this.jobPrinted ? printedSec : 0;
+        const reportedSec = this.jobPrinted ? printedSec || null : 0;
+        this.jobPrinted = false;
         const snapshot =
             status !== 'completed' &&
             this.camera.latestJpeg &&
             Date.now() - this.camera.latestJpegAt < SNAPSHOT_MAX_AGE_MS
                 ? this.camera.latestJpeg
                 : null;
-        void this.gcode
-            .finishJob(jobId, status, this.suppliesUsageMm, usage, durationSec, {
-                errorCode: this.s.errorCode,
-                errorMsg: this.s.pauseMsg,
-                snapshot,
-            })
+        const pausedAt = this.jobPausedAt;
+        this.jobPausedAt = null;
+        const failure = { errorCode: this.s.errorCode, errorMsg: this.s.pauseMsg, snapshot, pausedAt };
+        const filamentMm = this.suppliesUsageMm;
+        void this.priceUsage(usage)
+            .then((priced) => this.gcode.finishJob(jobId, status, filamentMm, priced, reportedSec, failure))
             .catch((e) => this.log.warn(`Job finish: ${(e as Error).message}`));
         this.emit('job', 'end', jobId, filename, status);
         this.jobOptions = {};
@@ -683,9 +710,27 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         });
     }
 
+    private async priceUsage(entries: SpoolUsageEntry[]): Promise<SpoolUsageEntry[]> {
+        const sink = this.sinks.find((x) => x.name === 'spoolman');
+        if (!sink?.describe) return entries;
+        return Promise.all(
+            entries.map(async (entry) => {
+                if (!entry.spoolmanId) return entry;
+                const pricing = await sink.describe?.(entry.spoolmanId).catch(() => null);
+                if (!pricing) return entry;
+                return {
+                    ...entry,
+                    weightG: Math.round(entry.mm * pricing.gramsPerMm * 100) / 100,
+                    pricePerG: pricing.pricePerG,
+                };
+            }),
+        );
+    }
+
     private spoolUsageEntries(): SpoolUsageEntry[] {
         const out: SpoolUsageEntry[] = [];
         const local = this.sinks.find((x) => x.name === 'local')?.slotMap(this.config.id);
+        const spoolman = this.sinks.find((x) => x.name === 'spoolman')?.slotMap(this.config.id);
         const perSlot = new Map(this.spoolUsage);
         if (!perSlot.size && this.suppliesUsageMm > 0) {
             const slot = this.s.amsLoadedSlot >= 0 ? this.s.amsLoadedSlot : 0;
@@ -699,6 +744,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 mm: Math.round(mm),
                 material: this.s.amsSlots.find((x) => x.globalIndex === slotIndex)?.type ?? '',
                 spoolId: typeof spoolId === 'string' ? spoolId : null,
+                spoolmanId: (spoolman?.get(slotIndex) as number | undefined) ?? null,
             });
         }
         return out;
@@ -734,6 +780,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             if (open && open.filename === filename) {
                 this.currentJobId = open.id;
                 this.currentJobFilename = filename;
+                this.jobPausedAt = null;
+                this.jobPrinted = this.s.currLayer > 0 || this.s.printDurationSec > 0;
+                if (open.pausedAt)
+                    void this.gcode
+                        .setJobPaused(open.id, null)
+                        .catch((e) => this.log.warn(`Job pause: ${(e as Error).message}`));
                 this.log.log(`Job resumed after reconnection: ${filename}`);
                 return;
             }
@@ -747,6 +799,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             elapsed > 0 ? new Date(Date.now() - elapsed * 1000) : undefined,
         );
         this.currentJobFilename = filename;
+        this.jobPausedAt = null;
+        this.jobPrinted = this.s.currLayer > 0 || this.s.printDurationSec > 0;
         this.log.log(`Job started: ${filename}`);
         this.emit('job', 'start', this.currentJobId, filename, null);
         this.emitEvent('print_started', { filename });
@@ -941,7 +995,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             const spoolId = map.get(slot);
             if (spoolId === undefined || mm < minMm) continue;
             reported.set(slot, (reported.get(slot) ?? 0) + mm);
-            sink.useFilament(spoolId, mm)
+            sink.useFilament(spoolId, mm, this.config.id)
                 .then(() => this.log.log(`${sink.name}: ${mm.toFixed(1)} mm → spool ${spoolId} (slot ${slot + 1})`))
                 .catch((e) => this.log.warn(`${sink.name}: report failed (spool ${spoolId}): ${(e as Error).message}`));
         }

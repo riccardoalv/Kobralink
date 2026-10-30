@@ -13,6 +13,7 @@ import { PrintCard } from '@/components/printer/print-card';
 import { QueueCard } from '@/components/printer/queue-card';
 import { StatusBadge } from '@/components/printer/status-badge';
 import { TemperatureCard } from '@/components/printer/temperature-card';
+import { GettingStarted } from '@/components/printers/getting-started';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrinter } from '@/hooks/use-printers';
@@ -123,6 +124,7 @@ function PrinterDashboard() {
 
     return (
         <div className="space-y-4">
+            <GettingStarted />
             {!canOperate && (
                 <div className="rounded-3xl bg-secondary px-5 py-3 text-sm text-muted-foreground">
                     {m.role_viewer_hint()}

@@ -65,6 +65,10 @@ const data: StatsDto = {
         { reason: 'spaghetti', count: 1 },
         { reason: 'error', count: 1 },
     ],
+    waste: {
+        paused: { jobs: 1, filamentMm: 3000, weightG: 9, filamentCost: 0 },
+        cancelled: { jobs: 1, filamentMm: 1000, weightG: 3, filamentCost: 0 },
+    },
 };
 
 describe('StatsBody', () => {
@@ -84,6 +88,13 @@ describe('StatsBody', () => {
         expect(screen.getByText(m.failure_reason_spaghetti())).toBeTruthy();
         expect(screen.getByText(m.failure_reason_error())).toBeTruthy();
         expect(screen.getAllByText('1 · 50%')).toHaveLength(2);
+    });
+
+    it('shows the wasted filament next to the key figures', async () => {
+        await renderWithProviders(<StatsBody data={data} days={30} />);
+        expect(screen.getByText(m.stats_waste_title())).toBeTruthy();
+        expect(screen.getByText('12 g')).toBeTruthy();
+        expect(screen.getByText(m.stats_waste_share({ pct: 33 }))).toBeTruthy();
     });
 
     it('hides the cost tile and the failures card when there is nothing to show', async () => {

@@ -6,9 +6,10 @@ import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { openPrintReadyDialog } from './print-ready-watcher';
 
-const { queueAdd, print, clearFileReady, toast } = vi.hoisted(() => ({
+const { queueAdd, print, scheduleCreate, clearFileReady, toast } = vi.hoisted(() => ({
     queueAdd: vi.fn(),
     print: vi.fn(),
+    scheduleCreate: vi.fn(),
     clearFileReady: vi.fn(),
     toast: { success: vi.fn(), error: vi.fn() },
 }));
@@ -16,7 +17,12 @@ const { queueAdd, print, clearFileReady, toast } = vi.hoisted(() => ({
 vi.mock('sonner', () => ({ toast }));
 
 vi.mock('@/lib/api', () => ({
-    api: { queue: { add: queueAdd }, files: { print }, control: { clearFileReady } },
+    api: {
+        queue: { add: queueAdd },
+        files: { print },
+        schedule: { create: scheduleCreate },
+        control: { clearFileReady },
+    },
 }));
 
 vi.mock('@/lib/queries', () => ({
@@ -50,6 +56,7 @@ async function openFor(filename: string): Promise<{ opened: boolean; props: Form
 beforeEach(() => {
     queueAdd.mockReset().mockResolvedValue({ filename: 'bracket.gcode' });
     print.mockReset().mockResolvedValue({ filename: 'bracket.gcode' });
+    scheduleCreate.mockReset().mockResolvedValue({ filename: 'bracket.gcode', startAt: '2030-01-01T08:00:00.000Z' });
     clearFileReady.mockReset().mockResolvedValue(undefined);
     toast.success.mockReset();
     toast.error.mockReset();
@@ -82,5 +89,27 @@ describe('openPrintReadyDialog', () => {
         const { props } = await openFor('bracket.gcode');
         await props?.onQueue?.(chosen);
         expect(toast.error).toHaveBeenCalledWith('queue full');
+    });
+
+    it('schedules the file with the start time and every option chosen in the dialog', async () => {
+        const { props } = await openFor('bracket.gcode');
+        await props?.onSchedule?.(chosen, '2030-01-01T08:00:00.000Z');
+        expect(scheduleCreate).toHaveBeenCalledWith('p1', {
+            fileId: 'f1',
+            startAt: '2030-01-01T08:00:00.000Z',
+            ...chosen,
+        });
+        expect(clearFileReady).toHaveBeenCalledWith('p1');
+        expect(toast.success).toHaveBeenCalledOnce();
+    });
+
+    it('reports a failed schedule and keeps the dialog open', async () => {
+        scheduleCreate.mockRejectedValueOnce(new Error('start time is in the past'));
+        const { props } = await openFor('bracket.gcode');
+        await expect(props?.onSchedule?.(chosen, '2020-01-01T08:00:00.000Z')).rejects.toThrow(
+            'start time is in the past',
+        );
+        expect(toast.error).toHaveBeenCalledWith('start time is in the past');
+        expect(clearFileReady).not.toHaveBeenCalled();
     });
 });

@@ -20,6 +20,7 @@ const base: PrintJobDto = {
     failureReason: 'filament_runout',
     note: 'line1\nline2',
     hasSnapshot: true,
+    pausedAt: null,
     cost: { filament: 0.5, energy: 0.1, machine: 2, total: 2.6 },
 };
 

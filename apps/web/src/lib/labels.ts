@@ -26,6 +26,7 @@ export const KOBRA_STATE_LABEL: Record<string, () => string> = {
     printing: m.state_printing,
     preheating: m.state_preheating,
     auto_leveling: m.state_auto_leveling,
+    vibrating: m.state_vibrating,
     checking: m.state_checking,
     updated: m.state_updated,
     init: m.state_init,

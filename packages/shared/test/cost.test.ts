@@ -22,3 +22,17 @@ describe('jobCost', () => {
         expect(c.total).toBe(0);
     });
 });
+
+describe('jobCost with a printer profile', () => {
+    it('uses the printer power draw instead of the default one', () => {
+        expect(jobCost(3600, 0, costs, { powerW: 300 }).energy).toBe(0.24);
+        expect(jobCost(3600, 0, costs, { powerW: 0 }).energy).toBe(0);
+        expect(jobCost(3600, 0, costs, { powerW: null }).energy).toBe(0.12);
+    });
+
+    it('adds the printer depreciation to the machine time', () => {
+        const c = jobCost(2 * 3600, 0, costs, { depreciationPerHour: 0.5 });
+        expect(c.machine).toBe(5);
+        expect(jobCost(3600, 0, costs, { depreciationPerHour: -3 }).machine).toBe(2);
+    });
+});

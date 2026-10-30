@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'bun:test';
+import fs from 'node:fs';
+import path from 'node:path';
 import { createClient } from '@libsql/client';
 import { applyMigrations } from '../src/prisma/migrator';
 import { MIGRATIONS_DIR, testDb } from './helpers/db';
@@ -49,6 +51,28 @@ describe('migrations', () => {
             expect(await columns(db.file, 'maintenance_log')).toEqual(
                 expect.arrayContaining(['taskId', 'doneAt', 'note', 'hours', 'jobs']),
             );
+        } finally {
+            await db.close();
+        }
+    });
+
+    it('give print jobs a pause time that starts empty', async () => {
+        const db = await testDb();
+        try {
+            expect(await columns(db.file, 'print_job')).toContain('pausedAt');
+            await db.client.printer.create({
+                data: {
+                    id: 'p1',
+                    name: 'Kobra',
+                    ip: '127.0.0.1',
+                    username: 'u',
+                    password: 'p',
+                    deviceId: 'd1',
+                    httpPort: 7125,
+                },
+            });
+            const job = await db.client.printJob.create({ data: { printerId: 'p1', filename: 'part.gcode' } });
+            expect(job.pausedAt).toBeNull();
         } finally {
             await db.close();
         }
@@ -119,6 +143,44 @@ describe('migrations', () => {
             expect(await db.client.scheduledPrint.count()).toBe(0);
             expect(await db.client.maintenanceTask.count()).toBe(0);
             expect(await db.client.maintenanceLog.count()).toBe(0);
+        } finally {
+            await db.close();
+        }
+    });
+});
+
+describe('maintenance preset key migration', () => {
+    it('recognises tasks created from a recommendation in any language', async () => {
+        const db = await testDb();
+        try {
+            expect(await columns(db.file, 'maintenance_task')).toContain('presetKey');
+            const sql = fs.readFileSync(
+                path.join(import.meta.dir, '../prisma/migrations/20261030010000_maintenance_preset_key/migration.sql'),
+                'utf8',
+            );
+            const updates = sql.split('\n').filter((l) => l.startsWith('UPDATE'));
+            await db.client.printer.create({
+                data: {
+                    id: 'p1',
+                    name: 'K',
+                    ip: '1.1.1.1',
+                    username: 'u',
+                    password: 'p',
+                    deviceId: 'd',
+                    httpPort: 17997,
+                },
+            });
+            for (const name of ['Limpar o bico', 'Nettoyer la buse', ' Clean the fans ', 'My own task']) {
+                await db.client.maintenanceTask.create({ data: { printerId: 'p1', name } });
+            }
+            for (const statement of updates) await db.client.$executeRawUnsafe(statement);
+            const rows = await db.client.maintenanceTask.findMany({ orderBy: { name: 'asc' } });
+            expect(Object.fromEntries(rows.map((r) => [r.name, r.presetKey]))).toEqual({
+                ' Clean the fans ': 'clean_fans',
+                'Limpar o bico': 'clean_nozzle',
+                'My own task': '',
+                'Nettoyer la buse': 'clean_nozzle',
+            });
         } finally {
             await db.close();
         }

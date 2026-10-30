@@ -52,3 +52,46 @@ describe('credentials', () => {
         expect(decryptInfo(enc, key, iv)).toEqual({ username: 'user1' });
     });
 });
+
+describe('filament usage', () => {
+    const orca = (tail: string[]) =>
+        Buffer.from(
+            [
+                '; filament_colour = #FF0000;#00FF00',
+                '; filament_type = PLA;PETG',
+                '; filament_density: 1.24,1.27',
+                '; filament_diameter: 1.75,1.75',
+                'T0',
+                'G1 X1',
+                'T1',
+                ...tail,
+            ].join('\n'),
+        );
+
+    it('reads the length and the weight of each filament', () => {
+        const f = extractFilamentInfo(
+            orca(['; filament used [mm] = 1234.5, 678.9', '; filament used [g] = 3.68, 2.06']),
+        );
+        expect(f.map((x) => [x.usedMm, x.usedG])).toEqual([
+            [1234.5, 3.68],
+            [678.9, 2.06],
+        ]);
+    });
+
+    it('weighs the length with the density and the diameter when the weights do not line up', () => {
+        const f = extractFilamentInfo(orca(['; filament used [mm] = 1000, 0', '; filament used [g] = 2.98']));
+        expect(f[0].usedMm).toBe(1000);
+        expect(f[0].usedG).toBeCloseTo(2.98, 2);
+        expect(f[1].usedG).toBe(0);
+    });
+
+    it('leaves the usage unknown when the slicer did not write it', () => {
+        const f = extractFilamentInfo(orca([]));
+        expect(f.every((x) => x.usedMm === null && x.usedG === null)).toBe(true);
+    });
+
+    it('does not mistake the total for a filament', () => {
+        const f = extractFilamentInfo(orca(['; total filament used [g] = 9.99', '; filament used [mm] = 10, 20']));
+        expect(f.map((x) => x.usedMm)).toEqual([10, 20]);
+    });
+});

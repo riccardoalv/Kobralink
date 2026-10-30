@@ -4,6 +4,7 @@ import {
     filamentWeightG,
     type JobCost,
     jobCost,
+    type MachineCost,
     type SpoolUsageEntry,
 } from '@farolprint/shared';
 import { jobMaterial } from './job-material';
@@ -12,14 +13,13 @@ export type PricedSpool = {
     diameterMm: number;
     densityGcm3: number;
     material: string;
-    price: number;
-    initialWeightG: number;
 };
 
 export interface PricingContext {
     spools: ReadonlyMap<string, PricedSpool>;
     filamentPricePerKg: number;
     costs: CostSettings;
+    printers?: ReadonlyMap<string, MachineCost>;
 }
 
 export interface PricedUsage {
@@ -38,6 +38,7 @@ export interface PricedJob {
 }
 
 export interface JobLike {
+    printerId?: string;
     status: string;
     durationSec: number | null;
     filamentMm: number;
@@ -66,17 +67,15 @@ export function priceJob(job: JobLike, ctx: PricingContext): PricedJob {
     const priced = entries.map((u): PricedUsage => {
         const spool = u.spoolId ? ctx.spools.get(String(u.spoolId)) : undefined;
         const material = (u.material || spool?.material || fileMaterial).toUpperCase();
-        const weightG = filamentWeightG(
-            u.mm,
-            spool?.diameterMm ?? 1.75,
-            spool?.densityGcm3 ?? DEFAULT_DENSITY[material.split('-')[0]] ?? 1.24,
-        );
-        const perG =
-            spool && spool.price > 0 && spool.initialWeightG > 0
-                ? spool.price / spool.initialWeightG
-                : ctx.filamentPricePerKg > 0
-                  ? ctx.filamentPricePerKg / 1000
-                  : null;
+        const weightG =
+            u.weightG ??
+            filamentWeightG(
+                u.mm,
+                spool?.diameterMm ?? 1.75,
+                spool?.densityGcm3 ?? DEFAULT_DENSITY[material.split('-')[0]] ?? 1.24,
+            );
+        const frozen = typeof u.pricePerG === 'number' ? u.pricePerG : null;
+        const perG = frozen ?? (ctx.filamentPricePerKg > 0 ? ctx.filamentPricePerKg / 1000 : null);
         return { mm: u.mm, material, weightG, cost: perG === null ? null : weightG * perG };
     });
     const filamentCost = priced.reduce((acc, u) => acc + (u.cost ?? 0), 0);
@@ -85,7 +84,12 @@ export function priceJob(job: JobLike, ctx: PricingContext): PricedJob {
         weightG: priced.reduce((acc, u) => acc + u.weightG, 0),
         unpricedG: priced.reduce((acc, u) => acc + (u.cost === null ? u.weightG : 0), 0),
         filamentCost,
-        cost: jobCost(job.durationSec ?? 0, filamentCost, ctx.costs),
+        cost: jobCost(
+            job.durationSec ?? 0,
+            filamentCost,
+            ctx.costs,
+            (job.printerId && ctx.printers?.get(job.printerId)) || {},
+        ),
     };
 }
 
@@ -95,6 +99,8 @@ export function hasAnyPricing(ctx: PricingContext): boolean {
         ctx.filamentPricePerKg > 0 ||
         c.hourlyRate > 0 ||
         (c.energyPricePerKwh > 0 && c.printerPowerW > 0) ||
-        [...ctx.spools.values()].some((s) => s.price > 0)
+        [...(ctx.printers?.values() ?? [])].some(
+            (p) => (p.depreciationPerHour ?? 0) > 0 || (c.energyPricePerKwh > 0 && (p.powerW ?? 0) > 0),
+        )
     );
 }

@@ -13,6 +13,7 @@ import { formatDuration, formatMoney, formatShortDate } from '@/lib/format';
 import { intlLocale, m } from '@/lib/i18n';
 import { failureReasonLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
+import { WasteCard } from './waste-card';
 
 export function StatsBody({ data, days }: { data: StatsDto; days: number }) {
     const locale = intlLocale();
@@ -106,6 +107,7 @@ export function StatsBody({ data, days }: { data: StatsDto; days: number }) {
                     />
                 ) : null}
             </div>
+            <WasteCard waste={data.waste} totalFilamentG={data.totalFilamentG} currency={data.currency} />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Card className="rounded-3xl border-0 shadow-none md:col-span-2">
                     <CardHeader>

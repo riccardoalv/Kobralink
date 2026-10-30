@@ -59,6 +59,7 @@ import type {
     UpdateUserInput,
     UserDto,
 } from '@farolprint/shared';
+import { printerSettingsSchema } from '@farolprint/shared';
 import { getLocale } from '@/lib/i18n';
 
 export class ApiError extends Error {
@@ -105,12 +106,17 @@ const json = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.strin
 
 export type PrinterWithLive = Printer & { live: PrinterLiveState | null };
 
+export function withFullSettings<T extends { settings: unknown }>(printer: T): T {
+    const parsed = printerSettingsSchema.safeParse(printer.settings ?? {});
+    return parsed.success ? { ...printer, settings: parsed.data } : printer;
+}
+
 export const api = {
     setupStatus: () => request<{ needsSetup: boolean }>('/api/v1/setup/status'),
 
     printers: {
-        list: () => request<PrinterWithLive[]>('/api/v1/printers'),
-        get: (id: string) => request<PrinterWithLive>(`/api/v1/printers/${id}`),
+        list: () => request<PrinterWithLive[]>('/api/v1/printers').then((list) => list.map(withFullSettings)),
+        get: (id: string) => request<PrinterWithLive>(`/api/v1/printers/${id}`).then(withFullSettings),
         add: (input: AddPrinterInput) => request<Printer>('/api/v1/printers', json(input)),
         update: (id: string, input: UpdatePrinterInput) =>
             request<Printer>(`/api/v1/printers/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
@@ -178,7 +184,7 @@ export const api = {
 
     spoolman: {
         spools: () => request<SpoolmanSpool[]>('/api/v1/spoolman/spools'),
-        health: () => request<{ reachable: boolean; configured: boolean }>('/api/v1/spoolman/health'),
+        health: () => request<{ reachable: boolean; configured: boolean; pending?: number }>('/api/v1/spoolman/health'),
         status: (id: string) => request<SpoolmanStatus>(`/api/v1/printers/${id}/spoolman`),
         setSlots: (id: string, slotMap: Record<string, number>) =>
             request<{ slotSpools: Record<string, number> }>(`/api/v1/printers/${id}/spoolman/slots`, json({ slotMap })),

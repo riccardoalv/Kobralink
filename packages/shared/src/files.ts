@@ -19,6 +19,8 @@ export interface GcodeFilament {
     colorHex: string;
     material: string;
     isUsed: boolean;
+    usedMm?: number | null;
+    usedG?: number | null;
 }
 
 export interface GcodeFileDto {
@@ -57,6 +59,7 @@ export interface PrintJobDto {
     failureReason: FailureReason | '';
     note: string;
     hasSnapshot: boolean;
+    pausedAt: string | null;
     cost: JobCost | null;
 }
 

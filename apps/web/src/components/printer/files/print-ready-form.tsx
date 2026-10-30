@@ -35,13 +35,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
+import { useSpoolLookup } from '@/hooks/use-slot-spool';
 import { hexToRgb, rgbCss, rgbToHex, textOn } from '@/lib/color';
+import { anyShort, checkFilament, type FilamentStatus, type SlotCheck } from '@/lib/filament-check';
 import { parseFilename } from '@/lib/filename';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filamentSlotsQuery, fileObjectsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
+import { EXTERNAL_SLOT } from '../ams/external-spool-form';
 
 export interface PrintReadyResult {
     filamentAssignments?: FilamentAssignment[];
@@ -163,6 +166,8 @@ export function PrintReadyForm({
     const [editing, setEditing] = useState<AmsSlot | null>(null);
     const [scheduling, setScheduling] = useState(false);
     const [startAt, setStartAt] = useState('');
+    const [acceptShort, setAcceptShort] = useState(false);
+    const spoolOf = useSpoolLookup(printerId);
 
     useEffect(() => {
         setAssignments((cur) => {
@@ -181,6 +186,19 @@ export function PrintReadyForm({
     const canPrint = state.connected && state.printState !== 'printing' && state.printState !== 'paused';
     const mismatches = channels.filter((ch) => ch.isUsed && compatibleSlots(ch, usable).length === 0);
     const blocked = usable.length > 0 && mismatches.length > 0;
+    const usedG = new Map(file.filaments.map((f) => [f.slotIndex, f.usedG ?? null]));
+    const checks = checkFilament(
+        channels
+            .filter((ch) => ch.isUsed)
+            .map((ch) => ({
+                slotKey: usable.length ? String(assignments[ch.paintIndex] ?? -1) : EXTERNAL_SLOT,
+                colorHex: ch.colorHex,
+                needG: usedG.get(ch.paintIndex) ?? null,
+            }))
+            .filter((need) => need.slotKey !== '-1'),
+        (slotKey) => spoolOf(slotKey).remainingG,
+    );
+    const shortBlocked = anyShort(checks) && !acceptShort;
     const remaining = names.length - excluded.length;
     const { name, plate } = parseFilename(file.filename);
     const tint = channels.find((ch) => ch.isUsed)?.colorHex ?? channels[0]?.colorHex;
@@ -374,6 +392,15 @@ export function PrintReadyForm({
                     </div>
                 )}
 
+                {checks.some((c) => c.needG !== null) && (
+                    <FilamentChecks
+                        checks={checks}
+                        external={!usable.length}
+                        accepted={acceptShort}
+                        onAccept={setAcceptShort}
+                    />
+                )}
+
                 {names.length >= 2 && (
                     <div className="grid gap-2">
                         <button
@@ -459,7 +486,7 @@ export function PrintReadyForm({
                             type="button"
                             variant="secondary"
                             className={cn('rounded-full', scheduling && 'bg-primary/15')}
-                            disabled={pending || blocked || (names.length > 0 && remaining <= 0)}
+                            disabled={pending || blocked || shortBlocked || (names.length > 0 && remaining <= 0)}
                             onClick={async () => {
                                 if (!scheduling) {
                                     setScheduling(true);
@@ -483,6 +510,7 @@ export function PrintReadyForm({
                             type="button"
                             variant="secondary"
                             className="rounded-full"
+                            disabled={shortBlocked}
                             onClick={() => {
                                 close();
                                 onQueue(build());
@@ -494,7 +522,9 @@ export function PrintReadyForm({
                     <Button
                         type="button"
                         className="rounded-full px-5"
-                        disabled={pending || !canPrint || blocked || (names.length > 0 && remaining <= 0)}
+                        disabled={
+                            pending || !canPrint || blocked || shortBlocked || (names.length > 0 && remaining <= 0)
+                        }
                         onClick={async () => {
                             setPending(true);
                             try {
@@ -536,6 +566,84 @@ function OptionRow({
                 <span className="text-xs text-muted-foreground">{hint}</span>
             </Label>
             <Switch id={id} checked={checked} onCheckedChange={onChange} />
+        </div>
+    );
+}
+
+const CHECK_LABEL: Record<FilamentStatus, () => string> = {
+    ok: m.print_ready_filament_ok,
+    tight: m.print_ready_filament_tight,
+    short: m.print_ready_filament_short,
+    unknown: m.print_ready_filament_unknown,
+};
+
+const CHECK_CLASS: Record<FilamentStatus, string> = {
+    ok: 'bg-primary/15 text-primary-strong',
+    tight: 'bg-chart-2/20 text-foreground',
+    short: 'bg-destructive/15 text-destructive',
+    unknown: 'bg-secondary text-muted-foreground',
+};
+
+export function FilamentChecks({
+    checks,
+    external,
+    accepted,
+    onAccept,
+}: {
+    checks: SlotCheck[];
+    external: boolean;
+    accepted: boolean;
+    onAccept: (accepted: boolean) => void;
+}) {
+    const short = anyShort(checks);
+    return (
+        <div className="grid gap-2">
+            <div className="text-sm font-medium">{m.print_ready_filament_title()}</div>
+            <ul className="grid gap-1.5">
+                {checks.map((c) => (
+                    <li
+                        key={c.slotKey}
+                        className="flex items-center gap-3 rounded-2xl bg-secondary/60 px-3 py-2 text-sm"
+                    >
+                        <Chip color={c.colorHex} className="size-6">
+                            {external ? '' : Number(c.slotKey) + 1}
+                        </Chip>
+                        <span className="min-w-0 flex-1">
+                            <span className="font-medium">
+                                {external
+                                    ? m.print_ready_filament_external()
+                                    : m.print_ready_filament_slot({ n: Number(c.slotKey) + 1 })}
+                            </span>
+                            {c.needG !== null && (
+                                <span className="text-muted-foreground">
+                                    {' · '}
+                                    {c.remainingG !== null
+                                        ? m.print_ready_filament_line({
+                                              need: Math.ceil(c.needG),
+                                              left: Math.floor(c.remainingG),
+                                          })
+                                        : m.print_ready_filament_need({ need: Math.ceil(c.needG) })}
+                                </span>
+                            )}
+                        </span>
+                        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', CHECK_CLASS[c.status])}>
+                            {CHECK_LABEL[c.status]()}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+            {short && (
+                <div className="grid gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <div className="flex items-start gap-2">
+                        <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                        <span>{m.print_ready_filament_short_hint()}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-foreground">
+                        <Switch id="print-ready-accept-short" checked={accepted} onCheckedChange={onAccept} />
+                        <Label htmlFor="print-ready-accept-short">{m.print_ready_filament_accept()}</Label>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

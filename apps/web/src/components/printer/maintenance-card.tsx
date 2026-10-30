@@ -34,6 +34,15 @@ export function presetLabel(p: MaintenancePreset): string {
     return PRESET_LABEL[p.key]?.() ?? p.key;
 }
 
+export function taskName(task: Pick<MaintenanceTaskDto, 'name' | 'presetKey'>): string {
+    return (task.presetKey && PRESET_LABEL[task.presetKey]?.()) || task.name;
+}
+
+function keepPresetKey(value: { name: string; presetKey: MaintenanceTaskDto['presetKey'] }) {
+    const label = value.presetKey ? PRESET_LABEL[value.presetKey]?.() : undefined;
+    return label && value.name.trim() === label ? value.presetKey : '';
+}
+
 export function MaintenanceCard({ printerId, className }: { printerId: string; className?: string }) {
     const qc = useQueryClient();
     const tasks = useQuery(maintenanceQuery(printerId));
@@ -52,19 +61,20 @@ export function MaintenanceCard({ printerId, className }: { printerId: string; c
         });
     const openDone = (task: MaintenanceTaskDto) =>
         confirmationDialogStore.actions.openDialog({
-            title: m.maintenance_done_title({ name: task.name }),
+            title: m.maintenance_done_title({ name: taskName(task) }),
             content: <DoneForm printerId={printerId} task={task} onSaved={invalidate} />,
         });
     const openLog = (task: MaintenanceTaskDto) =>
         confirmationDialogStore.actions.openDialog({
-            title: `${task.name} · ${m.maintenance_log()}`,
+            title: `${taskName(task)} · ${m.maintenance_log()}`,
             content: <LogList printerId={printerId} task={task} />,
         });
     const list = tasks.data ?? [];
     const dueCount = list.filter((t) => t.due).length;
     const names = new Set(list.map((t) => t.name.trim().toLowerCase()));
+    const keys = new Set(list.map((t) => t.presetKey));
     const suggested = tasks.isSuccess
-        ? MAINTENANCE_PRESETS.filter((p) => !names.has(presetLabel(p).toLowerCase()))
+        ? MAINTENANCE_PRESETS.filter((p) => !keys.has(p.key) && !names.has(presetLabel(p).toLowerCase()))
         : [];
     const enable = useMutation({
         mutationFn: (presets: MaintenancePreset[]) =>
@@ -72,6 +82,7 @@ export function MaintenanceCard({ printerId, className }: { printerId: string; c
                 presets.map((p) =>
                     api.maintenance.create(printerId, {
                         name: presetLabel(p),
+                        presetKey: p.key,
                         intervalHours: p.intervalHours,
                         intervalJobs: p.intervalJobs,
                         intervalDays: p.intervalDays,
@@ -117,7 +128,7 @@ export function MaintenanceCard({ printerId, className }: { printerId: string; c
                                     onLog={() => openLog(t)}
                                     onRemove={() =>
                                         alertConfirmationDialogStore.actions.openAlertDialog({
-                                            title: m.maintenance_delete_title({ name: t.name }),
+                                            title: m.maintenance_delete_title({ name: taskName(t) }),
                                             description: m.maintenance_delete_hint(),
                                             actionLabel: m.common_delete(),
                                             onAction: () => remove.mutateAsync(t.id),
@@ -195,7 +206,7 @@ function TaskRow({
             <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium">{task.name}</span>
+                        <span className="truncate text-sm font-medium">{taskName(task)}</span>
                         {task.due && (
                             <span className="rounded-full bg-destructive px-2 py-0.5 text-[10px] font-medium uppercase text-destructive-foreground">
                                 {m.maintenance_due()}
@@ -274,14 +285,18 @@ export function TaskForm({
     });
     const form = useForm({
         defaultValues: {
-            name: task?.name ?? '',
+            name: task ? taskName(task) : '',
+            presetKey: task?.presetKey ?? ('' as MaintenanceTaskDto['presetKey']),
             note: task?.note ?? '',
             intervalHours: task?.intervalHours ?? 0,
             intervalJobs: task?.intervalJobs ?? 0,
             intervalDays: task?.intervalDays ?? 0,
         },
         validators: { onSubmit: maintenanceTaskSchema.required() },
-        onSubmit: ({ value }) => save.mutateAsync(maintenanceTaskSchema.parse(value)).catch(() => undefined),
+        onSubmit: ({ value }) =>
+            save
+                .mutateAsync(maintenanceTaskSchema.parse({ ...value, presetKey: keepPresetKey(value) }))
+                .catch(() => undefined),
     });
     const num = (name: 'intervalHours' | 'intervalJobs' | 'intervalDays', label: string, step: number) => (
         <form.Field name={name}>
@@ -322,6 +337,7 @@ export function TaskForm({
                                 className="rounded-full bg-secondary px-3 py-1 text-xs hover:bg-accent"
                                 onClick={() => {
                                     form.setFieldValue('name', presetLabel(p));
+                                    form.setFieldValue('presetKey', p.key);
                                     form.setFieldValue('intervalHours', p.intervalHours);
                                     form.setFieldValue('intervalJobs', p.intervalJobs);
                                     form.setFieldValue('intervalDays', p.intervalDays);
@@ -395,7 +411,7 @@ export function DoneForm({
     const done = useMutation({
         mutationFn: (note: string) => api.maintenance.complete(printerId, task.id, { note }),
         onSuccess: () => {
-            toast.success(m.maintenance_completed({ name: task.name }));
+            toast.success(m.maintenance_completed({ name: taskName(task) }));
             onSaved();
             close();
         },

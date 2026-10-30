@@ -44,6 +44,7 @@ const job: PrintJobDto = {
     failureReason: 'filament_runout',
     note: 'spool ended',
     hasSnapshot: true,
+    pausedAt: null,
     cost: null,
 };
 

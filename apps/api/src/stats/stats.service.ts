@@ -1,14 +1,18 @@
 import {
+    depreciationPerHour,
     type PrintJobDto,
     round2,
     type StatsBucket,
     type StatsDto,
     type StatsFileEntry,
     type StatsPrinterEntry,
+    type StatsWaste,
+    type StatsWasteEntry,
 } from '@farolprint/shared';
 import { Injectable } from '@nestjs/common';
 import { toJobDto } from '../gcode/gcode.service';
 import type { PrintJob } from '../generated/prisma/client';
+import { PrintersService } from '../printers/printers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { hasAnyPricing, type PricedSpool, type PricingContext, priceJob } from './job-cost';
@@ -32,15 +36,20 @@ export class StatsService {
                 diameterMm: true,
                 densityGcm3: true,
                 material: true,
-                price: true,
-                initialWeightG: true,
             },
         });
+        const printerRows = await this.prisma.client.printer.findMany({ select: { id: true, settings: true } });
         const { filamentPricePerKg, costs } = this.settings.get();
         return {
             spools: new Map<string, PricedSpool>(spoolRows.map((s) => [s.id, s])),
             filamentPricePerKg,
             costs,
+            printers: new Map(
+                printerRows.map((p) => {
+                    const { profile } = PrintersService.parseSettings(p.settings);
+                    return [p.id, { powerW: profile.powerW, depreciationPerHour: depreciationPerHour(profile) }];
+                }),
+            ),
         };
     }
 
@@ -124,6 +133,7 @@ export class StatsService {
         const files = new Map<string, StatsFileEntry>();
         const materials = new Map<string, { filamentMm: number; weightG: number; cost: number; jobs: number }>();
         const failures = new Map<string, number>();
+        const waste: StatsWaste = { paused: emptyWaste(), cancelled: emptyWaste() };
         let totalFilamentG = 0;
         let filamentCost = 0;
         let energyCost = 0;
@@ -150,6 +160,11 @@ export class StatsService {
             if (!ok) {
                 const reason = j.failureReason || (j.status === 'error' ? 'error' : 'unlabeled');
                 failures.set(reason, (failures.get(reason) ?? 0) + 1);
+                const we = j.pausedAt ? waste.paused : waste.cancelled;
+                we.jobs += 1;
+                we.filamentMm += j.filamentMm;
+                we.weightG += priced.weightG;
+                we.filamentCost += priced.filamentCost;
             }
 
             const pe = printers.get(j.printerId) ?? {
@@ -265,6 +280,7 @@ export class StatsService {
             failures: [...failures.entries()]
                 .map(([reason, count]) => ({ reason, count }))
                 .sort((a, b) => b.count - a.count),
+            waste: { paused: roundWaste(waste.paused), cancelled: roundWaste(waste.cancelled) },
         };
     }
 }
@@ -283,6 +299,19 @@ function startOfDay(d: Date): Date {
 
 function dayKey(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function emptyWaste(): StatsWasteEntry {
+    return { jobs: 0, filamentMm: 0, weightG: 0, filamentCost: 0 };
+}
+
+function roundWaste(w: StatsWasteEntry): StatsWasteEntry {
+    return {
+        jobs: w.jobs,
+        filamentMm: Math.round(w.filamentMm),
+        weightG: Math.round(w.weightG),
+        filamentCost: round2(w.filamentCost),
+    };
 }
 
 function emptyBucket(key: string): StatsBucket {

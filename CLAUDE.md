@@ -38,9 +38,13 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   `src/generated/prisma` (gitignored, `prisma generate` before `tsc`). Migrations are applied at boot by
   `src/prisma/migrator.ts`.
 - `apps/web`: Vite + React 19, file-based TanStack Router (`src/routes`, `routeTree.gen.ts` gitignored), TanStack
-  Query, TanStack Store (`src/stores`), Tailwind v4, shadcn (`src/components/ui`, excluded from Biome). Dark theme only
-  (`class="dark"` on `<html>` in `index.html`, no toggle). Primary = emerald, radius 1.5rem, Outfit font. Design: icon
-  rail on the left, very rounded cards, the print card is accented while printing.
+  Query, TanStack Store (`src/stores`), Tailwind v4, shadcn (`src/components/ui`, excluded from Biome). Light and dark
+  themes follow the device, with a System / Light / Dark choice per browser (`src/stores/theme.ts`, applied before
+  paint by an inline script in `index.html`); every colour goes through the CSS tokens in `src/styles.css` so both
+  themes work. Primary = pastel periwinkle (`bg-primary`); brand-coloured text and icons use `text-primary-strong`, a
+  deeper shade in the light theme. Outfit font. Design: labelled collapsible sidebar on the left (bottom bar on
+  phones), rounded cards, the print card is accented while printing. The redesign in progress is in
+  [docs/roadmap.md](docs/roadmap.md).
   `bun run --filter @farolprint/web generate` = `tsr generate` + Paraglide compile (`src/paraglide`, gitignored); run
   by `check-types`.
 - `packages/shared`: Zod schemas and types shared by the API and the web (`control.ts`, `state.ts`, `macros.ts`,

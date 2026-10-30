@@ -38,6 +38,18 @@ export interface StatsPrinterEntry {
     cost: number;
 }
 
+export interface StatsWasteEntry {
+    jobs: number;
+    filamentMm: number;
+    weightG: number;
+    filamentCost: number;
+}
+
+export interface StatsWaste {
+    paused: StatsWasteEntry;
+    cancelled: StatsWasteEntry;
+}
+
 export interface StatsFailureEntry {
     reason: string;
     count: number;
@@ -74,4 +86,5 @@ export interface StatsDto {
     topFiles: StatsFileEntry[];
     materials: StatsMaterialEntry[];
     failures: StatsFailureEntry[];
+    waste: StatsWaste;
 }

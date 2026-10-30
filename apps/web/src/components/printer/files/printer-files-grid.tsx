@@ -173,9 +173,12 @@ function PrinterFilesLoading() {
     return (
         <div className="space-y-3" aria-busy="true">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="relative flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span className="relative flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary-strong">
                     <HardDrive className="size-3.5" />
-                    <Loader2 className="absolute inset-0 size-full animate-spin text-primary/60" strokeWidth={1.5} />
+                    <Loader2
+                        className="absolute inset-0 size-full animate-spin text-primary-strong/60"
+                        strokeWidth={1.5}
+                    />
                 </span>
                 <span>{m.pfiles_reading()}</span>
             </div>

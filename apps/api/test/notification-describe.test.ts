@@ -48,6 +48,14 @@ describe('notification texts', () => {
         expect(svc.build('p1', 'Kobra', 'maintenance_due', {}).body).toBe(': 0 h and 0 prints since the last time.');
     });
 
+    it('names a recommended task in the configured language', () => {
+        const fr = service({ locale: 'fr' }).svc;
+        const ev = fr.build('p1', 'Kobra', 'maintenance_due', { task: 'Clean the nozzle', presetKey: 'clean_nozzle' });
+        expect(ev.body.startsWith('Nettoyer la buse')).toBe(true);
+        const custom = fr.build('p1', 'Kobra', 'maintenance_due', { task: 'Graisser', presetKey: '' });
+        expect(custom.body.startsWith('Graisser')).toBe(true);
+    });
+
     it('follows the configured locale', () => {
         const { svc } = service({ locale: 'fr' });
         expect(svc.build('p1', 'Kobra', 'queue_next', { filename: 'a.gcode' }).title).toBe("Kobra — file d'attente");

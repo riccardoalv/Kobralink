@@ -34,3 +34,17 @@ describe('updateAppSettingsSchema', () => {
         expect(next.failureDetection.enabled).toBe(true);
     });
 });
+
+describe('publicUrl', () => {
+    it('is empty until the address of FarolPrint is set', () => {
+        expect(appSettingsSchema.parse({}).publicUrl).toBe('');
+    });
+
+    it('accepts a URL and rejects anything else', () => {
+        expect(appSettingsSchema.parse({ publicUrl: 'http://farol.local:7100' }).publicUrl).toBe(
+            'http://farol.local:7100',
+        );
+        expect(appSettingsSchema.safeParse({ publicUrl: 'farol.local' }).success).toBe(false);
+        expect(updateAppSettingsSchema.parse({ publicUrl: '' })).toEqual({ publicUrl: '' });
+    });
+});

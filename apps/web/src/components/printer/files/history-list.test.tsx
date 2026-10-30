@@ -35,6 +35,7 @@ const base: PrintJobDto = {
     failureReason: '',
     note: '',
     hasSnapshot: false,
+    pausedAt: null,
     cost: { filament: 0.5, energy: 0.1, machine: 1, total: 1.6 },
 };
 

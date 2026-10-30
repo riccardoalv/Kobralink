@@ -218,6 +218,7 @@ model PrintJob {
   failureReason String     @default("")
   note         String      @default("")
   snapshot     String?
+  pausedAt     DateTime?
   timelapses   Timelapse[]
 
   @@index([printerId, startedAt])
@@ -330,6 +331,7 @@ model MaintenanceTask {
   printerId     String
   printer       Printer          @relation(fields: [printerId], references: [id], onDelete: Cascade)
   name          String
+  presetKey     String           @default("")
   note          String           @default("")
   intervalHours Float            @default(0)
   intervalJobs  Int              @default(0)
@@ -354,4 +356,14 @@ model MaintenanceLog {
 
   @@index([taskId, doneAt])
   @@map("maintenance_log")
+}
+
+model SpoolmanPendingUse {
+  id        String   @id @default(cuid())
+  spoolId   Int
+  lengthMm  Float
+  printerId String   @default("")
+  createdAt DateTime @default(now())
+
+  @@map("spoolman_pending_use")
 }

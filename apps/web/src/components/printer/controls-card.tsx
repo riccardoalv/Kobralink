@@ -153,7 +153,7 @@ function Toggles({ printerId }: { printerId: string }) {
     const onError = (e: Error) => toast.error(e.message);
     const fanMut = useMutation({ mutationFn: (speed: number) => api.control.fan(printerId, { speed }), onError });
     const lightMut = useMutation({
-        mutationFn: (input: { on: boolean; brightness?: number }) => api.control.light(printerId, input),
+        mutationFn: (on: boolean) => api.control.light(printerId, { on }),
         onError,
     });
     const speedMut = useMutation({ mutationFn: (mode: number) => api.control.speed(printerId, { mode }), onError });
@@ -173,30 +173,22 @@ function Toggles({ printerId }: { printerId: string }) {
                 <Row
                     icon={state.lightOn ? <Lightbulb /> : <LightbulbOff />}
                     label={m.controls_light()}
-                    status={state.lightOn ? `${m.controls_on()} · ${state.lightBrightness} %` : m.controls_off()}
+                    status={state.lightOn ? m.controls_on() : m.controls_off()}
                     active={state.lightOn}
                     control={
-                        <Switch
-                            aria-label={m.controls_light()}
-                            checked={state.lightOn}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={state.lightOn ? 'default' : 'secondary'}
+                            aria-pressed={state.lightOn}
                             disabled={offline || lightMut.isPending}
-                            onCheckedChange={(on) => lightMut.mutate({ on })}
-                        />
+                            onClick={() => lightMut.mutate(!state.lightOn)}
+                            className="rounded-full px-4"
+                        >
+                            {state.lightOn ? m.controls_light_turn_off() : m.controls_light_turn_on()}
+                        </Button>
                     }
-                >
-                    {state.lightOn && (
-                        <Slider
-                            aria-label={m.controls_brightness()}
-                            value={[state.lightBrightness]}
-                            min={5}
-                            max={100}
-                            step={5}
-                            disabled={offline}
-                            onValueChange={([v]) => patchLiveState(printerId, { lightBrightness: v })}
-                            onValueCommit={([v]) => lightMut.mutate({ on: true, brightness: v })}
-                        />
-                    )}
-                </Row>
+                />
                 {powerConfigured && (
                     <Row
                         icon={powerOn ? <PlugZap /> : <Plug />}
@@ -270,7 +262,7 @@ function Row({
                 <span
                     className={cn(
                         'flex size-8 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:size-4',
-                        active ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground',
+                        active ? 'bg-primary/15 text-primary-strong' : 'bg-secondary text-muted-foreground',
                     )}
                 >
                     {icon}

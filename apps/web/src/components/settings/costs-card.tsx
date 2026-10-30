@@ -7,6 +7,8 @@ import { SettingsCard, SwitchRow } from './settings-form-card';
 
 type CostField = 'energyPricePerKwh' | 'printerPowerW' | 'hourlyRate';
 
+export const COSTS_KEYS = ['costs'] as const satisfies readonly (keyof AppSettings)[];
+
 export function CostsCard({ settings }: { settings: AppSettings }) {
     const save = useSaveSettings();
     const form = useForm({

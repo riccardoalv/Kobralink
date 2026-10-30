@@ -1,4 +1,4 @@
-import type { GcodeFileDto } from '@farolprint/shared';
+import { type GcodeFileDto, isCalibrating } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
@@ -12,6 +12,7 @@ import { api } from '@/lib/api';
 import { parseFilename } from '@/lib/filename';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
+import { kobraStateLabel } from '@/lib/labels';
 import { filesQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
@@ -29,6 +30,7 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
 
     const printing = state.printState === 'printing';
     const paused = state.printState === 'paused';
+    const calibrating = isCalibrating(state);
     const active = printing || paused;
     const files = useQuery({ ...filesQuery(printerId), enabled: active });
     const liveFile = active ? files.data?.find((f) => f.filename === state.filename) : undefined;
@@ -63,7 +65,7 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
                     <header className="flex items-center justify-between gap-3">
                         <h2 className="text-lg font-medium leading-tight">{m.print_title()}</h2>
                         <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-medium">
-                            {paused ? m.print_paused() : m.print_in_progress()}
+                            {paused ? m.print_paused() : calibrating ? m.state_calibrating() : m.print_in_progress()}
                         </span>
                     </header>
                     <div className="flex items-center gap-3">
@@ -78,23 +80,32 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
                                 </p>
                             )}
                         </div>
-                        <span className="text-3xl font-semibold tabular-nums">{pct}%</span>
+                        {!calibrating && <span className="text-3xl font-semibold tabular-nums">{pct}%</span>}
                     </div>
-                    <div
-                        role="progressbar"
-                        aria-label={m.print_title()}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={pct}
-                        className="h-2 overflow-hidden rounded-full bg-primary-foreground/20"
-                    >
+                    {calibrating ? (
+                        <p className="text-sm text-primary-foreground/80">
+                            {m.print_calibrating_hint({ step: kobraStateLabel(state.kobraState) })}
+                        </p>
+                    ) : (
                         <div
-                            className="h-full rounded-full bg-primary-foreground transition-[width] duration-500"
-                            style={{ width: `${pct}%` }}
-                        />
-                    </div>
+                            role="progressbar"
+                            aria-label={m.print_title()}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={pct}
+                            className="h-2 overflow-hidden rounded-full bg-primary-foreground/20"
+                        >
+                            <div
+                                className="h-full rounded-full bg-primary-foreground transition-[width] duration-500"
+                                style={{ width: `${pct}%` }}
+                            />
+                        </div>
+                    )}
                     <dl className="grid grid-cols-3 gap-2">
-                        <Kv k={m.print_elapsed()} v={formatDuration(clock.elapsedSec, { zero: true })} />
+                        <Kv
+                            k={m.print_elapsed()}
+                            v={calibrating ? '—' : formatDuration(clock.elapsedSec, { zero: true })}
+                        />
                         <Kv k={m.print_remaining()} v={formatDuration(remaining, { zero: true })} />
                         {liveFile ? (
                             <LayerKv printerId={printerId} file={liveFile} currLayer={state.currLayer} />
@@ -268,7 +279,7 @@ function ActionButton({
             className={cn(
                 'flex h-10 shrink-0 items-center justify-center gap-2 rounded-full text-sm font-medium transition-colors disabled:opacity-50 [&_svg]:size-4',
                 wide
-                    ? 'flex-1 bg-primary-foreground px-4 text-primary hover:bg-primary-foreground/90'
+                    ? 'flex-1 bg-primary-foreground px-4 text-primary-strong hover:bg-primary-foreground/90'
                     : danger
                       ? 'w-10 bg-destructive text-white hover:bg-destructive/90'
                       : 'w-10 bg-primary-foreground/15 hover:bg-primary-foreground/25',

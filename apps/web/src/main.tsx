@@ -7,10 +7,12 @@ import { AlertConfirmationDialog } from '@/components/dialogs/alert-confirmation
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Toaster } from '@/components/ui/sonner';
 import { installI18n, useLocale } from '@/lib/i18n';
+import { installTheme } from '@/stores/theme';
 import { routeTree } from './routeTree.gen';
 import './styles.css';
 
 installI18n();
+installTheme();
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: 1, staleTime: 5_000 } },

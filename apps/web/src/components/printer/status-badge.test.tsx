@@ -1,6 +1,7 @@
 import type { PrinterLiveState } from '@farolprint/shared';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { m } from '@/lib/i18n';
 import { StatusBadge } from './status-badge';
 
 const state = (overrides: Partial<PrinterLiveState>) =>
@@ -15,5 +16,15 @@ describe('StatusBadge', () => {
     it('falls back to the raw state when it is unknown', () => {
         render(<StatusBadge state={state({ kobraState: 'brand_new_state' })} />);
         expect(screen.getByText('brand_new_state')).toBeTruthy();
+    });
+});
+
+describe('StatusBadge while calibrating', () => {
+    it('says the printer is calibrating whatever the calibration step', () => {
+        for (const kobraState of ['auto_leveling', 'vibrating', 'preheating']) {
+            const { unmount } = render(<StatusBadge state={state({ kobraState, printState: 'printing' })} />);
+            expect(screen.getByText(m.state_calibrating())).toBeTruthy();
+            unmount();
+        }
     });
 });

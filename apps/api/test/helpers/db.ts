@@ -69,6 +69,7 @@ export async function seedJob(
         spoolUsage: string;
         failureReason: string;
         errorCode: number;
+        pausedAt: Date | null;
     }> = {},
 ) {
     return client.printJob.create({
@@ -85,6 +86,7 @@ export async function seedJob(
             spoolUsage: data.spoolUsage ?? '[]',
             failureReason: data.failureReason ?? '',
             errorCode: data.errorCode ?? 0,
+            pausedAt: data.pausedAt ?? null,
         },
     });
 }

@@ -1,4 +1,4 @@
-import type { PrinterLiveState } from '@farolprint/shared';
+import { isCalibrating, type PrinterLiveState } from '@farolprint/shared';
 import { Link } from '@tanstack/react-router';
 import {
     Ban,
@@ -26,7 +26,7 @@ import { rgbCss } from '@/lib/color';
 import { parseFilename } from '@/lib/filename';
 import { formatClock, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { connectionErrorText } from '@/lib/labels';
+import { connectionErrorText, kobraStateLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 const SNAPSHOT_INTERVAL_MS = 5_000;
@@ -94,7 +94,7 @@ export function PrinterCard({
                         </p>
                     </div>
                     {printing && live && (
-                        <span className="text-2xl font-semibold tabular-nums text-primary">
+                        <span className="text-2xl font-semibold tabular-nums text-primary-strong">
                             {Math.round(live.progress * 100)}%
                         </span>
                     )}
@@ -111,9 +111,13 @@ export function PrinterCard({
                             )}
                         </p>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                            <Meta icon={<Clock />}>
-                                {m.printers_remaining({ duration: formatDuration(live.remainTimeSec) })}
-                            </Meta>
+                            {isCalibrating(live) ? (
+                                <Meta icon={<Clock />}>{kobraStateLabel(live.kobraState)}</Meta>
+                            ) : (
+                                <Meta icon={<Clock />}>
+                                    {m.printers_remaining({ duration: formatDuration(live.remainTimeSec) })}
+                                </Meta>
+                            )}
                             {live.totalLayers > 0 && (
                                 <Meta icon={<Layers />}>
                                     {m.preview_layer({ n: live.currLayer, total: live.totalLayers })}
@@ -334,7 +338,7 @@ function Stat({ icon, label, value, target }: { icon: React.ReactNode; label: st
             <dt
                 className={cn(
                     'flex items-center gap-1.5 text-xs text-muted-foreground [&_svg]:size-3.5',
-                    heating && '[&_svg]:text-primary',
+                    heating && '[&_svg]:text-primary-strong',
                 )}
             >
                 {icon}
@@ -374,7 +378,7 @@ function IconButton({
             className={cn(
                 'flex size-9 items-center justify-center rounded-full bg-secondary outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-4',
                 destructive ? 'hover:bg-destructive hover:text-white' : 'hover:bg-accent',
-                pressed && 'text-primary',
+                pressed && 'text-primary-strong',
                 className,
             )}
         />

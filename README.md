@@ -98,7 +98,7 @@ every port listens on all interfaces).
 1. On the printer: Settings → **Enable LAN mode**.
 2. Dashboard → **Add a printer** → enter the IP. A Moonraker port is assigned (`7125`, `7126`, …).
 3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`
-   (or open **Connect OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
+   (or open **Settings → OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
    Click *Test*, then confirm: the **Device** tab now shows the printer and *Print* sends the G-code to FarolPrint.
 
 The OrcaSlicer **Device** tab only targets the printer: send a job, follow progress, pause / cancel, sync the ACE

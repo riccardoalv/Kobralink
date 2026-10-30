@@ -15,7 +15,7 @@ function cssColor(name: string, fallback: string) {
 
 function readColors(): ThemeColors {
     return {
-        primary: cssColor('--primary', '#10b981'),
+        primary: cssColor('--primary-strong', '#b5cbf3'),
         muted: cssColor('--muted-foreground', '#888888'),
         border: cssColor('--border', '#444444'),
     };

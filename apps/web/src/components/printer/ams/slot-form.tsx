@@ -92,7 +92,7 @@ function SlotFormInner({
                 else delete map[String(slot.globalIndex)];
                 tasks.push(api.spoolman.setSlots(printerId, map));
             }
-            if (v.localSpoolId !== currentLocal) {
+            if (!spoolmanOn && v.localSpoolId !== currentLocal) {
                 tasks.push(api.spools.assign(printerId, { [String(slot.globalIndex)]: v.localSpoolId || null }));
             }
             await Promise.all(tasks);
@@ -294,7 +294,7 @@ function SlotFormInner({
                         )}
                     </form.Field>
                 )}
-                {(localSpools.data?.length ?? 0) > 0 && (
+                {!spoolmanOn && (localSpools.data?.length ?? 0) > 0 && (
                     <form.Field name="localSpoolId">
                         {(field) => (
                             <div className="grid gap-2">

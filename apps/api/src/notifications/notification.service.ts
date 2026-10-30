@@ -4,6 +4,7 @@ import type { FarolPrintEvent, FarolPrintEventType, NotificationSettings, Printe
 import { Injectable, Logger } from '@nestjs/common';
 import type { BridgeDomainEvent, CommandRefused, PrinterBridge } from '../bridge/printer-bridge';
 import { m, runWithLocale } from '../i18n/locale';
+import { maintenanceTaskName } from '../maintenance/preset-names';
 import { SettingsService } from '../settings/settings.service';
 
 const HISTORY_MAX = 200;
@@ -271,7 +272,7 @@ function describe(type: FarolPrintEventType, printer: string, d: EventData): { t
             return {
                 title: m.notify_maintenance_due_title({ printer }),
                 body: m.notify_maintenance_due_body({
-                    task: String(d.task ?? ''),
+                    task: maintenanceTaskName({ name: String(d.task ?? ''), presetKey: String(d.presetKey ?? '') }),
                     hours: String(d.hours ?? 0),
                     jobs: String(d.jobs ?? 0),
                 }),

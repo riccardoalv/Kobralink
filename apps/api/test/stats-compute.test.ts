@@ -131,3 +131,110 @@ describe('StatsService.exportCsv', () => {
         expect(csv.trimEnd().split('\r\n')).toHaveLength(7);
     });
 });
+
+describe('StatsService.compute wasted filament', () => {
+    let waste: TestDb;
+    const pricedFilament = appSettingsSchema.parse({ currency: 'EUR', filamentPricePerKg: 20 });
+
+    beforeAll(async () => {
+        waste = await testDb();
+        await seedPrinter(waste.client, 'w1', 'Waste');
+        const paused = new Date(Date.now() - 3_600_000);
+        await seedJob(waste.client, 'w1', { filename: 'ok.gcode', filamentMm: 5000, startedAt: at(1) });
+        await seedJob(waste.client, 'w1', { filename: 'cancel.gcode', status: 'cancelled', filamentMm: 2000 });
+        await seedJob(waste.client, 'w1', { filename: 'lost.gcode', status: 'error', filamentMm: 500 });
+        await seedJob(waste.client, 'w1', {
+            filename: 'runout.gcode',
+            status: 'cancelled',
+            filamentMm: 3000,
+            pausedAt: paused,
+        });
+        await seedJob(waste.client, 'w1', {
+            filename: 'abandoned.gcode',
+            status: 'error',
+            filamentMm: 0,
+            pausedAt: paused,
+        });
+        await seedJob(waste.client, 'w1', {
+            filename: 'resumed.gcode',
+            filamentMm: 4000,
+            pausedAt: paused,
+        });
+        await seedJob(waste.client, 'w1', {
+            filename: 'live.gcode',
+            status: 'printing',
+            filamentMm: 100,
+            pausedAt: paused,
+        });
+    });
+
+    afterAll(() => waste.close());
+
+    it('splits the filament of unfinished prints between paused and cancelled ones', async () => {
+        current = pricedFilament;
+        const stats = await new StatsService(waste.prisma, settings).compute('w1', 30);
+        expect(stats.waste.paused).toMatchObject({ jobs: 2, filamentMm: 3000 });
+        expect(stats.waste.cancelled).toMatchObject({ jobs: 2, filamentMm: 2500 });
+    });
+
+    it('weighs and prices the waste like the rest of the filament', async () => {
+        current = pricedFilament;
+        const stats = await new StatsService(waste.prisma, settings).compute('w1', 30);
+        const perMm = stats.totalFilamentG / stats.totalFilamentMm;
+        expect(stats.waste.paused.weightG).toBeCloseTo(3000 * perMm, 0);
+        expect(stats.waste.cancelled.weightG).toBeCloseTo(2500 * perMm, 0);
+        expect(stats.waste.paused.filamentCost).toBeCloseTo((stats.waste.paused.weightG * 20) / 1000, 1);
+        expect(stats.waste.cancelled.filamentCost).toBeGreaterThan(0);
+    });
+
+    it('reports no waste without unfinished prints', async () => {
+        current = unpriced;
+        const stats = await new StatsService(db.prisma, settings).compute('p2', 30);
+        expect(stats.waste).toEqual({
+            paused: { jobs: 0, filamentMm: 0, weightG: 0, filamentCost: 0 },
+            cancelled: { jobs: 0, filamentMm: 0, weightG: 0, filamentCost: 0 },
+        });
+    });
+
+    it('leaves the waste unpriced without a filament price', async () => {
+        current = unpriced;
+        const stats = await new StatsService(waste.prisma, settings).compute('w1', 30);
+        expect(stats.waste.paused.filamentCost).toBe(0);
+        expect(stats.waste.paused.weightG).toBeGreaterThan(0);
+    });
+});
+
+describe('StatsService.compute with printer profiles', () => {
+    let profiled: TestDb;
+
+    beforeAll(async () => {
+        profiled = await testDb();
+        await seedPrinter(profiled.client, 'pp', 'Profiled');
+        await profiled.client.printer.update({
+            where: { id: 'pp' },
+            data: {
+                settings: JSON.stringify({ profile: { powerW: 400, purchasePrice: 2000, lifespanHours: 4000 } }),
+            },
+        });
+        await seedJob(profiled.client, 'pp', { durationSec: 7200 });
+    });
+
+    afterAll(() => profiled.close());
+
+    it('prices energy and machine time with the printer power draw and depreciation', async () => {
+        current = appSettingsSchema.parse({
+            currency: 'EUR',
+            costs: { energyPricePerKwh: 0.5, printerPowerW: 100, hourlyRate: 1 },
+        });
+        const stats = await new StatsService(profiled.prisma, settings).compute('pp', 30);
+        expect(stats.energyCost).toBe(0.4);
+        expect(stats.machineCost).toBe(3);
+    });
+
+    it('prices a printer with only a depreciation even without other costs', async () => {
+        current = unpriced;
+        const stats = await new StatsService(profiled.prisma, settings).compute('pp', 30);
+        expect(stats.machineCost).toBe(1);
+        expect(stats.totalCost).toBe(1);
+    });
+});

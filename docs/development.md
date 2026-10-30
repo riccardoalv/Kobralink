@@ -71,6 +71,20 @@ Tests are written in the same change as the code, never in a follow-up.
 - Payloads in tests come from real printers and are **anonymized**: no MQTT credentials, device IDs, tokens, serial
   numbers or public IPs.
 - Web tests render components with Testing Library in happy-dom; the locale is set to English in `src/test/setup.ts`.
+  `renderWithProviders(ui, { queryClient, path })` (`src/test/render.tsx`) wraps a component in a router and a query
+  client: pass a client prefilled with `setQueryData` for pages that read the cache (settings, session role), and a
+  `path` to check which link is active. Stores that read `localStorage` at import are tested by resetting the module
+  (`vi.resetModules()`) and importing them again.
+
+## Theme
+
+Light and dark themes follow the device, and the user can force one from Settings → General or the account menu
+(`src/stores/theme.ts`, kept per browser). An inline script in `index.html` applies the theme before React starts so
+the page never flashes the wrong colours. Components use only the colour tokens in `src/styles.css` (`bg-card`,
+`text-muted-foreground`, `bg-primary`…), never fixed palette colours, so both themes stay readable; when a fixed colour
+is unavoidable, give it a `dark:` variant. The primary colour is a pastel: use `bg-primary` with
+`text-primary-foreground` for filled elements, and `text-primary-strong` (never `text-primary`) for text and icons in the
+brand colour, which is a deeper shade in the light theme.
 
 ## Style and hooks
 
