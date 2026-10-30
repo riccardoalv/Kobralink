@@ -192,7 +192,7 @@ export class NotificationService extends EventEmitter<{
             embeds: [
                 {
                     title: event.title,
-                    description: event.body,
+                    description: event.url ? `${event.body}\n\n[${this.openLabel()}](${event.url})` : event.body,
                     ...(event.url ? { url: event.url } : {}),
                     color,
                     footer: { text: event.printerName },
@@ -221,16 +221,20 @@ export class NotificationService extends EventEmitter<{
               ? 'white_check_mark'
               : 'printer';
         return this.post(url, event.body, {
-            Title: event.title,
+            Title: headerValue(event.title),
             Tags: tags,
             Priority: event.type.startsWith('alert') ? '4' : '3',
-            ...(event.url ? { Click: event.url } : {}),
+            ...(event.url ? { Click: event.url, Actions: headerValue(`view, ${this.openLabel()}, ${event.url}`) } : {}),
         });
     }
 }
 
 function escapeMd(s: string): string {
     return s.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, (c) => `\\${c}`);
+}
+
+export function headerValue(s: string): string {
+    return /^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${Buffer.from(s, 'utf8').toString('base64')}?=`;
 }
 
 function escapeUrl(s: string): string {

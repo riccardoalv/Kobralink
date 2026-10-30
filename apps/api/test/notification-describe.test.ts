@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test';
 import { type AppSettings, appSettingsSchema, eventLinkPath as linkPath } from '@farolprint/shared';
 import { installI18n } from '../src/i18n/locale';
-import { eventUrl, NotificationService } from '../src/notifications/notification.service';
+import { eventUrl, headerValue, NotificationService } from '../src/notifications/notification.service';
 import type { SettingsService } from '../src/settings/settings.service';
 
 installI18n();
@@ -162,10 +162,21 @@ describe('notification links', () => {
                 (calls.find((c) => c.url.includes(host))?.init.headers ?? {}) as Record<string, string>;
             expect(JSON.parse(body('hook.test')).url).toBe('http://farol.lan/queue');
             expect(JSON.parse(body('discord.test')).embeds[0].url).toBe('http://farol.lan/queue');
+            expect(JSON.parse(body('discord.test')).embeds[0].description).toContain(
+                '[Open in FarolPrint](http://farol.lan/queue)',
+            );
             expect(JSON.parse(body('api.telegram.org')).text).toContain('[Open in FarolPrint](http://farol.lan/queue)');
             expect(headers('ntfy.test').Click).toBe('http://farol.lan/queue');
+            expect(headers('ntfy.test').Actions).toBe('view, Open in FarolPrint, http://farol.lan/queue');
         } finally {
             globalThis.fetch = realFetch;
         }
+    });
+});
+
+describe('headerValue', () => {
+    it('keeps plain text and encodes the rest for ntfy headers', () => {
+        expect(headerValue('Kobra - queue')).toBe('Kobra - queue');
+        expect(headerValue('Kobra — fila')).toBe(`=?UTF-8?B?${Buffer.from('Kobra — fila').toString('base64')}?=`);
     });
 });
