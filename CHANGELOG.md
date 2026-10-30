@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/riccardoalv/farolprint/compare/v0.11.0...v0.12.0) (2026-10-30)
+
+
+### Features
+
+* redesign the dashboard with one queue, richer statistics and automations ([#32](https://github.com/riccardoalv/farolprint/issues/32)) ([ac90f22](https://github.com/riccardoalv/farolprint/commit/ac90f222a08adeaf21144d5b23060fcbbe20f63b))
+
 ## [0.11.0](https://github.com/riccardoalv/farolprint/compare/v0.10.0...v0.11.0) (2026-10-28)
 
 
