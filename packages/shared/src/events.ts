@@ -12,6 +12,7 @@ export type FarolPrintEventType =
     | 'alert_spool_low'
     | 'alert_print_failure'
     | 'queue_next'
+    | 'queue_filament'
     | 'scheduled_print'
     | 'maintenance_due';
 

@@ -85,6 +85,8 @@ model Printer {
   model                 String                 @default("Anycubic Kobra X")
   httpPort              Int                    @unique
   settings              String                 @default("{}")
+  awaitingBedClear      Boolean                @default(false)
+  maintenance           Boolean                @default(false)
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   files                 GcodeFile[]
@@ -190,6 +192,14 @@ model GcodeFile {
   objects          String      @default("[]")
   svgImage         String?
   webUnverified    Boolean     @default(false)
+  printerModel     String      @default("")
+  nozzleMm         Float?
+  bedX             Float?
+  bedY             Float?
+  extentX          Float?
+  extentY          Float?
+  maxZ             Float?
+  metaVersion      Int         @default(0)
   createdAt        DateTime    @default(now())
   jobs             PrintJob[]
   queueItems       QueueItem[]
@@ -244,8 +254,9 @@ model Timelapse {
 
 model QueueItem {
   id              String    @id @default(cuid())
-  printerId       String
-  printer         Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  printerId       String?
+  printer         Printer?  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  targetTags      String    @default("[]")
   fileId          String
   file            GcodeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
   position        Int
@@ -253,7 +264,7 @@ model QueueItem {
   options         String    @default("{}")
   createdAt       DateTime  @default(now())
 
-  @@index([printerId, position])
+  @@index([position])
   @@map("queue_item")
 }
 

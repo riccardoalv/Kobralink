@@ -24,6 +24,13 @@ describe('notification texts', () => {
         expect(plain.body).toBe('Next file ready: a.gcode. Clear the bed, then start it.');
     });
 
+    it('describes an item held for lack of filament', () => {
+        const { svc } = service();
+        const held = svc.build('p1', 'Kobra', 'queue_filament', { filename: 'a.gcode' });
+        expect(held.title).toBe('Kobra — queue');
+        expect(held.body).toBe('a.gcode is on hold: the loaded filament will not last. Load or change a spool.');
+    });
+
     it('describes the three outcomes of a scheduled print', () => {
         const { svc } = service();
         const base = { filename: 'lid.gcode' };

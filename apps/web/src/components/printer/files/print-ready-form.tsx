@@ -4,6 +4,7 @@ import {
     type GcodeFilament,
     type GcodeFileDto,
     materialFamily,
+    type QueueTarget,
     type SlotFilamentInfo,
     slotUsableForPrint,
 } from '@farolprint/shared';
@@ -45,6 +46,12 @@ import { filamentSlotsQuery, fileObjectsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { EXTERNAL_SLOT } from '../ams/external-spool-form';
+
+export function queueTargetFor(choice: string, printerId: string): QueueTarget {
+    if (choice === 'any') return { printerId: null, targetTags: [] };
+    if (choice.startsWith('tag:')) return { printerId: null, targetTags: [choice.slice(4)] };
+    return { printerId, targetTags: [] };
+}
 
 export interface PrintReadyResult {
     filamentAssignments?: FilamentAssignment[];
@@ -125,7 +132,7 @@ export function PrintReadyForm({
     printerId: string;
     file: GcodeFileDto;
     onPrint: (result: PrintReadyResult) => Promise<unknown>;
-    onQueue?: (result: PrintReadyResult) => void;
+    onQueue?: (result: PrintReadyResult, target: QueueTarget) => void;
     onSchedule?: (result: PrintReadyResult, startAt: string) => Promise<unknown>;
 }) {
     const state = useLiveState(printerId);
@@ -167,6 +174,7 @@ export function PrintReadyForm({
     const [scheduling, setScheduling] = useState(false);
     const [startAt, setStartAt] = useState('');
     const [acceptShort, setAcceptShort] = useState(false);
+    const [queueChoice, setQueueChoice] = useState('this');
     const spoolOf = useSpoolLookup(printerId);
 
     useEffect(() => {
@@ -506,18 +514,34 @@ export function PrintReadyForm({
                         </Button>
                     )}
                     {onQueue && (
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            className="rounded-full"
-                            disabled={shortBlocked}
-                            onClick={() => {
-                                close();
-                                onQueue(build());
-                            }}
-                        >
-                            <ListPlus /> {m.queue_add()}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Select value={queueChoice} onValueChange={setQueueChoice}>
+                                <SelectTrigger className="w-44 rounded-full" aria-label={m.queue_target_label()}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="this">{m.queue_target_this()}</SelectItem>
+                                    <SelectItem value="any">{m.queue_target_any()}</SelectItem>
+                                    {(printer?.settings.profile.tags ?? []).map((tag) => (
+                                        <SelectItem key={tag} value={`tag:${tag}`}>
+                                            {m.queue_target_tag({ tag })}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="rounded-full"
+                                disabled={shortBlocked}
+                                onClick={() => {
+                                    close();
+                                    onQueue(build(), queueTargetFor(queueChoice, printerId));
+                                }}
+                            >
+                                <ListPlus /> {m.queue_add()}
+                            </Button>
+                        </div>
                     )}
                     <Button
                         type="button"

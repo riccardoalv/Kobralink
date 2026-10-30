@@ -19,6 +19,7 @@ export interface StoredFile extends GcodeFileDto {
 }
 
 const ALLOWED_EXT = ['.gcode', '.bgcode'];
+export const META_VERSION = 1;
 
 @Injectable()
 export class GcodeService implements OnApplicationBootstrap {
@@ -96,6 +97,8 @@ export class GcodeService implements OnApplicationBootstrap {
                 filaments: JSON.stringify(meta.filaments),
                 objects: JSON.stringify(meta.objects),
                 webUnverified,
+                ...meta.target,
+                metaVersion: META_VERSION,
             },
             update: {
                 printerId: printerId ?? undefined,
@@ -108,6 +111,8 @@ export class GcodeService implements OnApplicationBootstrap {
                 filaments: JSON.stringify(meta.filaments),
                 ...(meta.objects.length ? { objects: JSON.stringify(meta.objects) } : {}),
                 webUnverified,
+                ...meta.target,
+                metaVersion: META_VERSION,
                 createdAt: new Date(),
             },
         });

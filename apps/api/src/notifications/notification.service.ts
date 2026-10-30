@@ -25,6 +25,7 @@ const EVENT_FLAG: Record<FarolPrintEventType, keyof NotificationSettings['events
     alert_spool_low: 'alerts',
     alert_print_failure: 'printFailure',
     queue_next: 'queueNext',
+    queue_filament: 'queueNext',
     scheduled_print: 'scheduledPrint',
     maintenance_due: 'maintenanceDue',
 };
@@ -258,6 +259,8 @@ function describe(type: FarolPrintEventType, printer: string, d: EventData): { t
                     ? m.notify_queue_next_body_bed_clear({ filename })
                     : m.notify_queue_next_body({ filename }),
             };
+        case 'queue_filament':
+            return { title: m.notify_queue_next_title({ printer }), body: m.notify_queue_filament_body({ filename }) };
         case 'scheduled_print': {
             const result = String(d.result ?? 'started');
             const body =

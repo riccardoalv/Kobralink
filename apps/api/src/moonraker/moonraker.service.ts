@@ -426,7 +426,7 @@ export class MoonrakerService {
     }
 
     async jobQueueStatus() {
-        const items = await this.queue.list(this.bridge.id);
+        const items = await this.queue.listFor(this.bridge.id);
         return {
             queued_jobs: items.map((i) => ({
                 filename: i.filename,

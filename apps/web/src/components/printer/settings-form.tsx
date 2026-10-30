@@ -330,6 +330,13 @@ export function PrinterSettingsForm({
                             </Row>
                         )}
                     </form.Field>
+                    <form.Field name="settings.lightTrigger">
+                        {(field) => (
+                            <Row label={m.settings_light_trigger()} hint={m.settings_light_trigger_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
                     <form.Field name="settings.deletePrinterFileAfterPrint">
                         {(field) => (
                             <Row label={m.settings_delete_after_print()} hint={m.settings_delete_after_print_hint()}>

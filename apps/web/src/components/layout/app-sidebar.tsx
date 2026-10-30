@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { useStore } from '@tanstack/react-store';
 import { ChevronsUpDown, Ellipsis, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { NAV_ITEMS, type NavItem, SETTINGS_ITEM } from '@/components/layout/nav-items';
+import { MOBILE_ITEMS, MORE_ITEMS, NAV_ITEMS, type NavItem, SETTINGS_ITEM } from '@/components/layout/nav-items';
 import { initials, type MenuUser, UserMenu } from '@/components/layout/user-menu';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -117,13 +117,13 @@ function MobileNav({ user }: { user: MenuUser }) {
             aria-label={m.nav_main()}
             className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 flex h-16 items-stretch gap-1 rounded-3xl bg-sidebar px-2 shadow-xl shadow-black/30 md:hidden"
         >
-            {NAV_ITEMS.map((item) => (
+            {MOBILE_ITEMS.map((item) => (
                 <Link key={item.to} to={item.to} className={mobileLink}>
                     <item.icon />
                     <span className="max-w-full truncate">{item.label()}</span>
                 </Link>
             ))}
-            <UserMenu user={user} side="top" links={[SETTINGS_ITEM]}>
+            <UserMenu user={user} side="top" links={MORE_ITEMS}>
                 <button type="button" className={mobileLink}>
                     <Ellipsis />
                     <span>{m.nav_more()}</span>

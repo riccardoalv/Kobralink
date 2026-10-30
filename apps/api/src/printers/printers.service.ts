@@ -39,6 +39,8 @@ export class PrintersService {
             model: p.model,
             httpPort: p.httpPort,
             settings: PrintersService.parseSettings(p.settings),
+            maintenance: p.maintenance,
+            awaitingBedClear: p.awaitingBedClear,
             createdAt: p.createdAt.toISOString(),
         };
     }

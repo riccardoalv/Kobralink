@@ -11,53 +11,97 @@ import { QueueController } from '../src/queue/queue.controller';
 import type { QueueService } from '../src/queue/queue.service';
 import { ScheduledPrintController } from '../src/schedule/scheduled-print.controller';
 import type { ScheduledPrintService } from '../src/schedule/scheduled-print.service';
+import { LibraryController } from '../src/stats/library.controller';
 import { StatsController } from '../src/stats/stats.controller';
 import type { StatsService } from '../src/stats/stats.service';
 
 describe('QueueController', () => {
     const queue = {
-        status: mock(async () => ({ awaitingBedClear: true, nextFilename: 'a.gcode' })),
+        status: mock(async () => ({ awaitingBedClear: true, maintenance: false, nextFilename: 'a.gcode' })),
         confirmBedClear: mock(async () => ({ id: 'q1' })),
         startNext: mock(async () => ({ id: 'q1' })),
         add: mock(async () => ({ id: 'q2' })),
+        check: mock(async () => ({ ok: true, printers: [] })),
+        list: mock(async () => []),
+        listFor: mock(async () => []),
+        reorder: mock(async () => []),
+        remove: mock(async () => undefined),
+        clear: mock(async () => undefined),
+        setMaintenance: mock(async () => ({ awaitingBedClear: false, maintenance: true, nextFilename: null })),
     };
     const ctrl = new QueueController(queue as unknown as QueueService);
 
-    it('exposes the hold and confirms the bed is clear', async () => {
-        expect(await ctrl.status('p1')).toEqual({ awaitingBedClear: true, nextFilename: 'a.gcode' });
-        expect(await ctrl.bedClear('p1')).toEqual({ id: 'q1' });
-        expect(queue.confirmBedClear).toHaveBeenCalledWith('p1');
+    it('exposes the hold and confirms the bed is clear with a rating', async () => {
+        expect(await ctrl.status('p1')).toEqual({
+            awaitingBedClear: true,
+            maintenance: false,
+            nextFilename: 'a.gcode',
+        });
+        expect(await ctrl.bedClear('p1', {})).toEqual({ started: { id: 'q1' } });
+        expect(queue.confirmBedClear).toHaveBeenCalledWith('p1', 'good');
+        await ctrl.bedClear('p1', { outcome: 'bad' });
+        expect(queue.confirmBedClear).toHaveBeenLastCalledWith('p1', 'bad');
     });
 
     it('turns a failed start into a 502', async () => {
         queue.confirmBedClear.mockImplementationOnce(async () => {
             throw new Error('printer busy');
         });
-        await expect(ctrl.bedClear('p1')).rejects.toBeInstanceOf(BadGatewayException);
+        await expect(ctrl.bedClear('p1', {})).rejects.toBeInstanceOf(BadGatewayException);
         queue.startNext.mockImplementationOnce(async () => {
             throw new Error('offline');
         });
         await expect(ctrl.start('p1')).rejects.toBeInstanceOf(BadGatewayException);
     });
 
-    it('defaults the excluded objects when adding', async () => {
-        await ctrl.add('p1', { fileId: 'f1' });
-        expect(queue.add).toHaveBeenCalledWith('p1', 'f1', [], false, {});
+    it('adds to the single queue for any printer, a printer or tags', async () => {
+        await ctrl.add({ fileId: 'f1' });
+        expect(queue.add).toHaveBeenLastCalledWith('f1', [], false, {}, { printerId: null, targetTags: [] });
+        await ctrl.add({ fileId: 'f1', targetTags: ['petg'], excludedObjects: ['cube'], timelapse: true });
+        expect(queue.add).toHaveBeenLastCalledWith(
+            'f1',
+            ['cube'],
+            false,
+            { timelapse: true },
+            { printerId: null, targetTags: ['petg'] },
+        );
+        await ctrl.add({ fileId: 'f1', printerId: 'p2', targetTags: ['petg'] });
+        expect(queue.add).toHaveBeenLastCalledWith('f1', [], false, {}, { printerId: 'p2', targetTags: [] });
     });
 
-    it('passes the print options of the dialog to the queue', async () => {
-        await ctrl.add('p1', {
+    it('adds from a printer page for that printer, with the dialog options', async () => {
+        await ctrl.addFor('p1', {
             fileId: 'f1',
             excludedObjects: ['cube'],
             autoLeveling: false,
             vibrationCompensation: false,
-            timelapse: true,
         });
-        expect(queue.add).toHaveBeenLastCalledWith('p1', 'f1', ['cube'], false, {
-            autoLeveling: false,
-            vibrationCompensation: false,
-            timelapse: true,
-        });
+        expect(queue.add).toHaveBeenLastCalledWith(
+            'f1',
+            ['cube'],
+            false,
+            { autoLeveling: false, vibrationCompensation: false },
+            { printerId: 'p1', targetTags: [] },
+        );
+    });
+
+    it('checks, lists, reorders, removes, clears and toggles maintenance', async () => {
+        await ctrl.check({ fileId: 'f1', targetTags: ['a'] });
+        expect(queue.check).toHaveBeenLastCalledWith('f1', { printerId: null, targetTags: ['a'] });
+        await ctrl.list();
+        await ctrl.listFor('p1');
+        expect(queue.listFor).toHaveBeenCalledWith('p1');
+        await ctrl.reorder({ ids: ['b', 'a'] });
+        expect(queue.reorder).toHaveBeenCalledWith(['b', 'a']);
+        await ctrl.removeItem('q1');
+        await ctrl.remove('q2');
+        expect(queue.remove).toHaveBeenCalledTimes(2);
+        await ctrl.clearAll();
+        expect(queue.clear).toHaveBeenLastCalledWith();
+        await ctrl.clear('p1');
+        expect(queue.clear).toHaveBeenLastCalledWith('p1');
+        expect((await ctrl.maintenance('p1', { enabled: true })).maintenance).toBe(true);
+        expect(queue.setMaintenance).toHaveBeenCalledWith('p1', true);
     });
 });
 
@@ -192,5 +236,25 @@ describe('request validation of the new bodies', () => {
         });
         expect(() => pipe.transform({ fileId: 'f1', startAt: 'tomorrow' })).toThrow(BadRequestException);
         expect(() => pipe.transform({ startAt: '2026-11-01T08:00:00.000Z' })).toThrow(BadRequestException);
+    });
+});
+
+describe('LibraryController', () => {
+    const gcode = { list: mock(async () => [{ id: 'f1' }]) };
+    const stats = { history: mock(async () => []) };
+    const ctrl = new LibraryController(gcode as unknown as GcodeService, stats as unknown as StatsService);
+
+    it('lists every stored file', async () => {
+        expect(await ctrl.files()).toEqual([{ id: 'f1' }]);
+        expect(gcode.list).toHaveBeenCalledWith();
+    });
+
+    it('lists the history of every printer or of one, with bounded paging', async () => {
+        await ctrl.history();
+        expect(stats.history).toHaveBeenLastCalledWith(undefined, 50, 0);
+        await ctrl.history('p1', '999', '20');
+        expect(stats.history).toHaveBeenLastCalledWith('p1', 200, 20);
+        await ctrl.history('', 'x', 'y');
+        expect(stats.history).toHaveBeenLastCalledWith(undefined, 50, 0);
     });
 });

@@ -70,7 +70,16 @@ export class ScheduledPrintService implements OnModuleInit {
         const idle = s.connected && s.printState !== 'printing' && s.printState !== 'paused';
         if (!idle) {
             const { excludedObjects, ...queued } = options;
-            await this.queue.add(row.printerId, row.fileId, excludedObjects ?? [], true, queued).catch(() => null);
+            await this.queue
+                .add(
+                    row.fileId,
+                    excludedObjects ?? [],
+                    true,
+                    queued,
+                    { printerId: row.printerId, targetTags: [] },
+                    false,
+                )
+                .catch(() => null);
             this.log.warn(`Scheduled print ${row.file.filename} queued: printer busy or offline`);
             this.notify(bridge, row.file.filename, 'queued');
             return;

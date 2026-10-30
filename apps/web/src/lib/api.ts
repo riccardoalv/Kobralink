@@ -32,6 +32,8 @@ import type {
     PrinterSample,
     PrintJobDto,
     PrintPrinterFileInput,
+    QueueCheckDto,
+    QueueCheckInput,
     QueueItemDto,
     QueueStatusDto,
     ScheduleDryInput,
@@ -231,19 +233,24 @@ export const api = {
         `/api/v1/stats/export.csv?printerId=${encodeURIComponent(printerId ?? '')}&days=${days}`,
 
     queue: {
+        all: () => request<QueueItemDto[]>('/api/v1/queue'),
         list: (printerId: string) => request<QueueItemDto[]>(`/api/v1/printers/${printerId}/queue`),
         status: (printerId: string) => request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/status`),
-        bedClear: (printerId: string) =>
-            request<QueueItemDto>(`/api/v1/printers/${printerId}/queue/bed-clear`, { method: 'POST' }),
-        add: (printerId: string, input: AddQueueItemInput) =>
-            request<QueueItemDto>(`/api/v1/printers/${printerId}/queue`, json(input)),
-        reorder: (printerId: string, ids: string[]) =>
-            request<QueueItemDto[]>(`/api/v1/printers/${printerId}/queue/reorder`, json({ ids })),
+        bedClear: (printerId: string, outcome: 'good' | 'bad' = 'good') =>
+            request<{ started: QueueItemDto | null }>(
+                `/api/v1/printers/${printerId}/queue/bed-clear`,
+                json({ outcome }),
+            ),
+        maintenance: (printerId: string, enabled: boolean) =>
+            request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/maintenance`, json({ enabled })),
+        add: (input: AddQueueItemInput) => request<QueueItemDto>('/api/v1/queue', json(input)),
+        check: (input: QueueCheckInput) => request<QueueCheckDto>('/api/v1/queue/check', json(input)),
+        reorder: (ids: string[]) => request<QueueItemDto[]>('/api/v1/queue/reorder', json({ ids })),
         start: (printerId: string) =>
             request<QueueItemDto>(`/api/v1/printers/${printerId}/queue/start`, { method: 'POST' }),
-        remove: (printerId: string, itemId: string) =>
-            request<void>(`/api/v1/printers/${printerId}/queue/${itemId}`, { method: 'DELETE' }),
-        clear: (printerId: string) => request<void>(`/api/v1/printers/${printerId}/queue`, { method: 'DELETE' }),
+        remove: (itemId: string) => request<void>(`/api/v1/queue/${itemId}`, { method: 'DELETE' }),
+        clear: (printerId?: string) =>
+            request<void>(printerId ? `/api/v1/printers/${printerId}/queue` : '/api/v1/queue', { method: 'DELETE' }),
     },
 
     macros: {
@@ -351,7 +358,10 @@ export const api = {
     },
 
     files: {
+        all: () => request<GcodeFileDto[]>('/api/v1/files'),
         list: (id: string) => request<GcodeFileDto[]>(`/api/v1/printers/${id}/files`),
+        historyAll: (printerId?: string, limit = 100) =>
+            request<PrintJobDto[]>(`/api/v1/history?printerId=${encodeURIComponent(printerId ?? '')}&limit=${limit}`),
         upload: (id: string, file: File, print: boolean) => {
             const fd = new FormData();
             fd.append('file', file, file.name);

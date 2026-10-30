@@ -135,9 +135,11 @@ describe('useFileActions queueing', () => {
             filamentAssignments: [{ paintIndex: 0, slotIndex: 2, isUsed: true }],
         };
         await act(async () => {
-            props.onQueue?.(chosen);
+            props.onQueue?.(chosen, { printerId: 'p1', targetTags: [] });
         });
-        await waitFor(() => expect(queueAdd).toHaveBeenCalledWith('p1', { fileId: 'f1', ...chosen }));
+        await waitFor(() =>
+            expect(queueAdd).toHaveBeenCalledWith({ fileId: 'f1', ...chosen, printerId: 'p1', targetTags: [] }),
+        );
         await waitFor(() => expect(toast.success).toHaveBeenCalledOnce());
     });
 });

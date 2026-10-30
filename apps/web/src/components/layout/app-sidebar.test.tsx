@@ -49,7 +49,16 @@ describe('AppSidebar', () => {
     it('labels every section and the user', async () => {
         await renderWithProviders(<AppSidebar user={user} />);
         const aside = desktop();
-        for (const label of [m.nav_home(), m.nav_filament(), m.nav_stats(), m.nav_settings()]) {
+        for (const label of [
+            m.nav_home(),
+            m.nav_queue(),
+            m.nav_files(),
+            m.nav_history(),
+            m.nav_filament(),
+            m.nav_stats(),
+            m.nav_maintenance(),
+            m.nav_settings(),
+        ]) {
             expect(within(aside).getByRole('link', { name: label })).toBeTruthy();
         }
         expect(within(aside).getByText('Ada Lovelace')).toBeTruthy();
@@ -78,13 +87,17 @@ describe('AppSidebar', () => {
     it('shows the sections and a More menu on phones', async () => {
         await renderWithProviders(<AppSidebar user={user} />);
         const nav = mobileNav();
-        for (const label of [m.nav_home(), m.nav_filament(), m.nav_stats()]) {
+        for (const label of [m.nav_home(), m.nav_queue(), m.nav_files(), m.nav_stats()]) {
             expect(within(nav).getByRole('link', { name: label })).toBeTruthy();
         }
         expect(within(nav).queryByRole('link', { name: m.nav_settings() })).toBeNull();
+        expect(within(nav).queryByRole('link', { name: m.nav_filament() })).toBeNull();
         await userEvent.click(within(nav).getByRole('button', { name: m.nav_more() }));
         const settings = await screen.findByRole('menuitem', { name: m.nav_settings() });
         expect(settings.getAttribute('href')).toBe('/settings');
+        for (const label of [m.nav_history(), m.nav_filament(), m.nav_maintenance()]) {
+            expect(screen.getByRole('menuitem', { name: label })).toBeTruthy();
+        }
         expect(screen.getByRole('menuitem', { name: m.nav_logout() })).toBeTruthy();
     });
 

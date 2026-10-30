@@ -72,8 +72,8 @@ describe('openPrintReadyDialog', () => {
     it('queues the file with every option chosen in the dialog', async () => {
         const { opened, props } = await openFor('bracket.gcode');
         expect(opened).toBe(true);
-        await props?.onQueue?.(chosen);
-        expect(queueAdd).toHaveBeenCalledWith('p1', { fileId: 'f1', ...chosen });
+        await props?.onQueue?.(chosen, { printerId: null, targetTags: ['petg'] });
+        expect(queueAdd).toHaveBeenCalledWith({ fileId: 'f1', ...chosen, printerId: null, targetTags: ['petg'] });
         expect(clearFileReady).toHaveBeenCalledWith('p1');
         expect(toast.success).toHaveBeenCalledOnce();
     });
@@ -87,7 +87,7 @@ describe('openPrintReadyDialog', () => {
     it('reports a failed queue add', async () => {
         queueAdd.mockRejectedValueOnce(new Error('queue full'));
         const { props } = await openFor('bracket.gcode');
-        await props?.onQueue?.(chosen);
+        await props?.onQueue?.(chosen, { printerId: 'p1', targetTags: [] });
         expect(toast.error).toHaveBeenCalledWith('queue full');
     });
 

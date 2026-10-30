@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { createCipheriv } from 'node:crypto';
 import { decryptInfo, generateSignature } from '../src/credentials';
-import { extractFilamentInfo, extractThumbnail, parseEstimatedTime, parseLayerHeights } from '../src/gcode';
+import {
+    extractFilamentInfo,
+    extractPrintTarget,
+    extractThumbnail,
+    parseEstimatedTime,
+    parseLayerHeights,
+} from '../src/gcode';
 
 const sample = Buffer.from(
     [
@@ -93,5 +99,43 @@ describe('filament usage', () => {
     it('does not mistake the total for a filament', () => {
         const f = extractFilamentInfo(orca(['; total filament used [g] = 9.99', '; filament used [mm] = 10, 20']));
         expect(f.map((x) => x.usedMm)).toEqual([10, 20]);
+    });
+});
+
+describe('print target', () => {
+    const sliced = Buffer.from(
+        [
+            '; max_z_height: 42.60',
+            'EXCLUDE_OBJECT_DEFINE NAME=bracket CENTER=120,130 POLYGON=[[100,110],[140.25,110],[140.25,150.5],[100,150.5]]',
+            'EXCLUDE_OBJECT_DEFINE NAME=lid CENTER=60,60 POLYGON=[[40,40],[80,40],[80,80],[40,80]]',
+            'G1 X1',
+            '; printer_model = Anycubic Kobra 4',
+            '; nozzle_diameter = 0.4,0.4',
+            '; printable_area = 0x0,260x0,260x260,0x260',
+        ].join('\n'),
+    );
+
+    it('reads the printer, nozzle and bed the file was sliced for and the size of its parts', () => {
+        expect(extractPrintTarget(sliced)).toEqual({
+            printerModel: 'Anycubic Kobra 4',
+            nozzleMm: 0.4,
+            bedX: 260,
+            bedY: 260,
+            extentX: 140.3,
+            extentY: 150.5,
+            maxZ: 42.6,
+        });
+    });
+
+    it('leaves everything unknown in a file without slicer metadata', () => {
+        expect(extractPrintTarget(Buffer.from('G28\nG1 X10\n'))).toEqual({
+            printerModel: '',
+            nozzleMm: null,
+            bedX: null,
+            bedY: null,
+            extentX: null,
+            extentY: null,
+            maxZ: null,
+        });
     });
 });

@@ -1,27 +1,33 @@
 import type { PrinterWithLive } from '@/lib/api';
 import { m } from '@/lib/i18n';
 
-export const HOME_STATUSES = ['printing', 'paused', 'ready', 'error', 'offline'] as const;
+export const HOME_STATUSES = ['printing', 'paused', 'bed_clear', 'ready', 'error', 'maintenance', 'offline'] as const;
 export type HomeStatus = (typeof HOME_STATUSES)[number];
 
 export const HOME_STATUS_LABEL: Record<HomeStatus, () => string> = {
     printing: m.home_count_printing,
     paused: m.home_count_paused,
+    bed_clear: m.home_count_bed_clear,
     ready: m.home_count_ready,
     error: m.home_count_error,
+    maintenance: m.home_count_maintenance,
     offline: m.home_count_offline,
 };
 
-export function homeStatus(p: Pick<PrinterWithLive, 'live'>): HomeStatus {
+export function homeStatus(
+    p: Pick<PrinterWithLive, 'live'> & Partial<Pick<PrinterWithLive, 'maintenance' | 'awaitingBedClear'>>,
+): HomeStatus {
     const live = p.live;
     if (!live?.connected) return 'offline';
     if (live.printState === 'printing') return 'printing';
     if (live.printState === 'paused') return 'paused';
     if (live.printState === 'error') return 'error';
+    if (p.maintenance) return 'maintenance';
+    if (p.awaitingBedClear) return 'bed_clear';
     return 'ready';
 }
 
-export function countByStatus(printers: Pick<PrinterWithLive, 'live'>[]): Record<HomeStatus, number> {
+export function countByStatus(printers: Parameters<typeof homeStatus>[0][]): Record<HomeStatus, number> {
     const counts = Object.fromEntries(HOME_STATUSES.map((s) => [s, 0])) as Record<HomeStatus, number>;
     for (const p of printers) counts[homeStatus(p)] += 1;
     return counts;

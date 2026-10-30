@@ -165,7 +165,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
                 if (params.all) await this.moon.queue.clear(bridge.id);
                 else
                     for (const id of (params.job_ids as string[] | undefined) ?? [])
-                        await this.moon.queue.remove(bridge.id, String(id));
+                        await this.moon.queue.remove(String(id));
                 return this.moon.jobQueueStatus();
             }
             case 'server.job_queue.start':

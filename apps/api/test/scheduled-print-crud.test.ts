@@ -134,7 +134,7 @@ describe('scheduled prints', () => {
         });
         await service().onModuleInit();
         await sleep(250);
-        expect(queueAdd).toHaveBeenCalledWith('p1', 'f1', [], true, {});
+        expect(queueAdd).toHaveBeenCalledWith('f1', [], true, {}, { printerId: 'p1', targetTags: [] }, false);
         expect(printStoredFile).not.toHaveBeenCalled();
         expect(await db.client.scheduledPrint.findUnique({ where: { id: recent.id } })).toBeNull();
         expect(await db.client.scheduledPrint.findUnique({ where: { id: stale.id } })).toBeNull();

@@ -116,16 +116,18 @@ export class SpoolmanService implements OnModuleInit, OnModuleDestroy, FilamentU
         return spools;
     }
 
-    async describe(spoolId: string | number): Promise<SpoolmanPricing | null> {
+    async spools(): Promise<SpoolmanSpool[] | null> {
         if (!this.configured) return null;
         try {
-            const fresh =
-                this.cache && Date.now() - this.cache.at < CACHE_MS ? this.cache.spools : await this.listSpools();
-            const spool = fresh.find((s) => s.id === Number(spoolId));
-            return spool ? spoolmanPricing(spool) : null;
+            return this.cache && Date.now() - this.cache.at < CACHE_MS ? this.cache.spools : await this.listSpools();
         } catch {
             return null;
         }
+    }
+
+    async describe(spoolId: string | number): Promise<SpoolmanPricing | null> {
+        const spool = (await this.spools())?.find((s) => s.id === Number(spoolId));
+        return spool ? spoolmanPricing(spool) : null;
     }
 
     async useFilament(spoolId: string | number, lengthMm: number, printerId = ''): Promise<void> {

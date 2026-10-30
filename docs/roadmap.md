@@ -28,7 +28,7 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
 - Filament planning: the amount each colour needs is read from the G-code; the print dialog warns when a spool is
   short; the queue is simulated in order and holds an auto-start that would run out.
 
-## 4. Single queue
+## 4. Single queue (done, except the timeline, moved to later)
 
 - One queue for every printer. An item can only be added when a printer can take it (model, nozzle, build plate,
   materials and colours), and it says why it is waiting.
@@ -39,7 +39,7 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
   that would run out is held with a notification.
 - Opt-in light trigger: the light turned on three times within a short window on the printer screen confirms the bed
   is clear.
-- Pages: Queue (queued, scheduled, awaiting removal, timeline), Files (one library for every printer), History,
+- Pages: Queue (queued, awaiting removal, scheduled), Files, History (every printer, filterable by printer),
   Maintenance (all printers).
 
 ## 5. Statistics
@@ -58,5 +58,6 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
 
 ## Later
 
+- A queue timeline: when each queued item is expected to start and end on each printer.
 - Energy sensors (smart plugs through Home Assistant, or a plug's own API) measure each print's real consumption and
   replace the average draw entered in the printer profile.

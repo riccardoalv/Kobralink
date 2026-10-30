@@ -17,6 +17,11 @@ describe('homeStatus', () => {
         expect(homeStatus(printer('a', { printState: 'error' }))).toBe('error');
         expect(homeStatus(printer('a', { printState: 'standby' }))).toBe('ready');
         expect(homeStatus(printer('a', { printState: 'complete' }))).toBe('ready');
+        expect(homeStatus({ ...printer('a', { printState: 'standby' }), awaitingBedClear: true })).toBe('bed_clear');
+        expect(
+            homeStatus({ ...printer('a', { printState: 'standby' }), maintenance: true, awaitingBedClear: true }),
+        ).toBe('maintenance');
+        expect(homeStatus({ ...printer('a', { printState: 'printing' }), maintenance: true })).toBe('printing');
     });
 });
 
@@ -27,7 +32,15 @@ describe('countByStatus', () => {
             printer('b', { printState: 'printing' }),
             printer('c', null),
         ]);
-        expect(counts).toEqual({ printing: 2, paused: 0, ready: 0, error: 0, offline: 1 });
+        expect(counts).toEqual({
+            printing: 2,
+            paused: 0,
+            bed_clear: 0,
+            ready: 0,
+            error: 0,
+            maintenance: 0,
+            offline: 1,
+        });
     });
 });
 

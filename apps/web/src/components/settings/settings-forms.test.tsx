@@ -254,6 +254,28 @@ describe('editing the new settings', () => {
         expect(mocks.printerUpdate.mock.calls[0][1].settings.queueBedClearConfirm).toBe(false);
         expect(mocks.printerUpdate.mock.calls[0][1].settings.queueAutoStart).toBe(true);
     });
+
+    it('turns the light trigger on for a printer', async () => {
+        const printer = {
+            id: 'p1',
+            name: 'Kobra 4',
+            ip: '192.168.1.235',
+            httpPort: 7125,
+            deviceId: 'abcdef123456',
+            modeId: '20028',
+            username: 'user',
+            createdAt: '2026-10-20T00:00:00.000Z',
+            model: 'Anycubic Kobra 4',
+            settings: printerSettingsSchema.parse({}),
+            live: null,
+        } as unknown as PrinterWithLive;
+        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        expect(switchAfter(m.settings_light_trigger()).getAttribute('aria-checked')).toBe('false');
+        await userEvent.click(switchAfter(m.settings_light_trigger()));
+        await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+        await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
+        expect(mocks.printerUpdate.mock.calls[0][1].settings.lightTrigger).toBe(true);
+    });
 });
 
 describe('FarolPrint address', () => {

@@ -59,6 +59,7 @@ export const printerSettingsSchema = z.object({
     queueAutoStart: z.boolean().default(false),
     queueBedClearConfirm: z.boolean().default(true),
     failureDetection: z.boolean().default(true),
+    lightTrigger: z.boolean().default(false),
     alerts: alertSettingsSchema.default(alertSettingsSchema.parse({})),
     profile: printerProfileSchema.default(printerProfileSchema.parse({})),
 });
@@ -79,6 +80,8 @@ export const printerSchema = z.object({
     model: z.string(),
     httpPort: z.number().int(),
     settings: printerSettingsSchema,
+    maintenance: z.boolean().default(false),
+    awaitingBedClear: z.boolean().default(false),
     createdAt: z.string(),
 });
 export type Printer = z.infer<typeof printerSchema>;

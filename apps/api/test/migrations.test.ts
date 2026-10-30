@@ -186,3 +186,59 @@ describe('maintenance preset key migration', () => {
         }
     });
 });
+
+describe('single queue migration', () => {
+    it('merges the per-printer queues into one ordered queue', async () => {
+        const db = await testDb();
+        try {
+            expect(await columns(db.file, 'queue_item')).toEqual(expect.arrayContaining(['printerId', 'targetTags']));
+            expect(await columns(db.file, 'printer')).toEqual(
+                expect.arrayContaining(['awaitingBedClear', 'maintenance']),
+            );
+            expect(await columns(db.file, 'gcode_file')).toEqual(
+                expect.arrayContaining(['printerModel', 'nozzleMm', 'extentX', 'extentY', 'maxZ', 'metaVersion']),
+            );
+            await db.client.printer.create({
+                data: {
+                    id: 'p1',
+                    name: 'K',
+                    ip: '1.1.1.1',
+                    username: 'u',
+                    password: 'p',
+                    deviceId: 'd',
+                    httpPort: 17996,
+                },
+            });
+            await db.client.gcodeFile.create({ data: { id: 'f1', filename: 'a.gcode', sizeBytes: 1, md5: 'f1' } });
+            const anyPrinter = await db.client.queueItem.create({ data: { fileId: 'f1', position: 1 } });
+            expect(anyPrinter.printerId).toBeNull();
+            expect(anyPrinter.targetTags).toBe('[]');
+        } finally {
+            await db.close();
+        }
+    });
+
+    it('renumbers the old items by position then age', async () => {
+        const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, '20261030030000_single_queue/migration.sql'), 'utf8');
+        expect(sql).toContain('ROW_NUMBER() OVER (ORDER BY "position", "createdAt")');
+        const client = createClient({ url: ':memory:' });
+        await client.executeMultiple(`
+            CREATE TABLE "printer" ("id" TEXT PRIMARY KEY);
+            CREATE TABLE "gcode_file" ("id" TEXT PRIMARY KEY);
+            CREATE TABLE "queue_item" ("id" TEXT PRIMARY KEY, "printerId" TEXT NOT NULL, "fileId" TEXT NOT NULL, "position" INTEGER NOT NULL, "excludedObjects" TEXT NOT NULL DEFAULT '[]', "options" TEXT NOT NULL DEFAULT '{}', "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);
+            INSERT INTO "printer" VALUES ('a'), ('b');
+            INSERT INTO "gcode_file" VALUES ('f');
+            INSERT INTO "queue_item" ("id","printerId","fileId","position","createdAt") VALUES
+                ('a1','a','f',1,'2026-10-01'), ('b1','b','f',1,'2026-10-02'), ('a2','a','f',2,'2026-10-03');
+        `);
+        const redefine = sql.slice(sql.indexOf('CREATE TABLE "new_queue_item"'));
+        await client.executeMultiple(redefine);
+        const res = await client.execute('SELECT "id", "position", "printerId" FROM "queue_item" ORDER BY "position"');
+        expect(res.rows.map((r) => [r.id, Number(r.position), r.printerId])).toEqual([
+            ['a1', 1, 'a'],
+            ['b1', 2, 'b'],
+            ['a2', 3, 'a'],
+        ]);
+        client.close();
+    });
+});

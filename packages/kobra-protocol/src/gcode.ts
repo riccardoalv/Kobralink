@@ -14,6 +14,7 @@ export interface GcodeMetadata {
     thumbnailB64: string;
     filaments: GcodeFilamentInfo[];
     objects: string[];
+    target: GcodeTarget;
 }
 
 function headAndTail(data: Buffer, head: number, tail: number): string {
@@ -148,6 +149,7 @@ export function parseGcodeMetadata(data: Buffer): GcodeMetadata {
         thumbnailB64: extractThumbnail(data),
         filaments: extractFilamentInfo(data),
         objects: extractObjectNames(data),
+        target: extractPrintTarget(data),
     };
 }
 
@@ -188,4 +190,45 @@ function splitList(raw: string, sep: string | RegExp): string[] {
 
 function stripHash(s: string): string {
     return s.replace(/^#/, '');
+}
+
+export interface GcodeTarget {
+    printerModel: string;
+    nozzleMm: number | null;
+    bedX: number | null;
+    bedY: number | null;
+    extentX: number | null;
+    extentY: number | null;
+    maxZ: number | null;
+}
+
+export function extractPrintTarget(data: Buffer): GcodeTarget {
+    const text = headAndTail(data, 262144, 262144);
+    const value = (re: RegExp) => re.exec(text)?.[1]?.trim() ?? '';
+    const firstNumber = (raw: string) => {
+        const n = Number.parseFloat(raw.split(/[;,]/)[0] ?? '');
+        return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const area = value(/^\s*;\s*printable_area\s*=\s*(.+)$/m)
+        .split(',')
+        .map((p) => p.split('x').map(Number))
+        .filter((p) => p.length === 2 && p.every(Number.isFinite));
+    const objects = headAndTail(data, 2 * 1024 * 1024, 256 * 1024);
+    let extentX = 0;
+    let extentY = 0;
+    for (const m of objects.matchAll(/^EXCLUDE_OBJECT_DEFINE\b.*?POLYGON=(\[.*\])/gm)) {
+        for (const p of m[1].matchAll(/\[\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\]/g)) {
+            extentX = Math.max(extentX, Number(p[1]));
+            extentY = Math.max(extentY, Number(p[2]));
+        }
+    }
+    return {
+        printerModel: value(/^\s*;\s*printer_model\s*=\s*(.+)$/m),
+        nozzleMm: firstNumber(value(/^\s*;\s*nozzle_diameter\s*=\s*(.+)$/m)),
+        bedX: area.length ? Math.max(...area.map((p) => p[0])) : null,
+        bedY: area.length ? Math.max(...area.map((p) => p[1])) : null,
+        extentX: extentX > 0 ? Math.round(extentX * 10) / 10 : null,
+        extentY: extentY > 0 ? Math.round(extentY * 10) / 10 : null,
+        maxZ: firstNumber(value(/^\s*;\s*max_z_height\s*[:=]\s*(.+)$/m)),
+    };
 }

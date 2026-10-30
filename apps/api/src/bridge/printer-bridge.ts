@@ -56,6 +56,9 @@ const SNAPSHOT_MAX_AGE_MS = 120000;
 const CAMERA_STALE_MS = 30000;
 const CAMERA_FRESH_MS = 5000;
 const CAMERA_KICK_INTERVAL_MS = 60000;
+const LIGHT_TRIGGER_WINDOW_MS = 20_000;
+const LIGHT_TRIGGER_COUNT = 3;
+const LIGHT_OWN_COMMAND_MS = 5_000;
 const PAUSE_KOBRA_STATES = new Set(['pausing', 'paused', 'pause']);
 const RESUME_KOBRA_STATES = new Set(['resuming', 'resumed', 'printing']);
 
@@ -102,6 +105,7 @@ export interface BridgeEvents {
     event: [event: BridgeDomainEvent];
     layer: [layer: number, total: number];
     job: [phase: 'start' | 'end', jobId: string, filename: string, status: JobEndStatus | null];
+    light_trigger: [];
 }
 
 interface LastUpload {
@@ -130,6 +134,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private currentJobFilename = '';
     private jobPausedAt: Date | null = null;
     private jobPrinted = false;
+    private lightOnTimes: number[] = [];
+    private lastOwnLightAt = 0;
     private jobSync: Promise<void> | null = null;
     private jobsReconciled = false;
     private peakPrintTimeSec = 0;
@@ -919,9 +925,20 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private onLight(p: KobraMessage<KobraLightData>): void {
         const d = p.data ?? {};
+        const wasOn = this.s.lightOn;
         this.s.lightOn = Boolean(d.status);
+        if (!wasOn && this.s.lightOn) this.countLightOn(Date.now());
         this.s.lightBrightness = Number(d.brightness ?? 80);
         this.publish();
+    }
+
+    private countLightOn(now: number): void {
+        if (now - this.lastOwnLightAt < LIGHT_OWN_COMMAND_MS) return;
+        this.lightOnTimes = [...this.lightOnTimes.filter((t) => now - t <= LIGHT_TRIGGER_WINDOW_MS), now];
+        if (this.lightOnTimes.length < LIGHT_TRIGGER_COUNT) return;
+        this.lightOnTimes = [];
+        this.log.log('Light turned on three times on the printer: bed clear trigger');
+        this.emit('light_trigger');
     }
 
     private suppliesUsageMm = 0;
@@ -1242,6 +1259,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     setLight(on: boolean, brightness?: number): void {
         this.ensureConnected();
         const b = brightness ?? this.s.lightBrightness;
+        this.lastOwnLightAt = Date.now();
         this.client.setLight(on, b);
         this.s.lightOn = on;
         this.s.lightBrightness = b;

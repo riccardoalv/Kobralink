@@ -184,6 +184,23 @@ Bambu tools so people migrating from them find things where they expect. The pha
   on three times within a short window on its screen confirms the bed is clear. A single light-on does not count: the
   Kobra 4 turns its light on by itself when a print starts (seen on a real printer). FarolPrint ignores the light
   commands it sends itself.
+- **How the single queue picks the next file** (October 2026). The queue keeps one order for every printer. When a
+  printer is free (auto-start, a cleared bed or "Start next"), it takes the first item in that order that targets it
+  (the printer itself, tags it carries, or any printer), that it can print (same model when the file names one, same
+  nozzle, the parts fit the build volume) and whose filament the loaded spools cover. Items it cannot take keep their
+  place for another printer. Two starts on the same printer within 30 s are refused, so a double click or the light
+  trigger cannot start two files. The existing per-printer queues were merged in their old order, each item targeting
+  its printer.
+- **Every queued item says why it waits**: no printer can take it, the printer is offline, in maintenance, printing,
+  waiting for its bed to be cleared, short of filament, or ready for a manual start. The filament is simulated in queue
+  order: each item spends from the spools of the printer it would go to, so the second of two prints that together
+  need more than a spool holds shows "filament". An item held for filament is notified once (under the "Queue"
+  notification switch) instead of being started.
+- **A cleared bed is rated good or bad** (maintainer's decision). "Good" starts the next file when auto-start is on.
+  "Bad" marks the last print as failed with the reason "print quality" and puts its file back at the front of the
+  queue for the same printer, so the reprint comes before anything else. The light trigger counts as "good".
+- **Maintenance mode** takes a printer out of the queue without removing its items: nothing is dispatched to it, the
+  home page shows it apart, and the queue starts again when it comes back.
 
 ## Releases
 

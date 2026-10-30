@@ -55,13 +55,14 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
                             throw e;
                         })
                 }
-                onQueue={(r) =>
+                onQueue={(r, target) =>
                     api.queue
-                        .add(printerId, { fileId: file.id, ...r })
+                        .add({ fileId: file.id, ...r, ...target })
                         .then((item) => {
                             toast.success(m.queue_added({ name: item.filename }));
                             void api.control.clearFileReady(printerId);
                             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
+                            void qc.invalidateQueries({ queryKey: ['queue'] });
                         })
                         .catch((e: Error) => toast.error(e.message))
                 }

@@ -28,10 +28,11 @@ export function useFileActions(printerId: string) {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'history'] });
     };
     const enqueue = useMutation({
-        mutationFn: (input: AddQueueItemInput) => api.queue.add(printerId, input),
+        mutationFn: (input: AddQueueItemInput) => api.queue.add(input),
         onSuccess: (item) => {
             toast.success(m.queue_added({ name: item.filename }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
+            void qc.invalidateQueries({ queryKey: ['queue'] });
         },
         onError: (e) => toast.error(e.message),
     });
@@ -75,7 +76,7 @@ export function useFileActions(printerId: string) {
                         if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
                         return print.mutateAsync({ fileId: f.id, ...r });
                     }}
-                    onQueue={withQueue ? (r) => enqueue.mutate({ fileId: f.id, ...r }) : undefined}
+                    onQueue={withQueue ? (r, target) => enqueue.mutate({ fileId: f.id, ...r, ...target }) : undefined}
                     onSchedule={async (r, startAt) => {
                         if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
                         return schedule.mutateAsync({ fileId: f.id, startAt, ...r });
@@ -150,7 +151,7 @@ export function useFileActions(printerId: string) {
         uploadingCount,
         requestPrint,
         requestDelete,
-        enqueue: (f: GcodeFileDto) => enqueue.mutate({ fileId: f.id }),
+        enqueue: (f: GcodeFileDto) => enqueue.mutate({ fileId: f.id, printerId }),
         uploadMany,
     };
 }

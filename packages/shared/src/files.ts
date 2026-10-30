@@ -10,6 +10,7 @@ export const FAILURE_REASONS = [
     'layer_shift',
     'power_loss',
     'user_cancel',
+    'quality',
     'other',
 ] as const;
 export type FailureReason = (typeof FAILURE_REASONS)[number];

@@ -8,8 +8,10 @@ import { countByStatus, HOME_STATUS_LABEL, HOME_STATUSES, type HomeStatus, nextT
 const DOT: Record<HomeStatus, string> = {
     printing: 'bg-primary',
     paused: 'bg-chart-2',
+    bed_clear: 'bg-chart-2',
     ready: 'bg-chart-3',
     error: 'bg-destructive',
+    maintenance: 'bg-chart-4',
     offline: 'bg-muted-foreground/50',
 };
 

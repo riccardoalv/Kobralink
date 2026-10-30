@@ -75,10 +75,12 @@ function GlobalSubscriptions() {
         qc.setQueryData<FarolPrintEvent[]>(['notifications'], (old) => [...(old ?? []), event].slice(-200));
         if (
             event.type === 'queue_next' ||
+            event.type === 'queue_filament' ||
             event.type === 'print_finished' ||
             event.type === 'print_cancelled' ||
             event.type === 'scheduled_print'
         ) {
+            void qc.invalidateQueries({ queryKey: ['queue'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'queue'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'queue-status'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'schedule'] });
