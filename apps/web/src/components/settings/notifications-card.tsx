@@ -36,6 +36,7 @@ const EVENT_LABELS: [keyof AppSettings['notifications']['events'], () => string]
     ['queueNext', m.notif_ev_queue_next],
     ['scheduledPrint', m.notif_ev_scheduled_print],
     ['maintenanceDue', m.notif_ev_maintenance_due],
+    ['automation', m.notif_ev_automation],
     ['alerts', m.notif_ev_alerts],
     ['printFailure', m.notif_ev_print_failure],
 ];

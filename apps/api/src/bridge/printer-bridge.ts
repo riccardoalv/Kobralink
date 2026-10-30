@@ -135,6 +135,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private currentJobFilename = '';
     private jobPausedAt: Date | null = null;
     private cancelReason: FailureReason | '' = '';
+    private readonly unknownStates = new Set<string>();
     private jobPrinted = false;
     private lightOnTimes: number[] = [];
     private lastOwnLightAt = 0;
@@ -547,7 +548,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private applyKobraState(kobraState: string, fallback: 'printing' | 'standby'): void {
-        this.s.printState = KOBRA_TO_KLIPPER_STATE[kobraState] ?? fallback;
+        const known = KOBRA_TO_KLIPPER_STATE[kobraState];
+        if (!known && !this.unknownStates.has(kobraState)) {
+            this.unknownStates.add(kobraState);
+            this.log.warn(`Unknown Kobra state "${kobraState}", keeping the print state`);
+        }
+        this.s.printState = known ?? (this.s.kobraState === 'offline' ? fallback : this.s.printState);
         this.s.kobraState = kobraState;
         this.trackPause(kobraState);
         if (kobraState === 'printing') {

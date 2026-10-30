@@ -140,6 +140,8 @@ export const maintenanceQuery = (id: string) =>
 
 export const macrosQuery = queryOptions({ queryKey: ['macros'], queryFn: api.macros.list });
 
+export const automationsQuery = queryOptions({ queryKey: ['automations'], queryFn: api.automations.list });
+
 export const dryScheduleQuery = (id: string) =>
     queryOptions({ queryKey: ['printers', id, 'dry-schedule'], queryFn: () => api.drySchedule.list(id) });
 

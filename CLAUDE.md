@@ -75,7 +75,7 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
 - The main API (:7100): `/api/auth/*` (Better Auth), `/api/v1/*` (protected), serves `apps/web/dist`. One Nest module
   per domain (`printers`, `core` = control, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
   `detection`, `notifications`, `ha` = Home Assistant MQTT discovery, `stats`, `system`, `users`, `settings`,
-  `schedule` = scheduled prints, `maintenance` = preventive maintenance tasks).
+  `schedule` = scheduled prints, `maintenance` = preventive maintenance tasks, `automations` = automation rules).
 - Live UI state: SSE `/api/v1/printers/:id/events` → `usePrinterEvents` writes into the Query cache; `patchLiveState`
   does the local optimistic update before the MQTT confirmation.
 - Print queue (`queue/queue.service.ts`): one queue for every printer (`queue_item.position` is global,
@@ -97,6 +97,12 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   after a print and estimate accuracy; `compute` also returns the previous period (`previous`) for comparisons.
 - Macros are lists of JSON actions (`macroActionSchema` in `packages/shared/src/macros.ts`), not G-code; run by
   `macro.service.ts` through the `PrinterBridge` methods.
+- Automations (`automations/automation.service.ts`, `automation_rule` table, schemas in
+  `packages/shared/src/automations.ts`): rules fired by `NotificationService` events (`print_finished`,
+  `print_cancelled`, `alert_spool_low`), `QueueService`'s `bed_cleared` event or a 20 s clock for `time` rules; actions
+  run in order per (rule, printer) and the last error is stored on the rule. Power off waits for an idle printer and a
+  nozzle under 50 °C. Notifications carry `url` (`publicUrl` + `eventLinkPath` from `packages/shared/src/events.ts`),
+  sent to Discord, Telegram, ntfy and the webhook.
 - Camera: `bridge/camera.ts` (`CameraCache`) = one ffmpeg per printer (FLV → MJPEG at the camera's native frame
   rate and resolution, plus the original H.264 copied as MPEG-TS), fanned out to
   `/api/v1/printers/:id/camera/{stream,snapshot}` (dashboard) and `/api/camera/{stream,snapshot}` (Moonraker,

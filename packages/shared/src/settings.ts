@@ -14,6 +14,7 @@ export const notificationEventsSchema = z.object({
     printFailure: z.boolean().default(true),
     scheduledPrint: z.boolean().default(true),
     maintenanceDue: z.boolean().default(true),
+    automation: z.boolean().default(true),
 });
 export type NotificationEvents = z.infer<typeof notificationEventsSchema>;
 

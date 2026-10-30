@@ -6,6 +6,8 @@ import type {
     AmsFeedInput,
     AmsSetSlotInput,
     AppSettings,
+    AutomationRuleDto,
+    AutomationRuleInput,
     BackupInfoDto,
     CompleteMaintenanceInput,
     CreateUserInput,
@@ -255,6 +257,20 @@ export const api = {
             request<void>(printerId ? `/api/v1/printers/${printerId}/queue` : '/api/v1/queue', { method: 'DELETE' }),
     },
 
+    automations: {
+        list: () => request<AutomationRuleDto[]>('/api/v1/automations'),
+        create: (input: AutomationRuleInput) => request<AutomationRuleDto>('/api/v1/automations', json(input)),
+        update: (id: string, input: AutomationRuleInput) =>
+            request<AutomationRuleDto>(`/api/v1/automations/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
+        setEnabled: (id: string, enabled: boolean) =>
+            request<AutomationRuleDto>(`/api/v1/automations/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ enabled }),
+            }),
+        run: (id: string, printerId: string) =>
+            request<AutomationRuleDto>(`/api/v1/automations/${id}/run`, json({ printerId })),
+        remove: (id: string) => request<void>(`/api/v1/automations/${id}`, { method: 'DELETE' }),
+    },
     macros: {
         list: () => request<MacroDto[]>('/api/v1/macros'),
         create: (input: MacroInput) => request<MacroDto>('/api/v1/macros', json(input)),

@@ -50,6 +50,10 @@ reasons behind them.
   file to the printer and opens the dialog in the dashboard; confirming the dialog reuses that upload (same name, MD5
   and size as the last one) instead of sending the file again, so the print starts right away. The upload is forgotten
   when the file is deleted from the printer.
+- **An unknown printer state keeps the print state** (upstream issue #1). A Kobra state FarolPrint does not know used to
+  map to "printing" in `print/report` and "standby" in `info/report`, so the dashboard flipped between the two. The
+  print state now stays as it was (the message source only decides right after connecting), and each unknown state is
+  logged once so it can be added to the mapping.
 
 ## Filament and Spoolman
 
@@ -212,6 +216,19 @@ Bambu tools so people migrating from them find things where they expect. The pha
 - **The cancel dialog asks why** (maintainer's decision), with the same reasons as the history and "Don't say" as the
   default. The reason is kept by the bridge until the print ends and stored on the job; a cancel from OrcaSlicer or
   the printer screen stays unlabelled and can be labelled later from the history.
+- **Automations are rules, not scripts** (October 2026). A rule has one trigger (a print finished, a print cancelled
+  or failed, a bed cleared, a spool running low, or a time of day), a target (one printer, the printers carrying all
+  the given tags, or every printer) and up to ten actions run in order: a macro, the light, loading or unloading an
+  ACE slot, the smart plug, a wait and a notification. Actions only use the LAN protocol and the printer's power URLs;
+  there is no G-code action. A rule runs once at a time per printer, stops at the first failing action and keeps the
+  error, shown on the Automations page with a "Run now" button. Time rules run in the server's time zone.
+- **Powering a printer off waits for it** (maintainer's rule: never risk the printer). The power-off action is refused
+  while a print is running or paused and waits until the nozzle is below 50 °C (at most 30 minutes, then it gives up),
+  so the hotend fan can cool the heat break. Power on works on an offline printer, so a morning rule can wake it.
+- **Every notification opens its screen**: the printer page for print events, the queue for queue and scheduled
+  print events, maintenance, filament for low spools and automations for automation messages. Discord, Telegram, ntfy
+  and the webhook get the link built from FarolPrint's own address (`publicUrl`, set in the setup wizard or the general
+  settings); without it they carry no link. In the dashboard, the toast and the browser notification open the screen.
 
 ## Releases
 

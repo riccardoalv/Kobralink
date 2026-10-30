@@ -57,6 +57,7 @@ describe('AppSidebar', () => {
             m.nav_filament(),
             m.nav_stats(),
             m.nav_maintenance(),
+            m.nav_automations(),
             m.nav_settings(),
         ]) {
             expect(within(aside).getByRole('link', { name: label })).toBeTruthy();
@@ -95,7 +96,7 @@ describe('AppSidebar', () => {
         await userEvent.click(within(nav).getByRole('button', { name: m.nav_more() }));
         const settings = await screen.findByRole('menuitem', { name: m.nav_settings() });
         expect(settings.getAttribute('href')).toBe('/settings');
-        for (const label of [m.nav_history(), m.nav_filament(), m.nav_maintenance()]) {
+        for (const label of [m.nav_history(), m.nav_filament(), m.nav_maintenance(), m.nav_automations()]) {
             expect(screen.getByRole('menuitem', { name: label })).toBeTruthy();
         }
         expect(screen.getByRole('menuitem', { name: m.nav_logout() })).toBeTruthy();

@@ -1,4 +1,10 @@
-import type { FarolPrintEvent, PrinterLiveState, SseChannel, SseParams } from '@farolprint/shared';
+import {
+    eventLinkPath,
+    type FarolPrintEvent,
+    type PrinterLiveState,
+    type SseChannel,
+    type SseParams,
+} from '@farolprint/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -47,7 +53,7 @@ interface RefusedPayload {
     msg: string;
 }
 
-function GlobalSubscriptions() {
+function GlobalSubscriptions({ onOpen }: { onOpen?: (path: string) => void }) {
     const qc = useQueryClient();
     const settings = useQuery(appSettingsQuery);
     const browser = settings.data?.notifications.browser ?? true;
@@ -92,7 +98,12 @@ function GlobalSubscriptions() {
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'maintenance'] });
         }
         const alert = event.type.startsWith('alert') || event.type === 'print_paused';
-        (alert ? toast.warning : toast.info)(event.title, { description: event.body, duration: 8000 });
+        const path = eventLinkPath(event.type, event.printerId);
+        (alert ? toast.warning : toast.info)(event.title, {
+            description: event.body,
+            duration: 8000,
+            ...(onOpen ? { action: { label: m.notify_open_link(), onClick: () => onOpen(path) } } : {}),
+        });
         if (
             browserRef.current &&
             'Notification' in window &&
@@ -100,7 +111,12 @@ function GlobalSubscriptions() {
             document.hidden
         ) {
             try {
-                new Notification(event.title, { body: event.body, tag: event.id });
+                const shown = new Notification(event.title, { body: event.body, tag: event.id });
+                shown.onclick = () => {
+                    window.focus();
+                    onOpen?.(path);
+                    shown.close();
+                };
             } catch {}
         }
     });
@@ -120,11 +136,19 @@ function GlobalSubscriptions() {
     return null;
 }
 
-export function SseProvider({ children, client = sseMultiplexer }: { children: ReactNode; client?: SseMultiplexer }) {
+export function SseProvider({
+    children,
+    client = sseMultiplexer,
+    onOpen,
+}: {
+    children: ReactNode;
+    client?: SseMultiplexer;
+    onOpen?: (path: string) => void;
+}) {
     useEffect(() => () => client.disconnect(), [client]);
     return (
         <SseContext.Provider value={client}>
-            <GlobalSubscriptions />
+            <GlobalSubscriptions onOpen={onOpen} />
             {children}
         </SseContext.Provider>
     );

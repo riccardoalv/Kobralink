@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events';
 import {
     COLOR_TOLERANCE,
     type CompatReason,
@@ -113,7 +114,7 @@ export function filamentFit(
 }
 
 @Injectable()
-export class QueueService {
+export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string, outcome: 'good' | 'bad'] }> {
     private readonly log = new Logger(QueueService.name);
     private readonly watches = new Map<string, Watch>();
     private readonly bridges = new Map<string, PrinterBridge>();
@@ -128,7 +129,9 @@ export class QueueService {
         private readonly notifications: NotificationService,
         private readonly spoolman: SpoolmanService,
         private readonly localSpools: LocalSpoolService,
-    ) {}
+    ) {
+        super();
+    }
 
     attach(bridge: PrinterBridge): void {
         this.bridges.set(bridge.id, bridge);
@@ -350,6 +353,7 @@ export class QueueService {
     async confirmBedClear(printerId: string, outcome: 'good' | 'bad' = 'good'): Promise<QueueItemDto | null> {
         await this.setAwaiting(printerId, false);
         if (outcome === 'bad') await this.reject(printerId);
+        this.emit('bed_cleared', printerId, outcome);
         const bridge = this.bridges.get(printerId);
         if (!bridge?.settings.queueAutoStart) return null;
         return this.dispatch(printerId).catch(() => null);

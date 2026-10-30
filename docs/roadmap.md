@@ -49,11 +49,11 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
 - Jobs per day by outcome, failures by reason (Pareto), cancel reason asked when cancelling.
 - Per printer: utilisation, mean time between failures, idle time after a print, estimate accuracy, cost.
 
-## 6. Automations and notifications
+## 6. Automations and notifications (done)
 
 - Rules that run on events (print finished or failed, bed cleared, filament low, a time of day) for printers chosen
-  by tag, acting through the LAN protocol: run a macro, unload or load filament, switch the light, power off through
-  Home Assistant, notify.
+  by tag, acting through the LAN protocol: run a macro, unload or load filament (ACE), switch the light, switch the
+  smart plug (the printer's power URLs, such as Tasmota or a Home Assistant webhook), wait, notify.
 - Every notification links to the FarolPrint screen of the recommended action.
 
 ## Later

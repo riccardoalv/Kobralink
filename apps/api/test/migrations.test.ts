@@ -242,3 +242,44 @@ describe('single queue migration', () => {
         client.close();
     });
 });
+
+describe('automation rules migration', () => {
+    it('creates the rule table with its defaults and cascades with its printer', async () => {
+        const db = await testDb();
+        try {
+            expect(await columns(db.file, 'automation_rule')).toEqual(
+                expect.arrayContaining([
+                    'name',
+                    'enabled',
+                    'trigger',
+                    'time',
+                    'printerId',
+                    'targetTags',
+                    'actions',
+                    'lastRunAt',
+                    'lastError',
+                ]),
+            );
+            await db.client.printer.create({
+                data: {
+                    id: 'p1',
+                    name: 'Kobra',
+                    ip: '127.0.0.1',
+                    username: 'u',
+                    password: 'p',
+                    deviceId: 'd',
+                    httpPort: 17998,
+                },
+            });
+            const any = await db.client.automationRule.create({ data: { name: 'Any', trigger: 'time' } });
+            expect(any).toMatchObject({ enabled: true, time: '', printerId: null, targetTags: '[]', actions: '[]' });
+            await db.client.automationRule.create({
+                data: { name: 'One', trigger: 'print_finished', printerId: 'p1' },
+            });
+            await db.client.printer.delete({ where: { id: 'p1' } });
+            expect((await db.client.automationRule.findMany()).map((r) => r.name)).toEqual(['Any']);
+        } finally {
+            await db.close();
+        }
+    });
+});

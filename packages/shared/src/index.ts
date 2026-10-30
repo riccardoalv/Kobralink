@@ -1,3 +1,4 @@
+export * from './automations';
 export * from './control';
 export * from './cost';
 export * from './detection';

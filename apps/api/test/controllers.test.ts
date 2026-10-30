@@ -1,6 +1,8 @@
 import { describe, expect, it, mock } from 'bun:test';
 import { cancelPrintSchema, schedulePrintSchema, updatePrintJobSchema } from '@farolprint/shared';
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { AutomationController } from '../src/automations/automation.controller';
+import type { AutomationService } from '../src/automations/automation.service';
 import type { BridgeRegistry } from '../src/bridge/bridge.registry';
 import { ZodPipe } from '../src/common/zod.pipe';
 import { CoreController } from '../src/core/core.controller';
@@ -269,5 +271,33 @@ describe('LibraryController', () => {
         expect(stats.history).toHaveBeenLastCalledWith('p1', 200, 20);
         await ctrl.history('', 'x', 'y');
         expect(stats.history).toHaveBeenLastCalledWith(undefined, 50, 0);
+    });
+});
+
+describe('AutomationController', () => {
+    const automations = {
+        list: mock(async () => []),
+        create: mock(async () => ({ id: 'a1' })),
+        update: mock(async () => ({ id: 'a1' })),
+        setEnabled: mock(async () => ({ id: 'a1', enabled: false })),
+        runNow: mock(async () => ({ id: 'a1' })),
+        remove: mock(async () => undefined),
+    };
+    const ctrl = new AutomationController(automations as unknown as AutomationService);
+    const body = { name: 'Off', trigger: 'print_finished', actions: [{ type: 'light', on: false }] } as const;
+
+    it('lists, creates, updates, switches, runs and removes rules', async () => {
+        await ctrl.list();
+        await ctrl.create(body);
+        await ctrl.update('a1', body);
+        await ctrl.setEnabled('a1', { enabled: false });
+        await ctrl.run('a1', { printerId: 'p1' });
+        await ctrl.remove('a1');
+        expect(automations.list).toHaveBeenCalledOnce();
+        expect(automations.create).toHaveBeenCalledWith(body);
+        expect(automations.update).toHaveBeenCalledWith('a1', body);
+        expect(automations.setEnabled).toHaveBeenCalledWith('a1', false);
+        expect(automations.runNow).toHaveBeenCalledWith('a1', 'p1');
+        expect(automations.remove).toHaveBeenCalledWith('a1');
     });
 });

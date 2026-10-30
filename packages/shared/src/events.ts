@@ -14,7 +14,8 @@ export type FarolPrintEventType =
     | 'queue_next'
     | 'queue_filament'
     | 'scheduled_print'
-    | 'maintenance_due';
+    | 'maintenance_due'
+    | 'automation';
 
 export interface FarolPrintEvent {
     id: string;
@@ -24,5 +25,23 @@ export interface FarolPrintEvent {
     title: string;
     body: string;
     ts: number;
+    url?: string;
     data?: Record<string, string | number | boolean | null>;
+}
+
+export function eventLinkPath(type: FarolPrintEventType, printerId: string): string {
+    switch (type) {
+        case 'queue_next':
+        case 'queue_filament':
+        case 'scheduled_print':
+            return '/queue';
+        case 'maintenance_due':
+            return '/maintenance';
+        case 'alert_spool_low':
+            return '/filament';
+        case 'automation':
+            return '/automations';
+        default:
+            return printerId ? `/printers/${printerId}` : '/printers';
+    }
 }
