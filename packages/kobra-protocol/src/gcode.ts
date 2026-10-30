@@ -26,8 +26,8 @@ function headAndTail(data: Buffer, head: number, tail: number): string {
 export function parseEstimatedTime(data: Buffer): number {
     const text = headAndTail(data, 16384, 65536);
     const m =
-        /;\s*total estimated time:\s*(.*)/.exec(text) ??
-        /;\s*estimated printing time \(normal mode\)\s*=\s*(.*)/.exec(text);
+        /;[ \t]*total estimated time:[ \t]*(.*)/.exec(text) ??
+        /;[ \t]*estimated printing time \(normal mode\)[ \t]*=[ \t]*(.*)/.exec(text);
     if (!m) return 0;
     let secs = 0;
     for (const part of m[1].matchAll(/(\d+)\s*([hms])/g)) {
@@ -47,10 +47,10 @@ export function parseLayerHeights(data: Buffer): { layerHeight: number; firstLay
         const v = Number.parseFloat(m[1]);
         return Number.isFinite(v) ? v : 0;
     };
-    const layerHeight = grab(/;\s*layer_height\s*=\s*([0-9.]+)/);
+    const layerHeight = grab(/;[ \t]*layer_height[ \t]*=[ \t]*([0-9.]+)/);
     const firstLayerHeight =
-        grab(/;\s*initial_layer_print_height\s*=\s*([0-9.]+)/) ||
-        grab(/;\s*first_layer_height\s*=\s*([0-9.]+)/) ||
+        grab(/;[ \t]*initial_layer_print_height[ \t]*=[ \t]*([0-9.]+)/) ||
+        grab(/;[ \t]*first_layer_height[ \t]*=[ \t]*([0-9.]+)/) ||
         layerHeight;
     return { layerHeight, firstLayerHeight };
 }
@@ -209,7 +209,7 @@ export function extractPrintTarget(data: Buffer): GcodeTarget {
         const n = Number.parseFloat(raw.split(/[;,]/)[0] ?? '');
         return Number.isFinite(n) && n > 0 ? n : null;
     };
-    const area = value(/^\s*;\s*printable_area\s*=\s*(.+)$/m)
+    const area = value(/^[ \t]*;[ \t]*printable_area[ \t]*=[ \t]*(.+)$/m)
         .split(',')
         .map((p) => p.split('x').map(Number))
         .filter((p) => p.length === 2 && p.every(Number.isFinite));
@@ -223,12 +223,12 @@ export function extractPrintTarget(data: Buffer): GcodeTarget {
         }
     }
     return {
-        printerModel: value(/^\s*;\s*printer_model\s*=\s*(.+)$/m),
-        nozzleMm: firstNumber(value(/^\s*;\s*nozzle_diameter\s*=\s*(.+)$/m)),
+        printerModel: value(/^[ \t]*;[ \t]*printer_model[ \t]*=[ \t]*(.+)$/m),
+        nozzleMm: firstNumber(value(/^[ \t]*;[ \t]*nozzle_diameter[ \t]*=[ \t]*(.+)$/m)),
         bedX: area.length ? Math.max(...area.map((p) => p[0])) : null,
         bedY: area.length ? Math.max(...area.map((p) => p[1])) : null,
         extentX: extentX > 0 ? Math.round(extentX * 10) / 10 : null,
         extentY: extentY > 0 ? Math.round(extentY * 10) / 10 : null,
-        maxZ: firstNumber(value(/^\s*;\s*max_z_height\s*[:=]\s*(.+)$/m)),
+        maxZ: firstNumber(value(/^[ \t]*;[ \t]*max_z_height[ \t]*[:=][ \t]*(.+)$/m)),
     };
 }

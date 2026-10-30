@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "Unknown",
     "print_ready_filament_short_hint": "A spool runs out before the print ends. Swap it, or confirm to print anyway.",
     "print_ready_filament_accept": "Print anyway",
-    "api_queue_no_printer": "No printer can print {name}: model, nozzle, size or filament do not match.",
+    "api_queue_no_printer": "No printer can print {name} — {details}.",
     "api_queue_maintenance": "The printer is in maintenance.",
     "failure_reason_quality": "Rejected quality",
     "nav_queue": "Queue",

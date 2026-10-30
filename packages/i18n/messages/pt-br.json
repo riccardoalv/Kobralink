@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "Sem dados",
     "print_ready_filament_short_hint": "Um carretel acaba antes do fim da impressão. Troque o carretel ou confirme para imprimir mesmo assim.",
     "print_ready_filament_accept": "Imprimir mesmo assim",
-    "api_queue_no_printer": "Nenhuma impressora pode imprimir {name}: modelo, bico, tamanho ou filamento não batem.",
+    "api_queue_no_printer": "Nenhuma impressora pode imprimir {name} — {details}.",
     "api_queue_maintenance": "A impressora está em manutenção.",
     "failure_reason_quality": "Qualidade reprovada",
     "nav_queue": "Fila",

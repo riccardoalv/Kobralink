@@ -2,11 +2,13 @@ import { describe, expect, it } from 'bun:test';
 import {
     addQueueItemSchema,
     bedClearSchema,
+    blockingReasons,
     type FileTargetInfo,
     hexDistance,
     isTargeted,
     normalizeModel,
     type PrinterTargetInfo,
+    SOFT_COMPAT_REASONS,
     staticReasons,
     stockReasons,
 } from '../src/queue';
@@ -105,5 +107,13 @@ describe('queue schemas', () => {
     it('rates the cleared bed as good by default', () => {
         expect(bedClearSchema.parse({})).toEqual({ outcome: 'good' });
         expect(bedClearSchema.safeParse({ outcome: 'meh' }).success).toBe(false);
+    });
+});
+
+describe('blockingReasons', () => {
+    it('keeps every reason except the colour, which is only a hint', () => {
+        expect(blockingReasons(['model', 'color', 'size'])).toEqual(['model', 'size']);
+        expect(blockingReasons(['color'])).toEqual([]);
+        expect(SOFT_COMPAT_REASONS).toEqual(['color']);
     });
 });

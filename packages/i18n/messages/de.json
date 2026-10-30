@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "Unbekannt",
     "print_ready_filament_short_hint": "Eine Spule ist vor Druckende leer. Tauschen Sie sie oder bestätigen Sie den Druck trotzdem.",
     "print_ready_filament_accept": "Trotzdem drucken",
-    "api_queue_no_printer": "Kein Drucker kann {name} drucken: Modell, Düse, Größe oder Filament passen nicht.",
+    "api_queue_no_printer": "Kein Drucker kann {name} drucken — {details}.",
     "api_queue_maintenance": "Der Drucker ist in Wartung.",
     "failure_reason_quality": "Qualität abgelehnt",
     "nav_queue": "Warteschlange",

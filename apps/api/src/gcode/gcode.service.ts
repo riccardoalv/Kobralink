@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { extractFilamentInfo, parseGcodeMetadata } from '@farolprint/kobra-protocol';
+import { extractFilamentInfo, extractPrintTarget, parseGcodeMetadata } from '@farolprint/kobra-protocol';
 import type {
     GcodeFilament,
     GcodeFileDto,
@@ -19,7 +19,7 @@ export interface StoredFile extends GcodeFileDto {
 }
 
 const ALLOWED_EXT = ['.gcode', '.bgcode'];
-export const META_VERSION = 1;
+export const META_VERSION = 2;
 
 @Injectable()
 export class GcodeService implements OnApplicationBootstrap {
@@ -30,9 +30,9 @@ export class GcodeService implements OnApplicationBootstrap {
     constructor(private readonly prisma: PrismaService) {}
 
     onApplicationBootstrap(): void {
-        void this.backfillFilamentUsage().catch((e) =>
-            this.log.warn(`Filament usage backfill: ${(e as Error).message}`),
-        );
+        void this.backfillFilamentUsage()
+            .then(() => this.backfillTargets())
+            .catch((e) => this.log.warn(`File metadata backfill: ${(e as Error).message}`));
     }
 
     async backfillFilamentUsage(): Promise<number> {
@@ -59,6 +59,25 @@ export class GcodeService implements OnApplicationBootstrap {
             updated += 1;
         }
         if (updated) this.log.log(`Filament usage read from ${updated} stored file(s)`);
+        return updated;
+    }
+
+    async backfillTargets(): Promise<number> {
+        const rows = await this.prisma.client.gcodeFile.findMany({
+            where: { metaVersion: { lt: META_VERSION } },
+            select: { id: true, filename: true },
+        });
+        let updated = 0;
+        for (const row of rows) {
+            const data = await fs.promises.readFile(this.filePath(row.id, row.filename)).catch(() => null);
+            if (!data) continue;
+            await this.prisma.client.gcodeFile.update({
+                where: { id: row.id },
+                data: { ...extractPrintTarget(data), metaVersion: META_VERSION },
+            });
+            updated += 1;
+        }
+        if (updated) this.log.log(`Print target read again from ${updated} stored file(s)`);
         return updated;
     }
 

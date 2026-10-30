@@ -65,6 +65,12 @@ export interface QueueStatusDto {
 export const COMPAT_REASONS = ['target', 'model', 'nozzle', 'size', 'material', 'color'] as const;
 export type CompatReason = (typeof COMPAT_REASONS)[number];
 
+export const SOFT_COMPAT_REASONS: readonly CompatReason[] = ['color'];
+
+export function blockingReasons(reasons: CompatReason[]): CompatReason[] {
+    return reasons.filter((r) => !SOFT_COMPAT_REASONS.includes(r));
+}
+
 export interface PrinterCompatDto {
     printerId: string;
     name: string;

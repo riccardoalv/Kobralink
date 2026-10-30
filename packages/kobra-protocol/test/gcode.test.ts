@@ -127,6 +127,22 @@ describe('print target', () => {
         });
     });
 
+    it('keeps an empty field empty instead of reading the next line', () => {
+        const custom = Buffer.from(
+            [
+                '; printer_model = ',
+                '; printer_notes = ',
+                '; nozzle_diameter =',
+                '; printable_area = 0x0,260x0,260x260,0x260',
+                '; max_z_height:',
+                '; total estimated time:',
+                '; printer_settings_id = Anycubic Kobra 4 0.4 nozzle',
+            ].join('\n'),
+        );
+        expect(extractPrintTarget(custom)).toMatchObject({ printerModel: '', nozzleMm: null, bedX: 260, maxZ: null });
+        expect(parseEstimatedTime(custom)).toBe(0);
+    });
+
     it('leaves everything unknown in a file without slicer metadata', () => {
         expect(extractPrintTarget(Buffer.from('G28\nG1 X10\n'))).toEqual({
             printerModel: '',

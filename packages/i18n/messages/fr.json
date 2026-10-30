@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "Inconnu",
     "print_ready_filament_short_hint": "Une bobine sera vide avant la fin. Changez-la ou confirmez pour imprimer quand même.",
     "print_ready_filament_accept": "Imprimer quand même",
-    "api_queue_no_printer": "Aucune imprimante ne peut imprimer {name} : modèle, buse, taille ou filament incompatibles.",
+    "api_queue_no_printer": "Aucune imprimante ne peut imprimer {name} — {details}.",
     "api_queue_maintenance": "L'imprimante est en maintenance.",
     "failure_reason_quality": "Qualité refusée",
     "nav_queue": "File",

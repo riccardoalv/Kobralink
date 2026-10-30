@@ -1105,7 +1105,7 @@
     "print_ready_filament_unknown": "Desconocido",
     "print_ready_filament_short_hint": "Una bobina se acaba antes de terminar. Cámbiala o confirma para imprimir igualmente.",
     "print_ready_filament_accept": "Imprimir igualmente",
-    "api_queue_no_printer": "Ninguna impresora puede imprimir {name}: el modelo, la boquilla, el tamaño o el filamento no coinciden.",
+    "api_queue_no_printer": "Ninguna impresora puede imprimir {name} — {details}.",
     "api_queue_maintenance": "La impresora está en mantenimiento.",
     "failure_reason_quality": "Calidad rechazada",
     "nav_queue": "Cola",
