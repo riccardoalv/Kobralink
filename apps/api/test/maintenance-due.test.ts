@@ -47,6 +47,7 @@ describe('maintenance due notifications', () => {
         await h.service.checkDue('p1');
         expect(h.notifications.emitCustom).toHaveBeenCalledWith('p1', 'Kobra', 'maintenance_due', {
             task: 'Clean the nozzle',
+            presetKey: expect.any(String),
             hours: 2,
             jobs: 3,
         });

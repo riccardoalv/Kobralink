@@ -18,6 +18,8 @@ const spoolmanSchema = z.object({
     spoolmanSyncRateSec: z.number().int().min(0).max(3600),
 });
 
+export const SPOOLMAN_KEYS = ['spoolmanUrl', 'spoolmanSyncRateSec'] as const satisfies readonly (keyof AppSettings)[];
+
 export function SpoolmanCard({ settings }: { settings: AppSettings }) {
     const qc = useQueryClient();
     const health = useQuery({

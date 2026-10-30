@@ -51,8 +51,7 @@ export function MacrosCard({ printerId, className }: { printerId: string; classN
                     </button>
                 ) : (
                     <Link
-                        to="/settings"
-                        search={{ tab: 'macros' }}
+                        to="/settings/macros"
                         title={m.macros_manage()}
                         aria-label={m.macros_manage()}
                         className={manageClass}

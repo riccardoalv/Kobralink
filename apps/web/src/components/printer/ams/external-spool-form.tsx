@@ -32,7 +32,7 @@ export function ExternalSpoolForm({
     const currentLocal = localAssign.data?.slotSpools[EXTERNAL_SLOT] ?? '';
     const nextSpool = spoolId ?? currentSpool;
     const nextLocal = localSpoolId ?? currentLocal;
-    const hasLocal = (localSpools.data?.length ?? 0) > 0;
+    const hasLocal = !spoolmanOn && (localSpools.data?.length ?? 0) > 0;
 
     const save = useMutation({
         mutationFn: async () => {
@@ -43,7 +43,7 @@ export function ExternalSpoolForm({
                 else delete map[EXTERNAL_SLOT];
                 tasks.push(api.spoolman.setSlots(printerId, map));
             }
-            if (nextLocal !== currentLocal) {
+            if (!spoolmanOn && nextLocal !== currentLocal) {
                 tasks.push(api.spools.assign(printerId, { [EXTERNAL_SLOT]: nextLocal || null }));
             }
             await Promise.all(tasks);

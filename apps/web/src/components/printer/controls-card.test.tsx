@@ -47,37 +47,36 @@ beforeEach(() => {
     printers.powerStatus.mockReset().mockResolvedValue({ state: 'off' });
 });
 
-const lightSwitch = () => screen.getByRole('switch', { name: m.controls_light() });
 const powerSwitch = () => screen.getByRole('switch', { name: m.controls_power() });
 const openAxes = () => userEvent.click(screen.getByRole('button', { name: m.axes_title() }));
 
 describe('ControlsCard', () => {
-    it('shows the light and power switches and toggles the light off', async () => {
+    it('turns the light off with a button and shows no brightness', async () => {
         await renderWithProviders(<ControlsCard printerId="p1" />);
-        expect(lightSwitch().getAttribute('aria-checked')).toBe('true');
-        expect(screen.getByText('On · 80 %')).toBeTruthy();
-        expect(screen.getByRole('slider', { name: m.controls_brightness() })).toBeTruthy();
+        const light = screen.getByRole('button', { name: m.controls_light_turn_off() });
+        expect(light.getAttribute('aria-pressed')).toBe('true');
+        expect(screen.getByText(m.controls_on())).toBeTruthy();
+        expect(screen.queryByText(/80 %/)).toBeNull();
+        expect(screen.getAllByRole('slider')).toHaveLength(1);
         expect(screen.getByText('40 %')).toBeTruthy();
         expect(await screen.findByText('Plug off')).toBeTruthy();
         expect(powerSwitch().getAttribute('aria-checked')).toBe('false');
-        await userEvent.click(lightSwitch());
+        await userEvent.click(light);
         expect(control.light).toHaveBeenCalledWith('p1', { on: false });
     });
 
-    it('hides the brightness slider while the light is off and turns it on', async () => {
+    it('turns the light on with the same button', async () => {
         live.lightOn = false;
         await renderWithProviders(<ControlsCard printerId="p1" />);
-        expect(screen.getByText('Off')).toBeTruthy();
-        expect(screen.queryByRole('slider', { name: m.controls_brightness() })).toBeNull();
-        await userEvent.click(lightSwitch());
+        expect(screen.getByText(m.controls_off())).toBeTruthy();
+        const light = screen.getByRole('button', { name: m.controls_light_turn_on() });
+        expect(light.getAttribute('aria-pressed')).toBe('false');
+        await userEvent.click(light);
         expect(control.light).toHaveBeenCalledWith('p1', { on: true });
     });
 
-    it('commits the brightness and the fan speed from their sliders', async () => {
+    it('commits the fan speed from its slider', async () => {
         await renderWithProviders(<ControlsCard printerId="p1" />);
-        const brightness = screen.getByRole('slider', { name: m.controls_brightness() });
-        fireEvent.keyDown(brightness, { key: 'ArrowRight' });
-        await waitFor(() => expect(control.light).toHaveBeenCalledWith('p1', { on: true, brightness: 85 }));
         const fan = screen.getByRole('slider', { name: m.controls_part_fan() });
         fireEvent.keyDown(fan, { key: 'ArrowRight' });
         await waitFor(() => expect(control.fan).toHaveBeenCalledWith('p1', { speed: 45 }));
@@ -120,7 +119,7 @@ describe('ControlsCard', () => {
     it('disables the switches and the axes while offline', async () => {
         live.connected = false;
         await renderWithProviders(<ControlsCard printerId="p1" />);
-        expect(lightSwitch().hasAttribute('disabled')).toBe(true);
+        expect(screen.getByRole('button', { name: m.controls_light_turn_off() }).hasAttribute('disabled')).toBe(true);
         await openAxes();
         expect(screen.getByRole('button', { name: 'Z+' }).hasAttribute('disabled')).toBe(true);
     });

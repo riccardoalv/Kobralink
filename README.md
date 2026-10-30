@@ -23,20 +23,30 @@ by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker cli
 
 ## What you get
 
-- **Multi-printer**: add a printer with its IP only, credentials are recovered automatically
-- **Live state**: temperatures, fans, light, speed, progress, pause / resume / cancel, object skip
-- **Print from anywhere**: web dashboard, OrcaSlicer (upload + print), per-printer print queue with bed-clear
-  confirmation, scheduled starts
-- **GCode library**: thumbnails, estimated time, filaments, per-printer file browser
+- **Multi-printer**: add a printer with its IP only, credentials are recovered automatically; a setup wizard walks
+  through the first run, and each printer has a profile (location, tags, nozzle, power draw, purchase price)
+- **Live state**: temperatures, fans, light, speed, progress, calibration steps, pause / resume / cancel (with a
+  reason), object skip
+- **Print from anywhere**: web dashboard, OrcaSlicer (upload + print), scheduled starts
+- **One queue for every printer**: items target a printer, a tag or any compatible printer (model, nozzle, build
+  volume, materials and colours), say why they wait, and are checked against the loaded filament; a cleared bed is
+  rated good or bad, a printer can be put in maintenance, and an opt-in light trigger confirms the bed from the printer
+- **GCode library**: thumbnails, estimated time, filaments and the amount each colour needs, one library for every
+  printer
 - **AMS / ACE**: slot profiles, feeding, auto-feed, drying with scheduled cycles
-- **Filaments**: spool inventory + optional Spoolman sync
-- **Camera** (MJPEG, shared with Moonraker clients) and **timelapses** per job
+- **Filament**: Spoolman as the source of truth (prices, low-spool alerts, retried usage reports), or a simple local
+  inventory; the print dialog warns when a spool is short
+- **Camera** (MJPEG at native quality, shared with Moonraker clients) and **timelapses** per job
 - **AI failure detection** (optional, Obico model) with notify / pause / cancel
-- **Notifications**: webhook, Discord, Telegram, ntfy · **Home Assistant** MQTT discovery
-- **History & stats**: cost per print (filament, energy, machine time), CSV export, failures labelled with the
-  camera snapshot of the moment
+- **Automations**: rules on print end, failure, cleared bed, low filament or a time of day that run macros, switch
+  the light or the smart plug, load or unload filament and notify
+- **Notifications**: webhook, Discord, Telegram, ntfy, each linking to the right screen · **Home Assistant** MQTT
+  discovery
+- **History & stats**: cost per print (filament, energy, machine time, depreciation), comparison with the previous
+  period, utilisation, mean time between failures, idle time and estimate accuracy per printer, failures by reason
+  (Pareto) with the camera snapshot of the moment, wasted filament, CSV export
 - **Preventive maintenance** per printer: tasks due by print hours, number of prints or days, with history
-- **Macros**, backup / restore, update check, multi-user
+- **Macros**, backup / restore, update check, multi-user, light and dark themes
 - UI in **French**, **English**, **German**, **Spanish**, **Italian**, **Simplified Chinese** and
   **Brazilian Portuguese**
 
@@ -98,7 +108,7 @@ every port listens on all interfaces).
 1. On the printer: Settings → **Enable LAN mode**.
 2. Dashboard → **Add a printer** → enter the IP. A Moonraker port is assigned (`7125`, `7126`, …).
 3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`
-   (or open **Connect OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
+   (or open **Settings → OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
    Click *Test*, then confirm: the **Device** tab now shows the printer and *Print* sends the G-code to FarolPrint.
 
 The OrcaSlicer **Device** tab only targets the printer: send a job, follow progress, pause / cancel, sync the ACE

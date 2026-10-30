@@ -116,3 +116,57 @@ describe('filament usage without an ACE', () => {
         expect(totals(h.calls)).toEqual({ '1': 2000 });
     });
 });
+
+describe('job usage priced from Spoolman', () => {
+    function priced(describe?: FilamentUsageSink['describe']) {
+        const finished: unknown[][] = [];
+        const sink: FilamentUsageSink = {
+            name: 'spoolman',
+            syncRateSec: 0,
+            slotMap: () => new Map([[0, 12]]),
+            useFilament: async () => undefined,
+            describe,
+        };
+        const gcode = {
+            getByFilename: async () => null,
+            findOpenJob: async () => null,
+            startJob: async () => 'job-1',
+            finishJob: async (...args: unknown[]) => {
+                finished.push(args);
+            },
+        } as unknown as GcodeService;
+        const config = { id: 'printer-1', name: 'Kobra 4', settings: {} } as unknown as BridgePrinterConfig;
+        const bridge = new PrinterBridge(config, gcode, { cert: Buffer.alloc(0), key: Buffer.alloc(0) }, [sink]);
+        const internals = bridge as unknown as {
+            s: { connected: boolean };
+            onReport: (suffix: string, payload: Record<string, unknown>) => void;
+        };
+        internals.s.connected = true;
+        const report = async (suffix: string, payload: Record<string, unknown>) => {
+            internals.onReport(suffix, payload);
+            await new Promise((r) => setTimeout(r, 5));
+        };
+        return { finished, report };
+    }
+
+    it('freezes the weight and the price of the Spoolman spool when the job ends', async () => {
+        const h = priced(async () => ({ gramsPerMm: 0.003, pricePerG: 0.025 }));
+        await h.report('multiColorBox/report', noAce);
+        await h.report('print/report', printing(0));
+        await h.report('print/report', finished(2000));
+        const usage = h.finished[0][3] as Record<string, unknown>[];
+        expect(usage).toEqual([
+            expect.objectContaining({ slotIndex: 0, mm: 2000, spoolmanId: 12, weightG: 6, pricePerG: 0.025 }),
+        ]);
+    });
+
+    it('keeps the plain usage when Spoolman cannot describe the spool', async () => {
+        const h = priced(async () => null);
+        await h.report('multiColorBox/report', noAce);
+        await h.report('print/report', printing(0));
+        await h.report('print/report', finished(500));
+        const [entry] = h.finished[0][3] as Record<string, unknown>[];
+        expect(entry).toMatchObject({ spoolmanId: 12, mm: 500 });
+        expect(entry.weightG).toBeUndefined();
+    });
+});

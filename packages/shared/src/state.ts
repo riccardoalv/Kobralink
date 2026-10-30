@@ -131,6 +131,7 @@ export const KOBRA_TO_KLIPPER_STATE: Record<string, KlipperPrintState> = {
     printing: 'printing',
     preheating: 'printing',
     auto_leveling: 'printing',
+    vibrating: 'printing',
     checking: 'printing',
     updated: 'printing',
     init: 'printing',
@@ -154,6 +155,17 @@ export function slotUsableForPrint(slot: AmsSlot, mode: FilamentMode): boolean {
     return slot.boxId === -1;
 }
 
-export const PRE_PRINT_STATES = new Set(['preheating', 'auto_leveling', 'checking', 'updated', 'init']);
-export const ACTIVE_PRINT_STATES = new Set(['printing', 'preheating', 'auto_leveling', 'checking', 'init']);
+export const PRE_PRINT_STATES = new Set(['preheating', 'auto_leveling', 'vibrating', 'checking', 'updated', 'init']);
+export const ACTIVE_PRINT_STATES = new Set([
+    'printing',
+    'preheating',
+    'auto_leveling',
+    'vibrating',
+    'checking',
+    'init',
+]);
+
+export function isCalibrating(state: Pick<PrinterLiveState, 'printState' | 'kobraState'>): boolean {
+    return state.printState === 'printing' && PRE_PRINT_STATES.has(state.kobraState);
+}
 export const TERMINAL_PRINT_STATES = new Set(['finished', 'stoped', 'canceled']);

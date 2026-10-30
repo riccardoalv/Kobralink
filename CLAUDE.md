@@ -38,9 +38,13 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   `src/generated/prisma` (gitignored, `prisma generate` before `tsc`). Migrations are applied at boot by
   `src/prisma/migrator.ts`.
 - `apps/web`: Vite + React 19, file-based TanStack Router (`src/routes`, `routeTree.gen.ts` gitignored), TanStack
-  Query, TanStack Store (`src/stores`), Tailwind v4, shadcn (`src/components/ui`, excluded from Biome). Dark theme only
-  (`class="dark"` on `<html>` in `index.html`, no toggle). Primary = emerald, radius 1.5rem, Outfit font. Design: icon
-  rail on the left, very rounded cards, the print card is accented while printing.
+  Query, TanStack Store (`src/stores`), Tailwind v4, shadcn (`src/components/ui`, excluded from Biome). Light and dark
+  themes follow the device, with a System / Light / Dark choice per browser (`src/stores/theme.ts`, applied before
+  paint by an inline script in `index.html`); every colour goes through the CSS tokens in `src/styles.css` so both
+  themes work. Primary = pastel periwinkle (`bg-primary`); brand-coloured text and icons use `text-primary-strong`, a
+  deeper shade in the light theme. Outfit font. Design: labelled collapsible sidebar on the left (bottom bar on
+  phones), rounded cards, the print card is accented while printing. The redesign in progress is in
+  [docs/roadmap.md](docs/roadmap.md).
   `bun run --filter @farolprint/web generate` = `tsr generate` + Paraglide compile (`src/paraglide`, gitignored); run
   by `check-types`.
 - `packages/shared`: Zod schemas and types shared by the API and the web (`control.ts`, `state.ts`, `macros.ts`,
@@ -71,20 +75,34 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
 - The main API (:7100): `/api/auth/*` (Better Auth), `/api/v1/*` (protected), serves `apps/web/dist`. One Nest module
   per domain (`printers`, `core` = control, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
   `detection`, `notifications`, `ha` = Home Assistant MQTT discovery, `stats`, `system`, `users`, `settings`,
-  `schedule` = scheduled prints, `maintenance` = preventive maintenance tasks).
+  `schedule` = scheduled prints, `maintenance` = preventive maintenance tasks, `automations` = automation rules).
 - Live UI state: SSE `/api/v1/printers/:id/events` → `usePrinterEvents` writes into the Query cache; `patchLiveState`
   does the local optimistic update before the MQTT confirmation.
-- Print queue (`queue/queue.service.ts`): with `queueAutoStart`, the next file starts 15 s after a print finishes
-  unless `queueBedClearConfirm` (default on) holds it until `POST queue/bed-clear`; `GET queue/status` exposes the
-  hold. Queue items store the print dialog options (`queue_item.options`) and start with them. Scheduled prints (`schedule/`) fire a stored file at `startAt` and fall back to the front of the queue when
-  the printer is busy. Maintenance tasks (`maintenance/`) are due by print hours, jobs or days since the last
-  completion and notify once (`maintenance_due`).
+- Print queue (`queue/queue.service.ts`): one queue for every printer (`queue_item.position` is global,
+  `printerId` null = any printer, `targetTags` = printers carrying all those tags). Compatibility (`staticReasons`,
+  `stockReasons`, `filamentFit` in `packages/shared/src/queue.ts` and the service) uses the G-code target read at
+  upload (`gcode_file.printerModel/nozzleMm/extent*`, `metaVersion` drives the backfill). `dispatch(printerId)` starts
+  the first item the printer can take (30 s cooldown, one start in flight). With `queueAutoStart`, the next file starts
+  15 s after a print finishes unless `queueBedClearConfirm` (default on) sets `printer.awaitingBedClear` until
+  `POST printers/:id/queue/bed-clear` (`good`|`bad`; bad requeues the file first) or the opt-in light trigger
+  (`light_trigger` bridge event). `printer.maintenance` keeps a printer out. Items store the print dialog options
+  (`queue_item.options`) and start with them. Scheduled prints (`schedule/`) fire a stored file at `startAt` and fall
+  back to the front of the queue when the printer is busy. Maintenance tasks (`maintenance/`) are due by print
+  hours, jobs or days since the last completion and notify once (`maintenance_due`).
 - Costs: `stats/job-cost.ts` prices a job from the spool (or default) filament price plus `settings.costs` (energy
   per kWh × printer power, hourly machine rate). `GET /api/v1/stats/export.csv` exports one row per job. A cancelled
   or errored job keeps the printer error code, the last camera frame (`dataDir/failures/<jobId>.jpg`) and a user
-  label (`failureReason`, `note`) editable with `PATCH history/:jobId`.
+  label (`failureReason`, `note`) editable with `PATCH history/:jobId`; `POST print/cancel` takes an optional
+  `reason` the bridge stores on the job when it ends. `stats/stats-metrics.ts` defines utilisation, MTBF, idle time
+  after a print and estimate accuracy; `compute` also returns the previous period (`previous`) for comparisons.
 - Macros are lists of JSON actions (`macroActionSchema` in `packages/shared/src/macros.ts`), not G-code; run by
   `macro.service.ts` through the `PrinterBridge` methods.
+- Automations (`automations/automation.service.ts`, `automation_rule` table, schemas in
+  `packages/shared/src/automations.ts`): rules fired by `NotificationService` events (`print_finished`,
+  `print_cancelled`, `alert_spool_low`), `QueueService`'s `bed_cleared` event or a 20 s clock for `time` rules; actions
+  run in order per (rule, printer) and the last error is stored on the rule. Power off waits for an idle printer and a
+  nozzle under 50 °C. Notifications carry `url` (`publicUrl` + `eventLinkPath` from `packages/shared/src/events.ts`),
+  sent to Discord, Telegram, ntfy and the webhook.
 - Camera: `bridge/camera.ts` (`CameraCache`) = one ffmpeg per printer (FLV → MJPEG at the camera's native frame
   rate and resolution, plus the original H.264 copied as MPEG-TS), fanned out to
   `/api/v1/printers/:id/camera/{stream,snapshot}` (dashboard) and `/api/camera/{stream,snapshot}` (Moonraker,

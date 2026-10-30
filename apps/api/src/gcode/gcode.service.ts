@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseGcodeMetadata } from '@farolprint/kobra-protocol';
+import { extractFilamentInfo, parseGcodeMetadata } from '@farolprint/kobra-protocol';
 import type {
     GcodeFilament,
     GcodeFileDto,
@@ -9,7 +9,7 @@ import type {
     SpoolUsageEntry,
     UpdatePrintJobInput,
 } from '@farolprint/shared';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
 import { loadEnv } from '../config/env';
 import type { GcodeFile, PrintJob } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,14 +19,48 @@ export interface StoredFile extends GcodeFileDto {
 }
 
 const ALLOWED_EXT = ['.gcode', '.bgcode'];
+export const META_VERSION = 1;
 
 @Injectable()
-export class GcodeService {
+export class GcodeService implements OnApplicationBootstrap {
     private readonly log = new Logger(GcodeService.name);
     private readonly dir = loadEnv().gcodeDir;
     private readonly failuresDir = path.join(loadEnv().dataDir, 'failures');
 
     constructor(private readonly prisma: PrismaService) {}
+
+    onApplicationBootstrap(): void {
+        void this.backfillFilamentUsage().catch((e) =>
+            this.log.warn(`Filament usage backfill: ${(e as Error).message}`),
+        );
+    }
+
+    async backfillFilamentUsage(): Promise<number> {
+        const rows = await this.prisma.client.gcodeFile.findMany({
+            select: { id: true, filename: true, filaments: true },
+        });
+        let updated = 0;
+        for (const row of rows) {
+            let list: GcodeFilament[] = [];
+            try {
+                list = JSON.parse(row.filaments);
+            } catch {
+                list = [];
+            }
+            if (!Array.isArray(list) || !list.length || list.every((f) => 'usedMm' in f)) continue;
+            const data = await fs.promises.readFile(this.filePath(row.id, row.filename)).catch(() => null);
+            if (!data) continue;
+            const fresh = extractFilamentInfo(data);
+            if (!fresh.length) continue;
+            await this.prisma.client.gcodeFile.update({
+                where: { id: row.id },
+                data: { filaments: JSON.stringify(fresh) },
+            });
+            updated += 1;
+        }
+        if (updated) this.log.log(`Filament usage read from ${updated} stored file(s)`);
+        return updated;
+    }
 
     static isAllowedFilename(name: string): boolean {
         const lower = name.toLowerCase();
@@ -63,6 +97,8 @@ export class GcodeService {
                 filaments: JSON.stringify(meta.filaments),
                 objects: JSON.stringify(meta.objects),
                 webUnverified,
+                ...meta.target,
+                metaVersion: META_VERSION,
             },
             update: {
                 printerId: printerId ?? undefined,
@@ -75,6 +111,8 @@ export class GcodeService {
                 filaments: JSON.stringify(meta.filaments),
                 ...(meta.objects.length ? { objects: JSON.stringify(meta.objects) } : {}),
                 webUnverified,
+                ...meta.target,
+                metaVersion: META_VERSION,
                 createdAt: new Date(),
             },
         });
@@ -190,14 +228,20 @@ export class GcodeService {
         status: 'completed' | 'cancelled' | 'error',
         filamentMm = 0,
         spoolUsage: SpoolUsageEntry[] = [],
-        printDurationSec = 0,
-        failure: { errorCode?: number; errorMsg?: string; snapshot?: Buffer | null } = {},
+        printDurationSec: number | null = null,
+        failure: {
+            errorCode?: number;
+            errorMsg?: string;
+            snapshot?: Buffer | null;
+            pausedAt?: Date | null;
+            failureReason?: string;
+        } = {},
     ): Promise<void> {
         const job = await this.prisma.client.printJob.findUnique({ where: { id: jobId } });
         if (!job) return;
         const now = new Date();
         const wallSec = Math.max(0, Math.round((now.getTime() - job.startedAt.getTime()) / 1000));
-        const durationSec = printDurationSec > 0 ? Math.round(printDurationSec) : wallSec;
+        const durationSec = printDurationSec === null ? wallSec : Math.max(0, Math.round(printDurationSec));
         const snapshot = status === 'completed' ? null : await this.saveSnapshot(jobId, failure.snapshot ?? null);
         await this.prisma.client.printJob.update({
             where: { id: jobId },
@@ -210,6 +254,8 @@ export class GcodeService {
                 errorCode: status === 'completed' ? 0 : Math.max(0, Math.round(failure.errorCode ?? 0)),
                 errorMsg: status === 'completed' ? '' : (failure.errorMsg ?? '').slice(0, 500),
                 ...(snapshot ? { snapshot } : {}),
+                ...(failure.pausedAt !== undefined ? { pausedAt: failure.pausedAt } : {}),
+                ...(status !== 'completed' && failure.failureReason ? { failureReason: failure.failureReason } : {}),
             },
         });
     }
@@ -246,6 +292,10 @@ export class GcodeService {
             include: { file: { select: { thumbnail: true } } },
         });
         return toJobDto(row, row.file?.thumbnail ?? null);
+    }
+
+    async setJobPaused(jobId: string, pausedAt: Date | null): Promise<void> {
+        await this.prisma.client.printJob.updateMany({ where: { id: jobId, status: 'printing' }, data: { pausedAt } });
     }
 
     async closeOpenJobs(printerId: string, status: 'completed' | 'cancelled' | 'error'): Promise<number> {
@@ -335,6 +385,7 @@ export function toJobDto(j: PrintJob, thumbnail: string | null = null): PrintJob
         failureReason: j.failureReason as PrintJobDto['failureReason'],
         note: j.note,
         hasSnapshot: Boolean(j.snapshot),
+        pausedAt: j.pausedAt?.toISOString() ?? null,
         cost: null,
     };
 }

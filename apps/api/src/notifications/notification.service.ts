@@ -1,9 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import type { FarolPrintEvent, FarolPrintEventType, NotificationSettings, PrinterLiveState } from '@farolprint/shared';
+import {
+    eventLinkPath,
+    type FarolPrintEvent,
+    type FarolPrintEventType,
+    type NotificationSettings,
+    type PrinterLiveState,
+} from '@farolprint/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import type { BridgeDomainEvent, CommandRefused, PrinterBridge } from '../bridge/printer-bridge';
 import { m, runWithLocale } from '../i18n/locale';
+import { maintenanceTaskName } from '../maintenance/preset-names';
 import { SettingsService } from '../settings/settings.service';
 
 const HISTORY_MAX = 200;
@@ -24,8 +31,10 @@ const EVENT_FLAG: Record<FarolPrintEventType, keyof NotificationSettings['events
     alert_spool_low: 'alerts',
     alert_print_failure: 'printFailure',
     queue_next: 'queueNext',
+    queue_filament: 'queueNext',
     scheduled_print: 'scheduledPrint',
     maintenance_due: 'maintenanceDue',
+    automation: 'automation',
 };
 
 @Injectable()
@@ -96,9 +105,20 @@ export class NotificationService extends EventEmitter<{
     }
 
     build(printerId: string, printerName: string, type: FarolPrintEventType, data: EventData): FarolPrintEvent {
-        const locale = this.settings.get().locale;
+        const { locale, publicUrl } = this.settings.get();
         const { title, body } = runWithLocale(locale, () => describe(type, printerName, data));
-        return { id: randomUUID(), type, printerId, printerName, title, body, ts: Date.now(), data };
+        const url = eventUrl(publicUrl, type, printerId);
+        return {
+            id: randomUUID(),
+            type,
+            printerId,
+            printerName,
+            title,
+            body,
+            ts: Date.now(),
+            data,
+            ...(url ? { url } : {}),
+        };
     }
 
     async test(): Promise<{ delivered: string[]; failed: { channel: string; error: string }[] }> {
@@ -173,6 +193,7 @@ export class NotificationService extends EventEmitter<{
                 {
                     title: event.title,
                     description: event.body,
+                    ...(event.url ? { url: event.url } : {}),
                     color,
                     footer: { text: event.printerName },
                     timestamp: new Date(event.ts).toISOString(),
@@ -184,9 +205,13 @@ export class NotificationService extends EventEmitter<{
     private sendTelegram(token: string, chatId: string, event: FarolPrintEvent): Promise<void> {
         return this.post(`https://api.telegram.org/bot${token}/sendMessage`, {
             chat_id: chatId,
-            text: `*${escapeMd(event.title)}*\n${escapeMd(event.body)}`,
+            text: `*${escapeMd(event.title)}*\n${escapeMd(event.body)}${event.url ? `\n[${escapeMd(this.openLabel())}](${escapeUrl(event.url)})` : ''}`,
             parse_mode: 'MarkdownV2',
         });
+    }
+
+    private openLabel(): string {
+        return runWithLocale(this.settings.get().locale, () => m.notify_open_link());
     }
 
     private sendNtfy(url: string, event: FarolPrintEvent): Promise<void> {
@@ -199,12 +224,17 @@ export class NotificationService extends EventEmitter<{
             Title: event.title,
             Tags: tags,
             Priority: event.type.startsWith('alert') ? '4' : '3',
+            ...(event.url ? { Click: event.url } : {}),
         });
     }
 }
 
 function escapeMd(s: string): string {
     return s.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, (c) => `\\${c}`);
+}
+
+function escapeUrl(s: string): string {
+    return s.replace(/[)\\]/g, (c) => `\\${c}`);
 }
 
 function describe(type: FarolPrintEventType, printer: string, d: EventData): { title: string; body: string } {
@@ -257,6 +287,8 @@ function describe(type: FarolPrintEventType, printer: string, d: EventData): { t
                     ? m.notify_queue_next_body_bed_clear({ filename })
                     : m.notify_queue_next_body({ filename }),
             };
+        case 'queue_filament':
+            return { title: m.notify_queue_next_title({ printer }), body: m.notify_queue_filament_body({ filename }) };
         case 'scheduled_print': {
             const result = String(d.result ?? 'started');
             const body =
@@ -271,7 +303,7 @@ function describe(type: FarolPrintEventType, printer: string, d: EventData): { t
             return {
                 title: m.notify_maintenance_due_title({ printer }),
                 body: m.notify_maintenance_due_body({
-                    task: String(d.task ?? ''),
+                    task: maintenanceTaskName({ name: String(d.task ?? ''), presetKey: String(d.presetKey ?? '') }),
                     hours: String(d.hours ?? 0),
                     jobs: String(d.jobs ?? 0),
                 }),
@@ -286,7 +318,17 @@ function describe(type: FarolPrintEventType, printer: string, d: EventData): { t
                       : m.notify_alert_failure_body({ score: String(d.score ?? ''), filename });
             return { title: m.notify_alert_failure_title({ printer }), body };
         }
+        case 'automation':
+            return {
+                title: m.notify_automation_title({ printer, rule: String(d.rule ?? '') }),
+                body: String(d.message ?? ''),
+            };
     }
+}
+
+export function eventUrl(publicUrl: string, type: FarolPrintEventType, printerId: string): string | undefined {
+    if (!publicUrl) return undefined;
+    return `${publicUrl.replace(/\/+$/, '')}${eventLinkPath(type, printerId)}`;
 }
 
 function fmtDuration(sec: number): string {

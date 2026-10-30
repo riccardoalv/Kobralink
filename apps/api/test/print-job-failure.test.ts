@@ -69,6 +69,17 @@ describe('finishJob', () => {
         expect(row.durationSec).toBeLessThanOrEqual(92);
     });
 
+    it('keeps the reason given when cancelling, never on a completed job', async () => {
+        const cancelled = await svc.startJob('p1', 'why.gcode', null);
+        await svc.finishJob(cancelled, 'cancelled', 0, [], 10, { failureReason: 'adhesion' });
+        const completed = await svc.startJob('p1', 'fine.gcode', null);
+        await svc.finishJob(completed, 'completed', 0, [], 10, { failureReason: 'adhesion' });
+        const rows = await db.client.printJob.findMany({ where: { id: { in: [cancelled, completed] } } });
+        const reason = (id: string) => rows.find((r) => r.id === id)?.failureReason;
+        expect(reason(cancelled)).toBe('adhesion');
+        expect(reason(completed)).toBe('');
+    });
+
     it('ignores unknown jobs', async () => {
         await expect(svc.finishJob('missing', 'error')).resolves.toBeUndefined();
     });
@@ -127,6 +138,7 @@ describe('toJobDto', () => {
                 failureReason: 'filament_runout',
                 note: '',
                 snapshot: null,
+                pausedAt: new Date('2026-10-01T10:30:00Z'),
             },
             'thumb',
         );
@@ -135,5 +147,73 @@ describe('toJobDto', () => {
         expect(dto.finishedAt).toBeNull();
         expect(dto).toMatchObject({ errorCode: 7, errorMsg: 'runout', failureReason: 'filament_runout' });
         expect(dto.hasSnapshot).toBe(false);
+        expect(dto.pausedAt).toBe('2026-10-01T10:30:00.000Z');
+    });
+});
+
+describe('job pause time', () => {
+    it('records and clears the pause of a running job', async () => {
+        const id = await svc.startJob('p1', 'paused.gcode', null);
+        const at = new Date('2026-10-30T08:00:00Z');
+        await svc.setJobPaused(id, at);
+        expect((await db.client.printJob.findUniqueOrThrow({ where: { id } })).pausedAt).toEqual(at);
+        await svc.setJobPaused(id, null);
+        expect((await db.client.printJob.findUniqueOrThrow({ where: { id } })).pausedAt).toBeNull();
+    });
+
+    it('never rewrites the pause of a job that already ended', async () => {
+        const id = await svc.startJob('p1', 'ended.gcode', null);
+        await svc.finishJob(id, 'cancelled', 0, [], 10, {});
+        await svc.setJobPaused(id, new Date());
+        expect((await db.client.printJob.findUniqueOrThrow({ where: { id } })).pausedAt).toBeNull();
+    });
+
+    it('stores the pause the job ended with', async () => {
+        const at = new Date('2026-10-30T09:00:00Z');
+        const paused = await svc.startJob('p1', 'left-paused.gcode', null);
+        await svc.finishJob(paused, 'cancelled', 500, [], 60, { pausedAt: at });
+        const resumed = await svc.startJob('p1', 'resumed.gcode', null);
+        await svc.setJobPaused(resumed, at);
+        await svc.finishJob(resumed, 'cancelled', 500, [], 60, { pausedAt: null });
+        const rows = await db.client.printJob.findMany({ where: { id: { in: [paused, resumed] } } });
+        const byId = new Map(rows.map((r) => [r.id, r.pausedAt]));
+        expect(byId.get(paused)).toEqual(at);
+        expect(byId.get(resumed)).toBeNull();
+    });
+
+    it('keeps the stored pause when the job is closed without one', async () => {
+        const at = new Date('2026-10-30T10:00:00Z');
+        const id = await svc.startJob('p1', 'offline.gcode', null);
+        await svc.setJobPaused(id, at);
+        await svc.finishJob(id, 'error', 0, [], 0, {});
+        expect((await db.client.printJob.findUniqueOrThrow({ where: { id } })).pausedAt).toEqual(at);
+    });
+
+    it('keeps the pause of jobs closed after FarolPrint was offline', async () => {
+        await db.client.printJob.updateMany({
+            where: { printerId: 'p1', status: 'printing' },
+            data: { status: 'cancelled' },
+        });
+        const at = new Date('2026-10-30T11:00:00Z');
+        const id = await svc.startJob('p1', 'abandoned.gcode', null);
+        await svc.setJobPaused(id, at);
+        expect(await svc.closeOpenJobs('p1', 'cancelled')).toBe(1);
+        const row = await db.client.printJob.findUniqueOrThrow({ where: { id } });
+        expect(row.status).toBe('cancelled');
+        expect(row.pausedAt).toEqual(at);
+    });
+});
+
+describe('finishJob duration', () => {
+    it('keeps a zero print time and uses the wall clock only when the time is unknown', async () => {
+        const zero = await svc.startJob('p1', 'calibration.gcode', null);
+        await svc.finishJob(zero, 'cancelled', 0, [], 0, {});
+        const unknown = await svc.startJob('p1', 'no-clock.gcode', null);
+        await svc.finishJob(unknown, 'completed', 0, [], null, {});
+        const rows = await db.client.printJob.findMany({ where: { id: { in: [zero, unknown] } } });
+        const byId = new Map(rows.map((r) => [r.id, r.durationSec]));
+        expect(byId.get(zero)).toBe(0);
+        expect(byId.get(unknown)).toBeGreaterThanOrEqual(0);
+        expect(byId.get(unknown)).not.toBeNull();
     });
 });

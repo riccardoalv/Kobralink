@@ -1,4 +1,4 @@
-import { type PrinterSettingsFormValues, printerSettingsFormSchema } from '@farolprint/shared';
+import { type PrinterProfile, type PrinterSettingsFormValues, printerSettingsFormSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -14,9 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { api, type PrinterWithLive } from '@/lib/api';
 import { m } from '@/lib/i18n';
-import { filamentVendorsQuery } from '@/lib/queries';
+import { appSettingsQuery, filamentVendorsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { PrinterSpecsCard } from './printer-specs-card';
+import { ProfileFields } from './profile-fields';
 
 const SLOT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7];
 
@@ -77,6 +79,7 @@ export function PrinterSettingsForm({
         },
         onError: (e) => toast.error(e.message),
     });
+    const currency = useQuery(appSettingsQuery).data?.currency ?? 'EUR';
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const remove = useMutation({
         mutationFn: () => api.printers.remove(printer.id),
@@ -117,6 +120,28 @@ export function PrinterSettingsForm({
                     <ArrowLeft className="size-4" /> {m.common_back()}
                 </Link>
                 <h2 className="text-xl font-medium">{m.settings_title({ name: printer.name })}</h2>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start">
+                <Card className="rounded-3xl border-0 shadow-none">
+                    <CardHeader>
+                        <CardTitle>{m.profile_title()}</CardTitle>
+                        <CardDescription>{m.profile_hint()}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form.Field name="settings.profile">
+                            {(field) => (
+                                <ProfileFields
+                                    value={field.state.value as PrinterProfile}
+                                    onChange={field.handleChange}
+                                    modeId={printer.modeId}
+                                    currency={currency}
+                                />
+                            )}
+                        </form.Field>
+                    </CardContent>
+                </Card>
+                <PrinterSpecsCard modeId={printer.modeId} />
             </div>
 
             <Card className="rounded-3xl border-0 shadow-none">
@@ -301,6 +326,13 @@ export function PrinterSettingsForm({
                     <form.Field name="settings.queueBedClearConfirm">
                         {(field) => (
                             <Row label={m.settings_queue_bed_clear()} hint={m.settings_queue_bed_clear_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
+                    <form.Field name="settings.lightTrigger">
+                        {(field) => (
+                            <Row label={m.settings_light_trigger()} hint={m.settings_light_trigger_hint()}>
                                 <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
                             </Row>
                         )}

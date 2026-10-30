@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { api } from '@/lib/api';
 import { parseFilename } from '@/lib/filename';
+import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filesQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -54,15 +55,29 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
                             throw e;
                         })
                 }
-                onQueue={(r) =>
+                onQueue={(r, target) =>
                     api.queue
-                        .add(printerId, { fileId: file.id, ...r })
+                        .add({ fileId: file.id, ...r, ...target })
                         .then((item) => {
                             toast.success(m.queue_added({ name: item.filename }));
                             void api.control.clearFileReady(printerId);
                             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
+                            void qc.invalidateQueries({ queryKey: ['queue'] });
                         })
                         .catch((e: Error) => toast.error(e.message))
+                }
+                onSchedule={(r, startAt) =>
+                    api.schedule
+                        .create(printerId, { fileId: file.id, startAt, ...r })
+                        .then((item) => {
+                            toast.success(m.schedule_added({ name: item.filename, date: formatDate(item.startAt) }));
+                            void api.control.clearFileReady(printerId);
+                            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] });
+                        })
+                        .catch((e: Error) => {
+                            toast.error(e.message);
+                            throw e;
+                        })
                 }
             />
         ),

@@ -14,6 +14,7 @@ export const notificationEventsSchema = z.object({
     printFailure: z.boolean().default(true),
     scheduledPrint: z.boolean().default(true),
     maintenanceDue: z.boolean().default(true),
+    automation: z.boolean().default(true),
 });
 export type NotificationEvents = z.infer<typeof notificationEventsSchema>;
 
@@ -86,6 +87,7 @@ export const appSettingsSchema = z.object({
     haMqtt: haMqttSettingsSchema.default(haMqttSettingsSchema.parse({})),
     aceDryPresets: z.array(aceDryPresetSchema).max(20).default(DEFAULT_DRY_PRESETS),
     failureDetection: failureDetectionSettingsSchema.default(failureDetectionSettingsSchema.parse({})),
+    publicUrl: z.union([z.literal(''), z.url()]).default(''),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 export const updateAppSettingsSchema = patchSchema(appSettingsSchema);
@@ -97,10 +99,16 @@ export interface SpoolmanFilament {
     material?: string;
     color_hex?: string;
     vendor?: { id: number; name: string };
+    price?: number;
+    weight?: number;
+    density?: number;
+    diameter?: number;
 }
 
 export interface SpoolmanSpool {
     id: number;
+    price?: number;
+    initial_weight?: number;
     remaining_weight?: number;
     used_weight?: number;
     remaining_length?: number;

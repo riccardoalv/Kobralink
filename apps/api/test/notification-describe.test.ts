@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { type AppSettings, appSettingsSchema } from '@farolprint/shared';
+import { type AppSettings, appSettingsSchema, eventLinkPath as linkPath } from '@farolprint/shared';
 import { installI18n } from '../src/i18n/locale';
-import { NotificationService } from '../src/notifications/notification.service';
+import { eventUrl, NotificationService } from '../src/notifications/notification.service';
 import type { SettingsService } from '../src/settings/settings.service';
 
 installI18n();
@@ -22,6 +22,13 @@ describe('notification texts', () => {
         expect(held.body).toBe('Next file ready: a.gcode. Confirm the bed is clear to start it.');
         const plain = svc.build('p1', 'Kobra', 'queue_next', { filename: 'a.gcode', bedClear: false });
         expect(plain.body).toBe('Next file ready: a.gcode. Clear the bed, then start it.');
+    });
+
+    it('describes an item held for lack of filament', () => {
+        const { svc } = service();
+        const held = svc.build('p1', 'Kobra', 'queue_filament', { filename: 'a.gcode' });
+        expect(held.title).toBe('Kobra — queue');
+        expect(held.body).toBe('a.gcode is on hold: the loaded filament will not last. Load or change a spool.');
     });
 
     it('describes the three outcomes of a scheduled print', () => {
@@ -46,6 +53,14 @@ describe('notification texts', () => {
         expect(ev.title).toBe('Kobra — maintenance due');
         expect(ev.body).toBe('Clean the nozzle: 52 h and 9 prints since the last time.');
         expect(svc.build('p1', 'Kobra', 'maintenance_due', {}).body).toBe(': 0 h and 0 prints since the last time.');
+    });
+
+    it('names a recommended task in the configured language', () => {
+        const fr = service({ locale: 'fr' }).svc;
+        const ev = fr.build('p1', 'Kobra', 'maintenance_due', { task: 'Clean the nozzle', presetKey: 'clean_nozzle' });
+        expect(ev.body.startsWith('Nettoyer la buse')).toBe(true);
+        const custom = fr.build('p1', 'Kobra', 'maintenance_due', { task: 'Graisser', presetKey: '' });
+        expect(custom.body.startsWith('Graisser')).toBe(true);
     });
 
     it('follows the configured locale', () => {
@@ -76,5 +91,81 @@ describe('notification delivery flags', () => {
         svc.emitCustom('p1', 'Kobra', 'scheduled_print', { filename: 'a' });
         svc.emitCustom('p1', 'Kobra', 'maintenance_due', { task: 't' });
         expect(deliver).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('automation notifications', () => {
+    it('titles the message with the printer and the rule', () => {
+        const { svc } = service();
+        expect(svc.build('p1', 'Kobra', 'automation', { rule: 'Night', message: 'Lights off' })).toMatchObject({
+            title: 'Kobra — Night',
+            body: 'Lights off',
+        });
+    });
+
+    it('is delivered under its own switch, on by default', () => {
+        const on = service();
+        on.svc.emitCustom('p1', 'Kobra', 'automation', { rule: 'r', message: 'm' });
+        expect(on.deliver).toHaveBeenCalledTimes(1);
+        const off = service({ notifications: { events: { automation: false } } });
+        off.svc.emitCustom('p1', 'Kobra', 'automation', { rule: 'r', message: 'm' });
+        expect(off.deliver).not.toHaveBeenCalled();
+    });
+});
+
+describe('notification links', () => {
+    it('points each event at the screen that handles it', () => {
+        expect(linkPath('print_finished', 'p1')).toBe('/printers/p1');
+        expect(linkPath('alert_print_failure', 'p1')).toBe('/printers/p1');
+        expect(linkPath('printer_offline', '')).toBe('/printers');
+        expect(linkPath('queue_next', 'p1')).toBe('/queue');
+        expect(linkPath('queue_filament', 'p1')).toBe('/queue');
+        expect(linkPath('scheduled_print', 'p1')).toBe('/queue');
+        expect(linkPath('maintenance_due', 'p1')).toBe('/maintenance');
+        expect(linkPath('alert_spool_low', 'p1')).toBe('/filament');
+        expect(linkPath('automation', 'p1')).toBe('/automations');
+    });
+
+    it('builds the link from FarolPrint own address, or none without it', () => {
+        expect(eventUrl('http://farol.lan:7100/', 'queue_next', 'p1')).toBe('http://farol.lan:7100/queue');
+        expect(eventUrl('', 'queue_next', 'p1')).toBeUndefined();
+        expect(service({ publicUrl: 'http://farol.lan' }).svc.build('p1', 'K', 'print_finished', {}).url).toBe(
+            'http://farol.lan/printers/p1',
+        );
+        expect(service().svc.build('p1', 'K', 'print_finished', {}).url).toBeUndefined();
+    });
+
+    it('adds the link to Discord, Telegram, ntfy and the webhook', async () => {
+        const calls: { url: string; init: RequestInit }[] = [];
+        const realFetch = globalThis.fetch;
+        globalThis.fetch = (async (url: string, init: RequestInit) => {
+            calls.push({ url, init });
+            return new Response('', { status: 200 });
+        }) as unknown as typeof fetch;
+        try {
+            const current = appSettingsSchema.parse({
+                locale: 'en',
+                publicUrl: 'http://farol.lan',
+                notifications: {
+                    webhookUrl: 'http://hook.test/',
+                    discordUrl: 'http://discord.test/',
+                    telegramToken: 'token',
+                    telegramChatId: '42',
+                    ntfyUrl: 'http://ntfy.test/farol',
+                },
+            });
+            const svc = new NotificationService({ get: () => current } as unknown as SettingsService);
+            svc.emitCustom('p1', 'Kobra', 'queue_next', { filename: 'a.gcode' });
+            await new Promise((r) => setTimeout(r, 20));
+            const body = (host: string) => String(calls.find((c) => c.url.includes(host))?.init.body ?? '');
+            const headers = (host: string) =>
+                (calls.find((c) => c.url.includes(host))?.init.headers ?? {}) as Record<string, string>;
+            expect(JSON.parse(body('hook.test')).url).toBe('http://farol.lan/queue');
+            expect(JSON.parse(body('discord.test')).embeds[0].url).toBe('http://farol.lan/queue');
+            expect(JSON.parse(body('api.telegram.org')).text).toContain('[Open in FarolPrint](http://farol.lan/queue)');
+            expect(headers('ntfy.test').Click).toBe('http://farol.lan/queue');
+        } finally {
+            globalThis.fetch = realFetch;
+        }
     });
 });

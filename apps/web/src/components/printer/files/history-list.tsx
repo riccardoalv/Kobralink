@@ -10,7 +10,15 @@ import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { FailureDialog } from './failure-dialog';
 
-export function HistoryList({ printerId, jobs }: { printerId: string; jobs: PrintJobDto[] }) {
+export function HistoryList({
+    printerId,
+    jobs,
+    printerNames,
+}: {
+    printerId: string;
+    jobs: PrintJobDto[];
+    printerNames?: Record<string, string>;
+}) {
     const settings = useQuery(appSettingsQuery);
     const currency = settings.data?.currency ?? 'EUR';
     if (!jobs.length) return <p className="text-sm text-muted-foreground">{m.history_empty()}</p>;
@@ -18,7 +26,7 @@ export function HistoryList({ printerId, jobs }: { printerId: string; jobs: Prin
         confirmationDialogStore.actions.openDialog({
             title: m.history_edit_failure(),
             description: parseFilename(job.filename).name,
-            content: <FailureDialog printerId={printerId} job={job} />,
+            content: <FailureDialog printerId={job.printerId || printerId} job={job} />,
         });
     return (
         <ul className="divide-y divide-border">
@@ -53,7 +61,10 @@ export function HistoryList({ printerId, jobs }: { printerId: string; jobs: Prin
                                 </button>
                             )}
                         </div>
-                        <span className="text-muted-foreground">{formatDate(j.startedAt)}</span>
+                        <span className="text-muted-foreground">
+                            {printerNames?.[j.printerId] ? `${printerNames[j.printerId]} · ` : ''}
+                            {formatDate(j.startedAt)}
+                        </span>
                         <span className="w-20 text-right tabular-nums text-muted-foreground">
                             {formatDuration(j.durationSec ?? 0)}
                         </span>

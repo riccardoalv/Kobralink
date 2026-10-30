@@ -123,6 +123,7 @@ describe('maintenance due check', () => {
         expect(emitCustom).toHaveBeenCalledTimes(1);
         expect(emitCustom).toHaveBeenCalledWith('p1', 'Kobra', 'maintenance_due', {
             task: 'Nozzle',
+            presetKey: '',
             hours: 1,
             jobs: 1,
         });
@@ -152,6 +153,20 @@ describe('maintenance due check', () => {
         const row = await db.client.maintenanceTask.findUniqueOrThrow({ where: { id: task.id } });
         expect(row.dueNotifiedAt).toBeNull();
         svc.detach('p1');
+        await svc.remove('p1', task.id);
+    });
+});
+
+describe('recommended tasks', () => {
+    it('keep the recommendation they came from, and lose it when saved as a custom task', async () => {
+        const task = await svc.create('p1', {
+            name: 'Lubricate the axes',
+            presetKey: 'lubricate_axes',
+            intervalHours: 100,
+        });
+        expect(task.presetKey).toBe('lubricate_axes');
+        const renamed = await svc.update('p1', task.id, { name: 'Grease the screws', intervalHours: 100 });
+        expect(renamed.presetKey).toBe('');
         await svc.remove('p1', task.id);
     });
 });

@@ -1,7 +1,17 @@
 import { z } from 'zod';
 
+export const MAINTENANCE_PRESET_KEYS = [
+    'lubricate_axes',
+    'clean_nozzle',
+    'check_belts',
+    'clean_bed',
+    'clean_fans',
+] as const;
+export type MaintenancePresetKey = (typeof MAINTENANCE_PRESET_KEYS)[number];
+
 export const maintenanceTaskSchema = z.object({
     name: z.string().trim().min(1).max(64),
+    presetKey: z.union([z.literal(''), z.enum(MAINTENANCE_PRESET_KEYS)]).default(''),
     note: z.string().trim().max(500).default(''),
     intervalHours: z.number().min(0).max(100000).default(0),
     intervalJobs: z.number().int().min(0).max(100000).default(0),
@@ -24,6 +34,7 @@ export interface MaintenanceTaskDto {
     id: string;
     printerId: string;
     name: string;
+    presetKey: MaintenancePresetKey | '';
     note: string;
     intervalHours: number;
     intervalJobs: number;
@@ -45,7 +56,7 @@ export interface MaintenanceLogDto {
 }
 
 export interface MaintenancePreset {
-    key: string;
+    key: MaintenancePresetKey;
     intervalHours: number;
     intervalJobs: number;
     intervalDays: number;

@@ -6,7 +6,7 @@ import { m } from '@/lib/i18n';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { renderWithProviders } from '@/test/render';
-import { DoneForm, LogList, MaintenanceCard, presetLabel, TaskForm } from './maintenance-card';
+import { DoneForm, LogList, MaintenanceCard, presetLabel, TaskForm, taskName } from './maintenance-card';
 
 const { tasks, maintenance, toast } = vi.hoisted(() => {
     const tasks: MaintenanceTaskDto[] = [
@@ -14,6 +14,7 @@ const { tasks, maintenance, toast } = vi.hoisted(() => {
             id: 't1',
             printerId: 'p1',
             name: 'Clean the nozzle',
+            presetKey: '',
             note: 'Cold pull',
             intervalHours: 50,
             intervalJobs: 0,
@@ -28,6 +29,7 @@ const { tasks, maintenance, toast } = vi.hoisted(() => {
             id: 't2',
             printerId: 'p1',
             name: 'Lubricate the axes',
+            presetKey: '',
             note: '',
             intervalHours: 100,
             intervalJobs: 20,
@@ -85,6 +87,15 @@ describe('MaintenanceCard', () => {
         expect(screen.getByText('Cold pull')).toBeTruthy();
     });
 
+    it('shows recommended tasks in the current language and does not suggest them again', async () => {
+        maintenance.list.mockResolvedValue([{ ...tasks[0], name: 'Limpar o bico', presetKey: 'clean_nozzle' }]);
+        await renderWithProviders(<MaintenanceCard printerId="p1" />);
+        expect(await screen.findByText(m.maintenance_preset_clean_nozzle())).toBeTruthy();
+        expect(screen.queryByText('Limpar o bico')).toBeNull();
+        const section = await screen.findByRole('region', { name: m.maintenance_recommended() });
+        expect(section.textContent).not.toContain(m.maintenance_preset_clean_nozzle());
+    });
+
     it('shows the empty state without tasks', async () => {
         maintenance.list.mockResolvedValue([]);
         await renderWithProviders(<MaintenanceCard printerId="p1" />);
@@ -114,6 +125,7 @@ describe('MaintenanceCard', () => {
         await waitFor(() =>
             expect(maintenance.create).toHaveBeenCalledWith('p1', {
                 name: m.maintenance_preset_check_belts(),
+                presetKey: 'check_belts',
                 intervalHours: 200,
                 intervalJobs: 0,
                 intervalDays: 0,
@@ -133,6 +145,7 @@ describe('MaintenanceCard', () => {
         for (const p of MAINTENANCE_PRESETS) {
             expect(maintenance.create).toHaveBeenCalledWith('p1', {
                 name: presetLabel(p),
+                presetKey: p.key,
                 intervalHours: p.intervalHours,
                 intervalJobs: p.intervalJobs,
                 intervalDays: p.intervalDays,
@@ -204,6 +217,7 @@ describe('TaskForm', () => {
         await waitFor(() => expect(maintenance.create).toHaveBeenCalledOnce());
         expect(maintenance.create).toHaveBeenCalledWith('p1', {
             name: presetLabel(preset),
+            presetKey: preset.key,
             note: '',
             intervalHours: preset.intervalHours,
             intervalJobs: preset.intervalJobs,
@@ -231,8 +245,47 @@ describe('TaskForm', () => {
         expect(maintenance.update).toHaveBeenCalledWith(
             'p1',
             't2',
-            expect.objectContaining({ name: 'Lubricate everything', intervalHours: 100, intervalJobs: 20 }),
+            expect.objectContaining({
+                name: 'Lubricate everything',
+                intervalHours: 100,
+                intervalJobs: 20,
+                presetKey: '',
+            }),
         );
+    });
+
+    it('keeps a recommended task translated when it is saved without renaming', async () => {
+        const preset = { ...tasks[1], name: 'Lubrifier les axes', presetKey: 'lubricate_axes' as const };
+        await renderWithProviders(<TaskForm printerId="p1" task={preset} onSaved={vi.fn()} />);
+        expect((screen.getByLabelText(m.maintenance_name()) as HTMLInputElement).value).toBe(
+            m.maintenance_preset_lubricate_axes(),
+        );
+        await userEvent.click(screen.getByRole('button', { name: m.common_save() }));
+        await waitFor(() => expect(maintenance.update).toHaveBeenCalledOnce());
+        expect(maintenance.update.mock.calls[0][2]).toMatchObject({ presetKey: 'lubricate_axes' });
+    });
+
+    it('turns a recommended task into a custom one when it is renamed', async () => {
+        const preset = { ...tasks[1], presetKey: 'lubricate_axes' as const };
+        await renderWithProviders(<TaskForm printerId="p1" task={preset} onSaved={vi.fn()} />);
+        const name = screen.getByLabelText(m.maintenance_name());
+        await userEvent.clear(name);
+        await userEvent.type(name, 'Grease the Z screws');
+        await userEvent.click(screen.getByRole('button', { name: m.common_save() }));
+        await waitFor(() => expect(maintenance.update).toHaveBeenCalledOnce());
+        expect(maintenance.update.mock.calls[0][2]).toMatchObject({ name: 'Grease the Z screws', presetKey: '' });
+    });
+});
+
+describe('taskName', () => {
+    it('translates recommended tasks whatever language they were created in', () => {
+        expect(taskName({ name: 'Limpar o bico', presetKey: 'clean_nozzle' })).toBe(
+            m.maintenance_preset_clean_nozzle(),
+        );
+    });
+
+    it('keeps the name of custom tasks', () => {
+        expect(taskName({ name: 'Grease the Z screws', presetKey: '' })).toBe('Grease the Z screws');
     });
 });
 

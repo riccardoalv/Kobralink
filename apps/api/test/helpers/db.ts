@@ -69,6 +69,8 @@ export async function seedJob(
         spoolUsage: string;
         failureReason: string;
         errorCode: number;
+        pausedAt: Date | null;
+        finishedAt: Date | null;
     }> = {},
 ) {
     return client.printJob.create({
@@ -78,13 +80,14 @@ export async function seedJob(
             fileId: data.fileId ?? null,
             status: data.status ?? 'completed',
             startedAt: data.startedAt ?? new Date(),
-            finishedAt: new Date(),
+            finishedAt: data.finishedAt === undefined ? new Date() : data.finishedAt,
             durationSec: data.durationSec ?? 3600,
             estimatedSec: data.estimatedSec ?? 0,
             filamentMm: data.filamentMm ?? 0,
             spoolUsage: data.spoolUsage ?? '[]',
             failureReason: data.failureReason ?? '',
             errorCode: data.errorCode ?? 0,
+            pausedAt: data.pausedAt ?? null,
         },
     });
 }

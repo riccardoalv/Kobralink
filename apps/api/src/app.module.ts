@@ -4,6 +4,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { createAuth } from './auth/auth';
 import { SetupController } from './auth/setup.controller';
+import { AutomationModule } from './automations/automation.module';
 import { BridgeModule } from './bridge/bridge.module';
 import { WriteGuard } from './common/write.guard';
 import { loadEnv } from './config/env';
@@ -50,6 +51,7 @@ const env = loadEnv();
         StatsModule,
         DryScheduleModule,
         ScheduledPrintModule,
+        AutomationModule,
         UsersModule,
         SystemModule,
         ...(env.webDir

@@ -1,8 +1,8 @@
-import type { PrinterLiveState } from '@farolprint/shared';
+import { isCalibrating, type PrinterLiveState } from '@farolprint/shared';
 import { useEffect, useState } from 'react';
 
 export function usePrintClock(state: PrinterLiveState): { elapsedSec: number; remainSec: number } {
-    const running = state.printState === 'printing' && state.printTimeAt > 0;
+    const running = state.printState === 'printing' && state.printTimeAt > 0 && !isCalibrating(state);
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
         if (!running) return;

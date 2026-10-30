@@ -20,6 +20,7 @@ import {
     ServiceUnavailableException,
 } from '@nestjs/common';
 import { BridgeRegistry } from '../bridge/bridge.registry';
+import { fetchWithTimeout } from '../common/fetch';
 import { ZodPipe } from '../common/zod.pipe';
 import { m } from '../i18n/locale';
 import { PrintersService } from './printers.service';
@@ -130,10 +131,4 @@ export class PrintersController {
         await this.registry.despawn(id);
         await this.printers.remove(id);
     }
-}
-
-function fetchWithTimeout(url: string, ms = 5000): Promise<globalThis.Response> {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), ms);
-    return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }

@@ -10,6 +10,7 @@ export const FAILURE_REASONS = [
     'layer_shift',
     'power_loss',
     'user_cancel',
+    'quality',
     'other',
 ] as const;
 export type FailureReason = (typeof FAILURE_REASONS)[number];
@@ -19,6 +20,8 @@ export interface GcodeFilament {
     colorHex: string;
     material: string;
     isUsed: boolean;
+    usedMm?: number | null;
+    usedG?: number | null;
 }
 
 export interface GcodeFileDto {
@@ -57,6 +60,7 @@ export interface PrintJobDto {
     failureReason: FailureReason | '';
     note: string;
     hasSnapshot: boolean;
+    pausedAt: string | null;
     cost: JobCost | null;
 }
 
@@ -65,6 +69,12 @@ export const updatePrintJobSchema = z.object({
     note: z.string().trim().max(500).optional(),
 });
 export type UpdatePrintJobInput = z.infer<typeof updatePrintJobSchema>;
+
+export const cancelPrintSchema = z
+    .object({ reason: z.union([z.literal(''), z.enum(FAILURE_REASONS)]).optional() })
+    .optional()
+    .transform((v) => ({ reason: v?.reason ?? '' }));
+export type CancelPrintInput = z.input<typeof cancelPrintSchema>;
 
 export const filamentAssignmentSchema = z.object({
     paintIndex: z.number().int().min(0).max(63),

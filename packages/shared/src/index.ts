@@ -1,3 +1,4 @@
+export * from './automations';
 export * from './control';
 export * from './cost';
 export * from './detection';
@@ -10,6 +11,7 @@ export * from './macros';
 export * from './maintenance';
 export * from './patch';
 export * from './printer';
+export * from './printer-specs';
 export * from './queue';
 export * from './schedule';
 export * from './settings';

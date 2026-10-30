@@ -2,18 +2,18 @@ import { type AppSettings, appSettingsSchema, printerSettingsSchema } from '@far
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrinterSettingsForm } from '@/components/printer/settings-form';
 import type { PrinterWithLive } from '@/lib/api';
-import { m } from '@/lib/i18n';
+import { installI18n, m } from '@/lib/i18n';
 import { renderWithProviders } from '@/test/render';
-import { CostsCard } from './costs-card';
+import { COSTS_KEYS, CostsCard } from './costs-card';
 import { DetectionCard } from './detection-card';
 import { DryPresetsCard } from './dry-presets-card';
-import { GeneralCard } from './general-card';
+import { GENERAL_KEYS, GeneralCard } from './general-card';
 import { HaMqttCard } from './ha-mqtt-card';
 import { NotificationsCard } from './notifications-card';
-import { SpoolmanCard } from './spoolman-card';
+import { SPOOLMAN_KEYS, SpoolmanCard } from './spoolman-card';
 
 const mocks = vi.hoisted(() => ({
     save: vi.fn(),
@@ -135,7 +135,7 @@ beforeEach(() => {
 describe('saving a settings card without edits keeps every stored value', () => {
     it('general', async () => {
         const payload = await saveUnchanged(<GeneralCard settings={stored} />, mocks.save);
-        expectSection(payload, ['locale', 'updateCheck', 'verboseHttpLog', 'currency', 'filamentPricePerKg']);
+        expectSection(payload, [...GENERAL_KEYS]);
     });
 
     it('notifications', async () => {
@@ -145,7 +145,7 @@ describe('saving a settings card without edits keeps every stored value', () => 
 
     it('costs', async () => {
         const payload = await saveUnchanged(<CostsCard settings={stored} />, mocks.save);
-        expectSection(payload, ['costs']);
+        expectSection(payload, [...COSTS_KEYS]);
     });
 
     it('Home Assistant', async () => {
@@ -165,7 +165,7 @@ describe('saving a settings card without edits keeps every stored value', () => 
 
     it('Spoolman', async () => {
         const payload = await saveUnchanged(<SpoolmanCard settings={stored} />, mocks.settingsUpdate);
-        expectSection(payload, ['spoolmanUrl', 'spoolmanSyncRateSec']);
+        expectSection(payload, [...SPOOLMAN_KEYS]);
     });
 
     it('printer settings', async () => {
@@ -253,5 +253,47 @@ describe('editing the new settings', () => {
         await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
         expect(mocks.printerUpdate.mock.calls[0][1].settings.queueBedClearConfirm).toBe(false);
         expect(mocks.printerUpdate.mock.calls[0][1].settings.queueAutoStart).toBe(true);
+    });
+
+    it('turns the light trigger on for a printer', async () => {
+        const printer = {
+            id: 'p1',
+            name: 'Kobra 4',
+            ip: '192.168.1.235',
+            httpPort: 7125,
+            deviceId: 'abcdef123456',
+            modeId: '20028',
+            username: 'user',
+            createdAt: '2026-10-20T00:00:00.000Z',
+            model: 'Anycubic Kobra 4',
+            settings: printerSettingsSchema.parse({}),
+            live: null,
+        } as unknown as PrinterWithLive;
+        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        expect(switchAfter(m.settings_light_trigger()).getAttribute('aria-checked')).toBe('false');
+        await userEvent.click(switchAfter(m.settings_light_trigger()));
+        await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+        await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
+        expect(mocks.printerUpdate.mock.calls[0][1].settings.lightTrigger).toBe(true);
+    });
+});
+
+describe('FarolPrint address', () => {
+    beforeAll(() => installI18n());
+
+    it('fills in the address this page is open on', async () => {
+        await renderWithProviders(<GeneralCard settings={stored} />);
+        await userEvent.click(screen.getByRole('button', { name: m.settings_public_url_current() }));
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+        await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
+        expect(mocks.save.mock.calls[0][0]).toMatchObject({ publicUrl: window.location.origin });
+    });
+
+    it('refuses an address that is not a URL', async () => {
+        await renderWithProviders(<GeneralCard settings={stored} />);
+        await userEvent.type(screen.getByLabelText(m.settings_public_url()), 'farol.local');
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+        expect(await screen.findByText(m.validation_url())).toBeTruthy();
+        expect(mocks.save).not.toHaveBeenCalled();
     });
 });

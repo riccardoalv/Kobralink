@@ -6,11 +6,14 @@ import type {
     AmsFeedInput,
     AmsSetSlotInput,
     AppSettings,
+    AutomationRuleDto,
+    AutomationRuleInput,
     BackupInfoDto,
     CompleteMaintenanceInput,
     CreateUserInput,
     DetectionModelDto,
     FailureDetectionStatusDto,
+    FailureReason,
     FarolPrintEvent,
     FilamentProfile,
     FileObjectsDto,
@@ -32,6 +35,8 @@ import type {
     PrinterSample,
     PrintJobDto,
     PrintPrinterFileInput,
+    QueueCheckDto,
+    QueueCheckInput,
     QueueItemDto,
     QueueStatusDto,
     ScheduleDryInput,
@@ -59,6 +64,7 @@ import type {
     UpdateUserInput,
     UserDto,
 } from '@farolprint/shared';
+import { printerSettingsSchema } from '@farolprint/shared';
 import { getLocale } from '@/lib/i18n';
 
 export class ApiError extends Error {
@@ -105,12 +111,17 @@ const json = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.strin
 
 export type PrinterWithLive = Printer & { live: PrinterLiveState | null };
 
+export function withFullSettings<T extends { settings: unknown }>(printer: T): T {
+    const parsed = printerSettingsSchema.safeParse(printer.settings ?? {});
+    return parsed.success ? { ...printer, settings: parsed.data } : printer;
+}
+
 export const api = {
     setupStatus: () => request<{ needsSetup: boolean }>('/api/v1/setup/status'),
 
     printers: {
-        list: () => request<PrinterWithLive[]>('/api/v1/printers'),
-        get: (id: string) => request<PrinterWithLive>(`/api/v1/printers/${id}`),
+        list: () => request<PrinterWithLive[]>('/api/v1/printers').then((list) => list.map(withFullSettings)),
+        get: (id: string) => request<PrinterWithLive>(`/api/v1/printers/${id}`).then(withFullSettings),
         add: (input: AddPrinterInput) => request<Printer>('/api/v1/printers', json(input)),
         update: (id: string, input: UpdatePrinterInput) =>
             request<Printer>(`/api/v1/printers/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
@@ -138,7 +149,8 @@ export const api = {
         axisOff: (id: string) => request<void>(`/api/v1/printers/${id}/axis/off`, { method: 'POST' }),
         pause: (id: string) => request<void>(`/api/v1/printers/${id}/print/pause`, { method: 'POST' }),
         resume: (id: string) => request<void>(`/api/v1/printers/${id}/print/resume`, { method: 'POST' }),
-        cancel: (id: string) => request<void>(`/api/v1/printers/${id}/print/cancel`, { method: 'POST' }),
+        cancel: (id: string, reason: FailureReason | '' = '') =>
+            request<void>(`/api/v1/printers/${id}/print/cancel`, json({ reason })),
         clearFileReady: (id: string) => request<void>(`/api/v1/printers/${id}/file-ready/clear`, { method: 'POST' }),
     },
 
@@ -178,7 +190,7 @@ export const api = {
 
     spoolman: {
         spools: () => request<SpoolmanSpool[]>('/api/v1/spoolman/spools'),
-        health: () => request<{ reachable: boolean; configured: boolean }>('/api/v1/spoolman/health'),
+        health: () => request<{ reachable: boolean; configured: boolean; pending?: number }>('/api/v1/spoolman/health'),
         status: (id: string) => request<SpoolmanStatus>(`/api/v1/printers/${id}/spoolman`),
         setSlots: (id: string, slotMap: Record<string, number>) =>
             request<{ slotSpools: Record<string, number> }>(`/api/v1/printers/${id}/spoolman/slots`, json({ slotMap })),
@@ -225,21 +237,40 @@ export const api = {
         `/api/v1/stats/export.csv?printerId=${encodeURIComponent(printerId ?? '')}&days=${days}`,
 
     queue: {
+        all: () => request<QueueItemDto[]>('/api/v1/queue'),
         list: (printerId: string) => request<QueueItemDto[]>(`/api/v1/printers/${printerId}/queue`),
         status: (printerId: string) => request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/status`),
-        bedClear: (printerId: string) =>
-            request<QueueItemDto>(`/api/v1/printers/${printerId}/queue/bed-clear`, { method: 'POST' }),
-        add: (printerId: string, input: AddQueueItemInput) =>
-            request<QueueItemDto>(`/api/v1/printers/${printerId}/queue`, json(input)),
-        reorder: (printerId: string, ids: string[]) =>
-            request<QueueItemDto[]>(`/api/v1/printers/${printerId}/queue/reorder`, json({ ids })),
+        bedClear: (printerId: string, outcome: 'good' | 'bad' = 'good') =>
+            request<{ started: QueueItemDto | null }>(
+                `/api/v1/printers/${printerId}/queue/bed-clear`,
+                json({ outcome }),
+            ),
+        maintenance: (printerId: string, enabled: boolean) =>
+            request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/maintenance`, json({ enabled })),
+        add: (input: AddQueueItemInput) => request<QueueItemDto>('/api/v1/queue', json(input)),
+        check: (input: QueueCheckInput) => request<QueueCheckDto>('/api/v1/queue/check', json(input)),
+        reorder: (ids: string[]) => request<QueueItemDto[]>('/api/v1/queue/reorder', json({ ids })),
         start: (printerId: string) =>
             request<QueueItemDto>(`/api/v1/printers/${printerId}/queue/start`, { method: 'POST' }),
-        remove: (printerId: string, itemId: string) =>
-            request<void>(`/api/v1/printers/${printerId}/queue/${itemId}`, { method: 'DELETE' }),
-        clear: (printerId: string) => request<void>(`/api/v1/printers/${printerId}/queue`, { method: 'DELETE' }),
+        remove: (itemId: string) => request<void>(`/api/v1/queue/${itemId}`, { method: 'DELETE' }),
+        clear: (printerId?: string) =>
+            request<void>(printerId ? `/api/v1/printers/${printerId}/queue` : '/api/v1/queue', { method: 'DELETE' }),
     },
 
+    automations: {
+        list: () => request<AutomationRuleDto[]>('/api/v1/automations'),
+        create: (input: AutomationRuleInput) => request<AutomationRuleDto>('/api/v1/automations', json(input)),
+        update: (id: string, input: AutomationRuleInput) =>
+            request<AutomationRuleDto>(`/api/v1/automations/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
+        setEnabled: (id: string, enabled: boolean) =>
+            request<AutomationRuleDto>(`/api/v1/automations/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ enabled }),
+            }),
+        run: (id: string, printerId: string) =>
+            request<AutomationRuleDto>(`/api/v1/automations/${id}/run`, json({ printerId })),
+        remove: (id: string) => request<void>(`/api/v1/automations/${id}`, { method: 'DELETE' }),
+    },
     macros: {
         list: () => request<MacroDto[]>('/api/v1/macros'),
         create: (input: MacroInput) => request<MacroDto>('/api/v1/macros', json(input)),
@@ -345,7 +376,10 @@ export const api = {
     },
 
     files: {
+        all: () => request<GcodeFileDto[]>('/api/v1/files'),
         list: (id: string) => request<GcodeFileDto[]>(`/api/v1/printers/${id}/files`),
+        historyAll: (printerId?: string, limit = 100) =>
+            request<PrintJobDto[]>(`/api/v1/history?printerId=${encodeURIComponent(printerId ?? '')}&limit=${limit}`),
         upload: (id: string, file: File, print: boolean) => {
             const fd = new FormData();
             fd.append('file', file, file.name);

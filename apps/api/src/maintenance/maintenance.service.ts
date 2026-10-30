@@ -77,6 +77,7 @@ export class MaintenanceService {
             this.log.log(`Maintenance due on ${bridge.config.name}: ${t.name}`);
             this.notifications.emitCustom(printerId, bridge.config.name, 'maintenance_due', {
                 task: t.name,
+                presetKey: t.presetKey,
                 hours: Math.round(t.usage.hours),
                 jobs: t.usage.jobs,
             });
@@ -122,6 +123,7 @@ export class MaintenanceService {
             data: {
                 printerId,
                 name: input.name,
+                presetKey: input.presetKey ?? '',
                 note: input.note ?? '',
                 intervalHours: input.intervalHours ?? 0,
                 intervalJobs: input.intervalJobs ?? 0,
@@ -137,6 +139,7 @@ export class MaintenanceService {
             where: { id: row.id },
             data: {
                 name: input.name,
+                presetKey: input.presetKey ?? '',
                 note: input.note ?? '',
                 intervalHours: input.intervalHours ?? 0,
                 intervalJobs: input.intervalJobs ?? 0,
@@ -189,6 +192,7 @@ export function toDto(r: MaintenanceTask, usage: MaintenanceUsage): MaintenanceT
         id: r.id,
         printerId: r.printerId,
         name: r.name,
+        presetKey: (r.presetKey as MaintenanceTaskDto['presetKey']) || '',
         note: r.note,
         intervalHours: r.intervalHours,
         intervalJobs: r.intervalJobs,

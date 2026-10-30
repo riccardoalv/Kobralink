@@ -3,12 +3,18 @@ import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } fr
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-export async function renderWithProviders(ui: ReactNode) {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+export function testQueryClient(): QueryClient {
+    return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+}
+
+export async function renderWithProviders(
+    ui: ReactNode,
+    { queryClient = testQueryClient(), path = '/' }: { queryClient?: QueryClient; path?: string } = {},
+) {
     const rootRoute = createRootRoute({ component: () => <div data-testid="rendered">{ui}</div> });
     const router = createRouter({
         routeTree: rootRoute,
-        history: createMemoryHistory({ initialEntries: ['/'] }),
+        history: createMemoryHistory({ initialEntries: [path] }),
     });
     const result = render(
         <QueryClientProvider client={queryClient}>
@@ -16,5 +22,5 @@ export async function renderWithProviders(ui: ReactNode) {
         </QueryClientProvider>,
     );
     await screen.findByTestId('rendered');
-    return result;
+    return { ...result, queryClient, router };
 }

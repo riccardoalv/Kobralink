@@ -5,6 +5,7 @@ import {
     aceDrySchema,
     amsFeedSchema,
     amsSetSlotSchema,
+    cancelPrintSchema,
     type DeletePrinterFilesInput,
     deletePrinterFilesSchema,
     type FileObjectsDto,
@@ -181,8 +182,11 @@ export class CoreController {
 
     @Post('print/cancel')
     @HttpCode(204)
-    async cancel(@Param('id') id: string) {
-        await this.run(() => this.bridge(id).cancel());
+    async cancel(
+        @Param('id') id: string,
+        @Body(new ZodPipe(cancelPrintSchema)) body: z.output<typeof cancelPrintSchema>,
+    ) {
+        await this.run(() => this.bridge(id).cancel(body.reason));
     }
 
     @Get('camera/stream')

@@ -133,7 +133,7 @@ export function FileTile({
                                         'rounded-full px-2 py-0.5 font-medium',
                                         highlight
                                             ? 'bg-primary-foreground/20 text-primary-foreground'
-                                            : 'bg-primary/10 text-primary',
+                                            : 'bg-primary/10 text-primary-strong',
                                     )}
                                     title={m.files_web_warning_title()}
                                 >

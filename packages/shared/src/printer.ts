@@ -9,6 +9,36 @@ export const alertSettingsSchema = z.object({
 });
 export type AlertSettings = z.infer<typeof alertSettingsSchema>;
 
+const nullableNumber = (max: number) => z.number().min(0).max(max).nullable().default(null);
+
+export const PRINTER_TAG_MAX = 20;
+
+export const printerTagSchema = z
+    .string()
+    .trim()
+    .min(1)
+    .max(32)
+    .transform((v) => v.toLowerCase());
+
+export const printerProfileSchema = z.object({
+    location: z.string().trim().max(64).default(''),
+    tags: z
+        .array(printerTagSchema)
+        .max(PRINTER_TAG_MAX)
+        .transform((tags) => [...new Set(tags)])
+        .default([]),
+    nozzleMm: z.number().min(0.1).max(2).nullable().default(null),
+    powerW: nullableNumber(5000),
+    purchasePrice: nullableNumber(1_000_000),
+    lifespanHours: z.number().int().min(0).max(1_000_000).nullable().default(null),
+});
+export type PrinterProfile = z.infer<typeof printerProfileSchema>;
+
+export function depreciationPerHour(profile: Pick<PrinterProfile, 'purchasePrice' | 'lifespanHours'>): number {
+    const { purchasePrice, lifespanHours } = profile;
+    return purchasePrice && lifespanHours ? purchasePrice / lifespanHours : 0;
+}
+
 export const printerSettingsSchema = z.object({
     autoLeveling: z.boolean().default(true),
     vibrationCompensation: z.boolean().default(false),
@@ -29,7 +59,9 @@ export const printerSettingsSchema = z.object({
     queueAutoStart: z.boolean().default(false),
     queueBedClearConfirm: z.boolean().default(true),
     failureDetection: z.boolean().default(true),
+    lightTrigger: z.boolean().default(false),
     alerts: alertSettingsSchema.default(alertSettingsSchema.parse({})),
+    profile: printerProfileSchema.default(printerProfileSchema.parse({})),
 });
 
 export const powerActionSchema = z.object({ action: z.enum(['on', 'off']) });
@@ -48,6 +80,8 @@ export const printerSchema = z.object({
     model: z.string(),
     httpPort: z.number().int(),
     settings: printerSettingsSchema,
+    maintenance: z.boolean().default(false),
+    awaitingBedClear: z.boolean().default(false),
     createdAt: z.string(),
 });
 export type Printer = z.infer<typeof printerSchema>;

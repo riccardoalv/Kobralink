@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { maintenanceProgress, maintenanceTaskSchema } from '../src/maintenance';
+import {
+    MAINTENANCE_PRESET_KEYS,
+    MAINTENANCE_PRESETS,
+    maintenanceProgress,
+    maintenanceTaskSchema,
+} from '../src/maintenance';
 
 describe('maintenanceProgress', () => {
     it('is due when any criterion is reached', () => {
@@ -27,10 +32,22 @@ describe('maintenanceTaskSchema', () => {
         expect(maintenanceTaskSchema.safeParse({ name: '' }).success).toBe(false);
         expect(maintenanceTaskSchema.parse({ name: ' Clean nozzle ' })).toEqual({
             name: 'Clean nozzle',
+            presetKey: '',
             note: '',
             intervalHours: 0,
             intervalJobs: 0,
             intervalDays: 0,
         });
+    });
+});
+
+describe('maintenance preset keys', () => {
+    it('accepts a known recommendation or none, and nothing else', () => {
+        expect(maintenanceTaskSchema.parse({ name: 'x', presetKey: 'clean_bed' }).presetKey).toBe('clean_bed');
+        expect(maintenanceTaskSchema.safeParse({ name: 'x', presetKey: 'polish' }).success).toBe(false);
+    });
+
+    it('covers every recommendation', () => {
+        expect(MAINTENANCE_PRESETS.map((p) => p.key).sort()).toEqual([...MAINTENANCE_PRESET_KEYS].sort());
     });
 });

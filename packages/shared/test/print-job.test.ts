@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { FAILURE_REASONS, updatePrintJobSchema } from '../src/files';
+import { cancelPrintSchema, FAILURE_REASONS, updatePrintJobSchema } from '../src/files';
 
 describe('updatePrintJobSchema', () => {
     it('accepts every failure reason, an empty reason and a trimmed note', () => {
@@ -19,7 +19,7 @@ describe('updatePrintJobSchema', () => {
         expect(updatePrintJobSchema.safeParse({ note: 'x'.repeat(500) }).success).toBe(true);
     });
 
-    it('lists the eight agreed reasons', () => {
+    it('lists the agreed reasons', () => {
         expect([...FAILURE_REASONS]).toEqual([
             'spaghetti',
             'adhesion',
@@ -28,7 +28,20 @@ describe('updatePrintJobSchema', () => {
             'layer_shift',
             'power_loss',
             'user_cancel',
+            'quality',
             'other',
         ]);
+    });
+});
+
+describe('cancelPrintSchema', () => {
+    it('takes an optional reason and defaults to none', () => {
+        expect(cancelPrintSchema.parse({ reason: 'spaghetti' })).toEqual({ reason: 'spaghetti' });
+        expect(cancelPrintSchema.parse({})).toEqual({ reason: '' });
+        expect(cancelPrintSchema.parse(undefined)).toEqual({ reason: '' });
+    });
+
+    it('rejects an unknown reason', () => {
+        expect(cancelPrintSchema.safeParse({ reason: 'gremlins' }).success).toBe(false);
     });
 });

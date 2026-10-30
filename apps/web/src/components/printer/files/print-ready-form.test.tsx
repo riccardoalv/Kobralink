@@ -11,9 +11,14 @@ vi.mock('@/lib/queries', () => ({
     fileObjectsQuery: () => ({ queryKey: ['objects'], queryFn: async () => ({ names: [], svgB64: '' }) }),
 }));
 
+vi.mock('@/hooks/use-slot-spool', () => ({
+    useSpoolLookup: () => (slot: string) => ({ remainingG: mocks.remaining[slot] }),
+}));
+
 vi.mock('./print-preview-3d', () => ({ PrintPreview3D: () => <div data-testid="preview-3d" /> }));
 
 const mocks = vi.hoisted(() => ({
+    remaining: {} as Record<string, number | undefined>,
     live: { connected: true, printState: 'standby', amsSlots: [], filamentMode: 'single' },
     printer: {
         settings: { autoLeveling: true, vibrationCompensation: false, timelapseEnabled: true, failureDetection: false },
@@ -92,5 +97,50 @@ describe('PrintReadyForm scheduling', () => {
         const [options, startAt] = onSchedule.mock.calls[0];
         expect(options).toMatchObject({ autoLeveling: true, timelapse: false });
         expect(startAt).toBe(new Date('2026-11-01T08:00').toISOString());
+    });
+});
+
+describe('PrintReadyForm filament check', () => {
+    const used = (usedG?: number) =>
+        ({
+            ...file,
+            filaments: [{ slotIndex: 0, material: 'PETG', colorHex: '#111111', isUsed: true, usedG }],
+        }) as unknown as GcodeFileDto;
+    const printButton = () => screen.getByRole('button', { name: /^print$/i });
+
+    it('says the external spool has enough filament', async () => {
+        mocks.remaining = { '0': 900 };
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={used(120)} onPrint={vi.fn()} />);
+        expect(screen.getByText(m.print_ready_filament_title())).toBeTruthy();
+        expect(screen.getByText(m.print_ready_filament_external())).toBeTruthy();
+        expect(screen.getByText(m.print_ready_filament_ok())).toBeTruthy();
+        expect((printButton() as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('holds the print until a short spool is accepted', async () => {
+        mocks.remaining = { '0': 50 };
+        const onPrint = vi.fn().mockResolvedValue(undefined);
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={used(120)} onPrint={onPrint} />);
+        expect(screen.getByText(m.print_ready_filament_short())).toBeTruthy();
+        expect(screen.getByText(m.print_ready_filament_short_hint())).toBeTruthy();
+        expect((printButton() as HTMLButtonElement).disabled).toBe(true);
+        await userEvent.click(screen.getByRole('switch', { name: m.print_ready_filament_accept() }));
+        expect((printButton() as HTMLButtonElement).disabled).toBe(false);
+        await userEvent.click(printButton());
+        expect(onPrint).toHaveBeenCalled();
+    });
+
+    it('shows only the need when the spool is unknown', async () => {
+        mocks.remaining = {};
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={used(119.2)} onPrint={vi.fn()} />);
+        expect(screen.getByText(m.print_ready_filament_unknown())).toBeTruthy();
+        expect(screen.getByText(new RegExp(m.print_ready_filament_need({ need: 120 })))).toBeTruthy();
+        expect((printButton() as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('stays out of the way when the file has no usage', async () => {
+        mocks.remaining = { '0': 10 };
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={used(undefined)} onPrint={vi.fn()} />);
+        expect(screen.queryByText(m.print_ready_filament_title())).toBeNull();
     });
 });
