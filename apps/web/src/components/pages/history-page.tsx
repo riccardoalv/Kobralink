@@ -22,7 +22,7 @@ export function HistoryPage() {
                 )}
             </PageHeader>
             <Card className="rounded-3xl border-0 shadow-none">
-                <CardContent className="pt-4">
+                <CardContent>
                     <HistoryList
                         printerId={filter ?? ''}
                         jobs={jobs.data ?? []}

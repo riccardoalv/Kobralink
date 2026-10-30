@@ -71,12 +71,12 @@ export function AutomationsPage() {
             </PageHeader>
             {rules.isSuccess && list.length === 0 ? (
                 <Card className="rounded-3xl border-0 shadow-none">
-                    <CardContent className="pt-6">
+                    <CardContent>
                         <EmptyState icon={<Workflow />}>{m.automations_empty()}</EmptyState>
                     </CardContent>
                 </Card>
             ) : (
-                <ul className="grid gap-3 lg:grid-cols-2">
+                <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                     {list.map((rule) => (
                         <RuleCard
                             key={rule.id}
@@ -124,9 +124,9 @@ export function RuleCard({
     const targets = targetedPrinters(rule, printers);
     const when = rule.trigger === 'time' ? `${TRIGGER_LABEL.time()} ${rule.time}` : TRIGGER_LABEL[rule.trigger]();
     return (
-        <li>
+        <li className="min-w-0">
             <Card className={cn('h-full rounded-3xl border-0 shadow-none', !rule.enabled && 'opacity-60')}>
-                <CardContent className="grid gap-3 pt-6">
+                <CardContent className="grid gap-3">
                     <div className="flex items-start gap-3">
                         <div className="min-w-0 flex-1">
                             <h3 className="truncate font-medium">{rule.name}</h3>
@@ -141,15 +141,17 @@ export function RuleCard({
                             aria-label={m.automations_enabled()}
                         />
                     </div>
-                    <ol className="grid gap-1 text-sm">
+                    <ol className="grid grid-cols-1 gap-1 text-sm">
                         {rule.actions.map((a, i) => (
                             <li
                                 key={`${a.type}-${String(i)}`}
-                                className="flex gap-2 rounded-2xl bg-secondary/60 px-3 py-1.5"
+                                className="flex min-w-0 gap-2 rounded-2xl bg-secondary/60 px-3 py-1.5"
                             >
                                 <span className="tabular-nums text-muted-foreground">{i + 1}</span>
                                 <span className="font-medium">{ACTION_LABEL[a.type]()}</span>
-                                <span className="truncate text-muted-foreground">{describeAction(a, macros)}</span>
+                                <span className="min-w-0 truncate text-muted-foreground">
+                                    {describeAction(a, macros)}
+                                </span>
                             </li>
                         ))}
                     </ol>

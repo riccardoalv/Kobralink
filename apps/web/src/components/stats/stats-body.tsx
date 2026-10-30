@@ -76,7 +76,7 @@ export function StatsBody({ data, days }: { data: StatsDto; days: number }) {
                 />
                 <Tile
                     label={m.stats_total_time()}
-                    value={formatDuration(data.totalDurationSec)}
+                    value={formatDuration(data.totalDurationSec, { units: 2 })}
                     sub={m.stats_avg({ duration: formatDuration(data.avgDurationSec) })}
                     extra={
                         data.estimateRatio !== null

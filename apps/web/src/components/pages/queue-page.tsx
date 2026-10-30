@@ -94,7 +94,7 @@ export function QueuePage() {
                 ))}
             </div>
             <Card className="rounded-3xl border-0 shadow-none">
-                <CardContent className="grid gap-3 pt-6">
+                <CardContent className="grid gap-3">
                     {tab === 'queued' &&
                         (items.length === 0 ? (
                             <EmptyState icon={<ListOrdered />}>{m.queue_empty()}</EmptyState>
