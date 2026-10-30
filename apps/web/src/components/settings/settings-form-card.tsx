@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { SaveBar } from '@/components/form/save-bar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCanOperate } from '@/hooks/use-role';
 import { m } from '@/lib/i18n';
@@ -10,6 +10,8 @@ export function SettingsCard({
     onSubmit,
     submitting,
     extra,
+    changed = false,
+    onDiscard,
 }: {
     title: React.ReactNode;
     description?: React.ReactNode;
@@ -17,6 +19,8 @@ export function SettingsCard({
     onSubmit?: () => void;
     submitting?: boolean;
     extra?: React.ReactNode;
+    changed?: boolean;
+    onDiscard?: () => void;
 }) {
     const body = (
         <Card className="rounded-3xl border-0 shadow-none">
@@ -26,14 +30,7 @@ export function SettingsCard({
             </CardHeader>
             <CardContent className="grid gap-4">
                 {children}
-                {onSubmit && (
-                    <div className="flex items-center gap-2">
-                        <Button type="submit" className="rounded-full px-6" disabled={submitting}>
-                            {m.common_save()}
-                        </Button>
-                        {extra}
-                    </div>
-                )}
+                {onSubmit && <SaveBar changed={changed} submitting={submitting} onDiscard={onDiscard} extra={extra} />}
             </CardContent>
         </Card>
     );

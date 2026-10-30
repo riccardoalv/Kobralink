@@ -1,5 +1,5 @@
 import { APP_LOCALES, type AppLocale, type AppSettings, optionalUrl } from '@farolprint/shared';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { z } from 'zod';
 import { FieldError } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
@@ -40,12 +40,19 @@ export function GeneralCard({ settings }: { settings: AppSettings }) {
             publicUrl: settings.publicUrl,
         },
         validators: { onSubmit: generalSchema },
-        onSubmit: ({ value }) => save.mutateAsync(value).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync(value)
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
+    const changed = useStore(form.store, (s) => !s.isDefaultValue);
     return (
         <SettingsCard
             title={m.settings_general()}
             onSubmit={() => void form.handleSubmit()}
+            changed={changed}
+            onDiscard={() => form.reset()}
             submitting={save.isPending}
         >
             <form.Field name="locale">
