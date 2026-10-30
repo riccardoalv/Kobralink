@@ -60,6 +60,12 @@ export interface QueueStatusDto {
     awaitingBedClear: boolean;
     maintenance: boolean;
     nextFilename: string | null;
+    autoStartAt: string | null;
+}
+
+export interface BedClearResultDto {
+    started: QueueItemDto | null;
+    startsAt: string | null;
 }
 
 export const COMPAT_REASONS = ['target', 'model', 'nozzle', 'size', 'material', 'color'] as const;

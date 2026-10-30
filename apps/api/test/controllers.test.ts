@@ -19,8 +19,14 @@ import type { StatsService } from '../src/stats/stats.service';
 
 describe('QueueController', () => {
     const queue = {
-        status: mock(async () => ({ awaitingBedClear: true, maintenance: false, nextFilename: 'a.gcode' })),
-        confirmBedClear: mock(async () => ({ id: 'q1' })),
+        status: mock(async () => ({
+            awaitingBedClear: true,
+            maintenance: false,
+            nextFilename: 'a.gcode',
+            autoStartAt: null,
+        })),
+        confirmBedClear: mock(async () => ({ started: { id: 'q1' }, startsAt: null })),
+        cancelAutoStart: mock(() => true),
         startNext: mock(async () => ({ id: 'q1' })),
         add: mock(async () => ({ id: 'q2' })),
         check: mock(async () => ({ ok: true, printers: [] })),
@@ -38,11 +44,17 @@ describe('QueueController', () => {
             awaitingBedClear: true,
             maintenance: false,
             nextFilename: 'a.gcode',
+            autoStartAt: null,
         });
-        expect(await ctrl.bedClear('p1', {})).toEqual({ started: { id: 'q1' } });
+        expect(await ctrl.bedClear('p1', {})).toEqual({ started: { id: 'q1' }, startsAt: null });
         expect(queue.confirmBedClear).toHaveBeenCalledWith('p1', 'good');
         await ctrl.bedClear('p1', { outcome: 'bad' });
         expect(queue.confirmBedClear).toHaveBeenLastCalledWith('p1', 'bad');
+    });
+
+    it('cancels a pending automatic start and returns the status', async () => {
+        expect(await ctrl.cancelAutoStart('p1')).toMatchObject({ awaitingBedClear: true, autoStartAt: null });
+        expect(queue.cancelAutoStart).toHaveBeenCalledWith('p1');
     });
 
     it('turns a failed start into a 502', async () => {

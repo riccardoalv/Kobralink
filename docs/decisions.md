@@ -92,7 +92,9 @@ later and build on these.
 - **Bed-clear confirmation before the next queued job** (maintainer's rule). With auto-start on, the next file waits
   until the user confirms the bed is empty (`queueBedClearConfirm`, on by default); the old 15 s auto-start stays
   available by turning the confirmation off, for printers with an ejector. The hold is dropped as soon as the printer
-  starts printing by any other means.
+  starts printing by any other means. Since 0.14 (maintainer's request, October 2026) the hold starts the moment a
+  print ends, not when the printer later reports free, and it also follows cancelled and failed prints, even with the
+  confirmation off: an ejector only runs at the end of a completed file, so a failed part may still be on the bed.
 - **Scheduled starts reuse the print dialog.** A scheduled print stores the same options as an immediate one
   (excluded objects, slot mapping, leveling, timelapse, detection). If the printer is busy or offline at the time, the
   file goes to the front of the queue instead of being lost, and a notification says so. The dialog opened after an
@@ -184,10 +186,18 @@ Bambu tools so people migrating from them find things where they expect. The pha
   keeps its recommendation key (`maintenance_task.presetKey`) and is shown, and notified, in the current language;
   renaming it makes it a custom task with its own name. Tasks created before the key existed are recognised by their
   name in any of the seven languages.
-- **Light toggles can start the next print** (maintainer's decision), as an opt-in setting: turning the printer light
-  on three times within a short window on its screen confirms the bed is clear. A single light-on does not count: the
-  Kobra 4 turns its light on by itself when a print starts (seen on a real printer). FarolPrint ignores the light
-  commands it sends itself.
+- **Light toggles can start the next print** (maintainer's decision), as an opt-in setting: tapping the light button on
+  the printer screen 3 times within 20 s confirms the bed is clear, like the "Good" button. Every light message the
+  printer sends counts as a tap, whatever the state, because the Kobra 4 merges quick taps (4 quick taps arrived as 2
+  messages on a real printer), so the taps should be about a second apart. A single light-on does not count: the
+  Kobra 4 turns its light on by itself when a print starts. FarolPrint ignores the replies to the light commands it
+  sends itself. The trigger only confirms the bed; starting the next file needs auto-start, so turning the trigger on
+  turns auto-start on and turning auto-start off turns the trigger off (maintainer's request).
+- **The wait before an automatic start is a setting** (`queueAutoStartDelaySec`, 0 to 3600 s, 15 by default;
+  maintainer's request). It applies after the bed is confirmed (so you can step away after tapping the light) and,
+  with the confirmation off, after a print finishes. The queue shows the countdown with a button to cancel it;
+  starting a file by hand or adding one to the queue does not wait. The printer settings show a sentence that says
+  what will happen with the current choices.
 - **How the single queue picks the next file** (October 2026). The queue keeps one order for every printer. When a
   printer is free (auto-start, a cleared bed or "Start next"), it takes the first item in that order that targets it
   (the printer itself, tags it carries, or any printer), that it can print (same model when the file names one, same
@@ -253,6 +263,4 @@ Bambu tools so people migrating from them find things where they expect. The pha
 - A Kobra MQTT simulator that replays captured messages, so the whole bridge can be tested in CI without a printer.
 - The external spool is tracked under slot key `0`, the same as ACE slot 1, so a printer with an ACE cannot track both;
   a separate key needs testing on a printer with an ACE.
-- Does the printer send `light/report` when the light is switched on its own screen? The light trigger depends on it
-  and has to be checked on a real printer.
 

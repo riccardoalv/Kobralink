@@ -55,3 +55,22 @@ describe('depreciationPerHour', () => {
         expect(depreciationPerHour({ purchasePrice: 3000, lifespanHours: 0 })).toBe(0);
     });
 });
+
+describe('queue start settings', () => {
+    it('start manually, confirm the bed and wait 15 s before an automatic start by default', () => {
+        expect(printerSettingsSchema.parse({})).toMatchObject({
+            queueAutoStart: false,
+            queueBedClearConfirm: true,
+            queueAutoStartDelaySec: 15,
+            lightTrigger: false,
+        });
+    });
+
+    it('accept a wait from 0 to 3600 whole seconds', () => {
+        expect(printerSettingsSchema.parse({ queueAutoStartDelaySec: 0 }).queueAutoStartDelaySec).toBe(0);
+        expect(printerSettingsSchema.parse({ queueAutoStartDelaySec: 3600 }).queueAutoStartDelaySec).toBe(3600);
+        expect(printerSettingsSchema.safeParse({ queueAutoStartDelaySec: -1 }).success).toBe(false);
+        expect(printerSettingsSchema.safeParse({ queueAutoStartDelaySec: 3601 }).success).toBe(false);
+        expect(printerSettingsSchema.safeParse({ queueAutoStartDelaySec: 1.5 }).success).toBe(false);
+    });
+});

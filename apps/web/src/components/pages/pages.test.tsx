@@ -12,7 +12,15 @@ import { MaintenancePage } from './maintenance-page';
 import { QueuePage } from './queue-page';
 
 const { queue, schedule, files, state } = vi.hoisted(() => ({
-    queue: { all: vi.fn(), reorder: vi.fn(), remove: vi.fn(), clear: vi.fn(), bedClear: vi.fn() },
+    queue: {
+        all: vi.fn(),
+        reorder: vi.fn(),
+        remove: vi.fn(),
+        clear: vi.fn(),
+        bedClear: vi.fn(),
+        status: vi.fn(),
+        cancelAutoStart: vi.fn(),
+    },
     schedule: { list: vi.fn(), remove: vi.fn() },
     files: { historyAll: vi.fn() },
     state: { printers: [] as unknown[] },
@@ -84,6 +92,12 @@ beforeEach(() => {
     queue.remove.mockReset().mockResolvedValue(undefined);
     queue.clear.mockReset().mockResolvedValue(undefined);
     queue.bedClear.mockReset().mockResolvedValue({ started: null });
+    queue.status
+        .mockReset()
+        .mockResolvedValue({ awaitingBedClear: false, maintenance: false, nextFilename: null, autoStartAt: null });
+    queue.cancelAutoStart
+        .mockReset()
+        .mockResolvedValue({ awaitingBedClear: false, maintenance: false, nextFilename: null, autoStartAt: null });
     schedule.list.mockReset().mockImplementation(async (printerId: string) =>
         printerId === 'p2'
             ? [
@@ -126,6 +140,19 @@ describe('QueuePage', () => {
         expect(dialog.title).toBe(m.queue_clear_title());
         await dialog.onAction?.();
         expect(queue.clear).toHaveBeenCalledOnce();
+    });
+
+    it('counts down the automatic start of each printer and cancels it', async () => {
+        queue.status.mockImplementation(async (id: string) => ({
+            awaitingBedClear: false,
+            maintenance: false,
+            nextFilename: null,
+            autoStartAt: id === 'p2' ? new Date(Date.now() + 9_500).toISOString() : null,
+        }));
+        await renderWithProviders(<QueuePage />);
+        expect(await screen.findByText(`Kobra X · ${m.queue_starts_in({ seconds: 10 })}`)).toBeTruthy();
+        await userEvent.click(screen.getByRole('button', { name: m.queue_cancel_start() }));
+        expect(queue.cancelAutoStart).toHaveBeenCalledWith('p2');
     });
 
     it('lists the printers waiting for bed removal', async () => {

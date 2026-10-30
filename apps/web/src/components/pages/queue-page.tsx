@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/printer/panel';
 import { ScheduledRow } from '@/components/printer/queue-card';
+import { AutoStartCountdown } from '@/components/queue/auto-start-countdown';
 import { BedClearBanner } from '@/components/queue/bed-clear-banner';
 import { moveInOrder, QueueItemRow } from '@/components/queue/queue-item-row';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { usePrinters } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { allQueueQuery, scheduleQuery } from '@/lib/queries';
+import { allQueueQuery, queueStatusQuery, scheduleQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { PageHeader } from './page-header';
@@ -25,6 +26,11 @@ export function QueuePage() {
     const [tab, setTab] = useState<Tab>('queued');
     const queue = useQuery(allQueueQuery);
     const schedules = useQueries({ queries: printers.map((p) => scheduleQuery(p.id)) });
+    const statuses = useQueries({ queries: printers.map((p) => queueStatusQuery(p.id)) });
+    const countdowns = printers.flatMap((p, i) => {
+        const at = statuses[i]?.data?.autoStartAt;
+        return at ? [{ printer: p, at }] : [];
+    });
     const items = queue.data ?? [];
     const removal = printers.filter(
         (p) =>
@@ -75,6 +81,9 @@ export function QueuePage() {
                     </Button>
                 )}
             </PageHeader>
+            {countdowns.map(({ printer, at }) => (
+                <AutoStartCountdown key={printer.id} printerId={printer.id} startsAt={at} name={printer.name} />
+            ))}
             <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-secondary p-1 [scrollbar-width:none]">
                 {tabs.map((t) => (
                     <button

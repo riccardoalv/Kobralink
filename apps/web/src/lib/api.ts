@@ -9,6 +9,7 @@ import type {
     AutomationRuleDto,
     AutomationRuleInput,
     BackupInfoDto,
+    BedClearResultDto,
     CompleteMaintenanceInput,
     CreateUserInput,
     DetectionModelDto,
@@ -240,11 +241,10 @@ export const api = {
         all: () => request<QueueItemDto[]>('/api/v1/queue'),
         list: (printerId: string) => request<QueueItemDto[]>(`/api/v1/printers/${printerId}/queue`),
         status: (printerId: string) => request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/status`),
+        cancelAutoStart: (printerId: string) =>
+            request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/auto-start`, { method: 'DELETE' }),
         bedClear: (printerId: string, outcome: 'good' | 'bad' = 'good') =>
-            request<{ started: QueueItemDto | null }>(
-                `/api/v1/printers/${printerId}/queue/bed-clear`,
-                json({ outcome }),
-            ),
+            request<BedClearResultDto>(`/api/v1/printers/${printerId}/queue/bed-clear`, json({ outcome })),
         maintenance: (printerId: string, enabled: boolean) =>
             request<QueueStatusDto>(`/api/v1/printers/${printerId}/queue/maintenance`, json({ enabled })),
         add: (input: AddQueueItemInput) => request<QueueItemDto>('/api/v1/queue', json(input)),

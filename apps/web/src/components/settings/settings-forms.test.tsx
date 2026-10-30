@@ -288,7 +288,47 @@ describe('editing the new settings', () => {
         await userEvent.click(screen.getByRole('button', { name: m.common_save() }));
         await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
         expect(mocks.printerUpdate.mock.calls[0][1].settings.lightTrigger).toBe(true);
+        expect(mocks.printerUpdate.mock.calls[0][1].settings.queueAutoStart).toBe(true);
         await waitFor(() => expect(screen.queryByText(m.form_unsaved())).toBeNull());
+    });
+
+    it('explains the queue mode, sets the wait and keeps the light trigger tied to auto-start', async () => {
+        const printer = {
+            id: 'p1',
+            name: 'Kobra 4',
+            ip: '192.168.1.235',
+            httpPort: 7125,
+            deviceId: 'abcdef123456',
+            modeId: '20028',
+            username: 'user',
+            createdAt: '2026-10-20T00:00:00.000Z',
+            model: 'Anycubic Kobra 4',
+            settings: printerSettingsSchema.parse({}),
+            live: null,
+        } as unknown as PrinterWithLive;
+        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        expect(screen.getByRole('note').textContent).toBe(m.queue_mode_manual_confirm());
+        expect(screen.queryByLabelText(m.settings_queue_delay())).toBeNull();
+        await userEvent.click(switchAfter(m.settings_light_trigger()));
+        expect(switchAfter(m.settings_queue_auto_start()).getAttribute('aria-checked')).toBe('true');
+        const delay = screen.getByLabelText(m.settings_queue_delay()) as HTMLInputElement;
+        expect(delay.value).toBe('15');
+        await userEvent.clear(delay);
+        await userEvent.type(delay, '30');
+        expect(screen.getByRole('note').textContent).toBe(
+            m.queue_mode_auto_confirm({ when: m.queue_when_after({ seconds: 30 }), how: m.queue_mode_how_light() }),
+        );
+        await userEvent.click(switchAfter(m.settings_queue_auto_start()));
+        expect(switchAfter(m.settings_light_trigger()).getAttribute('aria-checked')).toBe('false');
+        expect(screen.queryByLabelText(m.settings_queue_delay())).toBeNull();
+        await userEvent.click(switchAfter(m.settings_queue_auto_start()));
+        await userEvent.click(screen.getByRole('button', { name: m.common_save() }));
+        await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
+        expect(mocks.printerUpdate.mock.calls[0][1].settings).toMatchObject({
+            queueAutoStart: true,
+            queueAutoStartDelaySec: 30,
+            lightTrigger: false,
+        });
     });
 
     it('shows the save bar on a printer change and discards it', async () => {

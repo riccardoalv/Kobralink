@@ -82,10 +82,13 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   `printerId` null = any printer, `targetTags` = printers carrying all those tags). Compatibility (`staticReasons`,
   `stockReasons`, `filamentFit` in `packages/shared/src/queue.ts` and the service) uses the G-code target read at
   upload (`gcode_file.printerModel/nozzleMm/extent*`, `metaVersion` drives the backfill). `dispatch(printerId)` starts
-  the first item the printer can take (30 s cooldown, one start in flight). With `queueAutoStart`, the next file starts
-  15 s after a print finishes unless `queueBedClearConfirm` (default on) sets `printer.awaitingBedClear` until
-  `POST printers/:id/queue/bed-clear` (`good`|`bad`; bad requeues the file first) or the opt-in light trigger
-  (`light_trigger` bridge event). `printer.maintenance` keeps a printer out. Items store the print dialog options
+  the first item the printer can take (30 s cooldown, one start in flight). A print that ends sets
+  `printer.awaitingBedClear` (finished ones when `queueBedClearConfirm` is on, the default; cancelled and failed ones
+  always) until `POST printers/:id/queue/bed-clear` (`good`|`bad`; bad requeues the file first) or the opt-in light
+  trigger (3 light reports from the printer screen within 20 s, `light_trigger` bridge event). With `queueAutoStart`,
+  the next file starts `queueAutoStartDelaySec` after that confirmation, or after a finished print when the
+  confirmation is off; `GET printers/:id/queue/status` returns the countdown (`autoStartAt`) and
+  `DELETE printers/:id/queue/auto-start` cancels it. `printer.maintenance` keeps a printer out. Items store the print dialog options
   (`queue_item.options`) and start with them. Scheduled prints (`schedule/`) fire a stored file at `startAt` and fall
   back to the front of the queue when the printer is busy. Maintenance tasks (`maintenance/`) are due by print
   hours, jobs or days since the last completion and notify once (`maintenance_due`).
